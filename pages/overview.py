@@ -144,7 +144,7 @@ for bracket_name, registrants in bracket_buckets.items():
                 continue
                 
             clean_team = w_pick["team_picked"].replace("_SO", "")
-            has_asterisk = "*" if w_pick["team_picked"].endswith("_SO"] else ""
+            has_asterisk = "*" if w_pick["team_picked"].endswith("_SO") else ""
             
             bg_color = "transparent"
             text_color = "#1e293b"
