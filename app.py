@@ -110,7 +110,7 @@ else:
                 with cols[i % 18]:
                     clean_t = p["team_picked"].replace("_SO", "")
                     has_so = "*" if p["team_picked"].endswith("_SO") else ""
-                    st.markdown(f"<div style='border:1px solid #cbd5e1; padding:4px; border-radius:4px; text-align:center; background:#f8fafc; font-size:11px;'>W{p['week']}<br><b>{clean_t}{has_so}</b></div>", unsafe_allowed_html=True)
+                    st.markdown(f"<div style='border:1px solid #cbd5e1; padding:4px; border-radius:4px; text-align:center; background:#f8fafc; font-size:11px;'>W{p['week']}<br><b>{clean_t}{has_so}</b></div>", unsafe_allow_html=True)
         else:
             st.info("No prior weeks on record yet for this season.")
 
@@ -166,7 +166,7 @@ else:
                         st.rerun()
 
                 with col_vs:
-                    st.markdown("<center style='color:gray; font-size:11px; padding-top:6px;'>VS</center>", unsafe_allowed_html=True)
+                    st.markdown("<center style='color:gray; font-size:11px; padding-top:6px;'>VS</center>", unsafe_allow_html=True)
 
                 with col_home:
                     is_sel_home = home in st.session_state.selected_teams
