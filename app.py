@@ -40,18 +40,52 @@ if 'user' not in st.session_state:
 
 if not st.session_state.user:
     st.subheader("🔒 Competitor Login Portal")
-    email = st.text_input("Registered Email Address")
-    password = st.text_input("Password", type="password")
     
-    if st.button("Log In", use_container_width=True):
+    # 🧪 MASQUERADE / TESTING MODE OVERRIDE
+    testing_mode = st.checkbox("🧪 Enable Developer Masquerade Mode (Testing Only)")
+    
+    if testing_mode:
         try:
-            res = supabase.auth.sign_in_with_password({"email": email, "password": password})
-            st.session_state.user = res.user
-            st.success("Session secured!")
-            st.rerun()
-        except Exception:
-            st.error("Authentication rejected. Verify your email and password.")
+            # Fetch all user profiles from the database to populate the masquerade list
+            users_list = supabase.table("users").select("id", "username").execute().data
+            if users_list:
+                user_options = {u["username"]: u["id"] for u in users_list}
+                selected_user_name = st.selectbox("Masquerade as Player:", list(user_options.keys()))
+                
+                if st.button("Masquerade Login", use_container_width=True):
+                    # Mock an authenticated session object matching the selected player's ID
+                    class MockUser:
+                        def __init__(self, uid):
+                            self.id = uid
+                    
+                    st.session_state.user = MockUser(user_options[selected_user_name])
+                    st.success(f"Masquerading successfully as {selected_user_name}!")
+                    st.rerun()
+            else:
+                st.info("No players found in the database. Please run the seed_data.py script first.")
+        except Exception as e:
+            st.error(f"Could not load users for masquerade mode: {str(e)}")
+            
+    else:
+        # Standard Production Login Window
+        email = st.text_input("Registered Email Address")
+        password = st.text_input("Password", type="password")
+        
+        if st.button("Log In", use_container_width=True):
+            try:
+                res = supabase.auth.sign_in_with_password({"email": email, "password": password})
+                st.session_state.user = res.user
+                st.success("Session secured!")
+                st.rerun()
+            except Exception:
+                st.error("Authentication rejected. Verify your email and password.")
 else:
+    # Button to quickly log out and switch users during testing
+    if st.sidebar.button("🚪 Log Out / Clear Session"):
+        st.session_state.user = None
+        st.session_state.selected_teams = []
+        st.rerun()
+        
     user_id = st.session_state.user.id
     
     # Fetch player details and registration bracket standing profiles
