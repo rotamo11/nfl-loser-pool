@@ -86,8 +86,8 @@ if sorted_tallies:
 else:
     st.info("🔒 Selection tallies remain hidden until your own weekly entry is Finalized.")
 
-# --- 4. RENDER BRACKET MATRIX GIRD ---
-st.markdown("<br>### 📋 Complete Tournament Roster Grid", unsafe_allow_html=True)
+# --- 4. RENDER BRACKET MATRIX GRID ---
+st.markdown("<br>### 📋 Complete Tournament Roster Grid", unsafe_allowed_html=True)
 
 # Bucket players into their designated operational brackets
 bracket_buckets = {
@@ -97,76 +97,85 @@ bracket_buckets = {
     "🔴 Eliminated Competitors": [r for r in regs_res if r["bracket_status"] == "Eliminated"]
 }
 
+# Fix: Build ONE complete structural HTML template layout block for the entire view grid
+full_html_grid = ""
+
 for bracket_name, registrants in bracket_buckets.items():
     if not registrants:
         continue
         
-    st.markdown(f"<div style='background:#f1f5f9; padding:6px 12px; font-weight:bold; border-radius:4px; margin-top:15px;'>{bracket_name}</div>", unsafe_allow_html=True)
-    
-    # Generate interactive HTML table matrix strings
-    html_table = """
-    <table style="width:100%; border-collapse:collapse; background:white; font-size:12px; margin-top:5px;">
+    # Append the bracket classification status strip headers
+    full_html_grid += f"""
+    <div style='background:#f1f5f9; padding:8px 12px; font-weight:bold; border-radius:4px; margin-top:20px; font-family:sans-serif; color:#334155; font-size:13px;'>
+        {bracket_name}
+    </div>
+    <table style="width:100%; border-collapse:collapse; background:white; font-size:12px; margin-top:5px; font-family:sans-serif;">
         <thead>
             <tr style="background:#334155; color:white; text-align:center;">
                 <th style="padding:8px; border:1px solid #cbd5e1; text-align:left;">Competitor</th>
-                <th style="padding:8px; border:1px solid #cbd5e1;">Byes</th>
+                <th style="padding:8px; border:1px solid #cbd5e1; width:50px;">Byes</th>
     """
-    # Append header matrix rows up to Week 18 limits
+    
     for w in range(1, 19):
-        html_table += f'<th style="padding:4px; border:1px solid #cbd5e1; width:45px;">W{w}</th>'
-    html_table += "</tr></thead><tbody>"
+        full_html_grid += f'<th style="padding:4px; border:1px solid #cbd5e1; width:45px; text-align:center;">W{w}</th>'
+    full_html_grid += "</tr></thead><tbody>"
     
     for reg in registrants:
         username = user_map.get(reg["user_id"], "Unknown Player")
-        html_table += f"""
+        full_html_grid += f"""
             <tr style="border-bottom:1px solid #e2e8f0;">
-                <td style="padding:6px; border:1px solid #cbd5e1; font-weight:bold; color:#1e293b;">{username}</td>
-                <td style="padding:6px; border:1px solid #cbd5e1; text-align:center; font-family:monospace;">{reg['byes_used']}/1</td>
+                <td style="padding:6px; border:1px solid #cbd5e1; font-weight:bold; color:#1e293b; background:#f8fafc;">{username}</td>
+                <td style="padding:6px; border:1px solid #cbd5e1; text-align:center; font-family:monospace; background:#f8fafc;">{reg['byes_used']}/1</td>
         """
         
-        # Populate custom cells dynamically based on selection state parameters
         for w in range(1, 19):
             w_pick = next((p for p in picks_res if p["user_id"] == reg["user_id"] and p["week"] == w), None)
             
             if not w_pick:
-                html_table += '<td style="border:1px solid #cbd5e1; bg:#fafafa;"></td>'
+                full_html_grid += '<td style="border:1px solid #cbd5e1; background:#fafafa;"></td>'
                 continue
                 
-            # Restrict visual tracking for active weeks if security constraints aren't validated
+            # Security Rule Enforcer: Restrict live metrics viewing if user has not met validation rules
             if w == current_week and not can_view_live_picks:
-                icon_tag = "🔒" if w_pick["pick_state"] == "Confirmed" else "❌ Hidden"
-                html_table += f'<td style="border:1px solid #cbd5e1; text-align:center; color:#94a3b8; font-size:10px;">{icon_tag}</td>'
+                icon_tag = "🔒 Confirmed" if w_pick["pick_state"] == "Confirmed" else "🔒 Hidden"
+                full_html_grid += f'<td style="border:1px solid #cbd5e1; text-align:center; color:#94a3b8; font-size:10px; background:#f1f5f9; font-weight:bold;">{icon_tag}</td>'
                 continue
                 
             clean_team = w_pick["team_picked"].replace("_SO", "")
             has_asterisk = "*" if w_pick["team_picked"].endswith("_SO") else ""
             
-            # Match layout conditions to correct hexadecimal design specifications
             bg_color = "transparent"
+            text_color = "#1e293b"
             indicator_icon = ""
             
             if w_pick["pick_state"] == "Correct":
-                bg_color = "#008000"  # Direct Green Rule
-                indicator_icon = '<span style="position:absolute; bottom:1px; right:2px; color:white; font-size:8px; font-weight:black;">✓</span>'
+                bg_color = "#008000"
+                text_color = "white"
+                indicator_icon = '<span style="position:absolute; bottom:1px; right:3px; color:white; font-size:9px; font-weight:900;">✓</span>'
             elif w_pick["pick_state"] == "Incorrect":
-                bg_color = "#FF0000"  # Direct Red Rule
-                indicator_icon = '<span style="position:absolute; bottom:1px; right:2px; color:white; font-size:8px; font-weight:black;">X</span>'
+                bg_color = "#FF0000"
+                text_color = "white"
+                indicator_icon = '<span style="position:absolute; bottom:1px; right:3px; color:white; font-size:9px; font-weight:900;">X</span>'
             elif w_pick["pick_state"] == "Finalized":
-                indicator_icon = '<span style="position:absolute; bottom:1px; right:2px; font-size:8px;">🔒</span>'
+                indicator_icon = '<span style="position:absolute; bottom:1px; right:3px; font-size:8px;">🔒</span>'
                 
             if clean_team == "BYE":
-                html_table += f'<td style="border:1px solid #cbd5e1; background:{bg_color}; text-align:center; font-weight:bold; color:gray; position:relative;">BYE{indicator_icon}</td>'
+                full_html_grid += f'<td style="border:1px solid #cbd5e1; background:{bg_color}; text-align:center; font-weight:bold; color:{text_color}; position:relative;">BYE{indicator_icon}</td>'
             else:
-                html_table += f"""
-                <td style="border:1px solid #cbd5e1; background:{bg_color}; text-align:center; position:relative; padding:2px;">
+                # FIX: Fixed standard CDN route url links mapping string concatenations securely
+                full_html_grid += f"""
+                <td style="border:1px solid #cbd5e1; background:{bg_color}; text-align:center; position:relative; padding:2px; color:{text_color};">
                     <div style="display:flex; flex-direction:column; align-items:center; justify-content:center;">
-                        <img src="https://espncdn.com{clean_team.lower()}.png" width="30" height="20" style="object-fit:contain; padding-bottom:2px;"/>
-                        <span style="font-size:7px; font-weight:bold; line-height:1; color:inherit;">{clean_team}{has_asterisk}</span>
+                        <img src="https://espncdn.com{clean_team.lower()}.png" width="30" height="20" style="object-fit:contain; padding-bottom:1px;"/>
+                        <span style="font-size:8px; font-weight:bold; line-height:1;">{clean_team}{has_asterisk}</span>
                     </div>
                     {indicator_icon}
                 </td>
                 """
-        html_table += "</tr>"
+        full_html_grid += "</tr>"
         
-    html_table += "</tbody></table>"
-    st.markdown(html_table, unsafe_allow_html=True)
+    full_html_grid += "</tbody></table>"
+
+# Pass the cleanly compiled layout string exactly once to the markdown view engine
+st.markdown(full_html_grid, unsafe_allow_html=True)
+
