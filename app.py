@@ -25,7 +25,7 @@ st.markdown(
         </p>
     </div>
     """, 
-    unsafe_allowed_html=True
+    unsafe_allow_html=True
 )
 
 # Persistent Helpful Quick Links Sidebar
