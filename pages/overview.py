@@ -1,5 +1,4 @@
 import streamlit as st
-import streamlit.components.v1 as components
 from supabase import create_client, Client
 
 # Initialize database connection context
@@ -63,15 +62,15 @@ for p in picks_res:
         if can_view_live_picks:
             tally_counts[p["team_picked"]] = tally_counts.get(p["team_picked"], 0) + 1
 
-sorted_tallies = sorted(tally_counts.items(), key=lambda item: (-item[1], item[0]))
+sorted_tallies = sorted(tally_counts.items(), key=lambda item: (-item, item))
 
 if sorted_tallies:
     tally_cols = st.columns(min(len(sorted_tallies), 6))
     for idx, (team, count) in enumerate(sorted_tallies):
         clean_team = team.replace("_SO", "")
         with tally_cols[idx % 6]:
-            # FIX: Updated to use live, active ESPN Combiner API format
-            logo_img = "" if clean_team == "BYE" else f'<img src="https://espncdn.com{clean_team.upper()}.png&h=40&w=40" width="24" height="16" style="object-fit:contain;"/>'
+            # FIX: Switched to The Odds API's stable 3-letter formatted logo CDN link
+            logo_img = "" if clean_team == "BYE" else f'<img src="https://the-odds-api.com{clean_team.upper()}.png" width="24" height="16" style="object-fit:contain;"/>'
             st.markdown(
                 f"""
                 <div style="background:white; border:1px solid #e2e8f0; padding:6px; border-radius:4px; display:flex; align-items:center; gap:8px; font-family:sans-serif;">
@@ -85,7 +84,7 @@ if sorted_tallies:
 else:
     st.info("🔒 Selection tallies remain hidden until your own weekly entry is Finalized.")
 
-# --- 4. RENDER BRACKET MATRIX GRID VIA SANBOXED COMPONENT CONTAINER ---
+# --- 4. RENDER BRACKET MATRIX GRID ---
 st.markdown("<br>### 📋 Complete Tournament Roster Grid", unsafe_allow_html=True)
 
 bracket_buckets = {
@@ -95,16 +94,22 @@ bracket_buckets = {
     "🔴 Eliminated Competitors": [r for r in regs_res if r["bracket_status"] == "Eliminated"]
 }
 
+# Compile raw HTML grid into a standalone iframe payload layout
 html_iframe_payload = """
+<!DOCTYPE html>
+<html>
+<head>
 <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; background: #f8fafc; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; background: #f8fafc; padding: 10px; }
     .bracket-title { background:#e2e8f0; padding:8px 12px; font-weight:bold; border-radius:4px; margin-top:20px; color:#334155; font-size:13px; }
     table { width:100%; border-collapse:collapse; background:white; font-size:12px; margin-top:5px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
     th { background:#334155; color:white; padding:8px; border:1px solid #cbd5e1; font-weight:bold; }
     td { border:1px solid #cbd5e1; padding:4px; text-align:center; vertical-align:middle; }
-    .player-name { text-align:left; font-weight:bold; color:#1e293b; background:#f8fafc; padding-left:8px; min-w:150px; }
+    .player-name { text-align:left; font-weight:bold; color:#1e293b; background:#f8fafc; padding-left:8px; min-width:150px; }
     .bye-cell { font-family:monospace; text-align:center; background:#f8fafc; }
 </style>
+</head>
+<body>
 """
 
 for bracket_name, registrants in bracket_buckets.items():
@@ -164,11 +169,11 @@ for bracket_name, registrants in bracket_buckets.items():
             if clean_team == "BYE":
                 html_iframe_payload += f'<td style="background:{bg_color}; font-weight:bold; color:{text_color}; position:relative;">BYE{indicator_icon}</td>'
             else:
-                # FIX: Updated to uppercase formatting inside the clean combiner cdn layout string
+                # FIX: Updated logo source mapping string parameter keys cleanly to upper
                 html_iframe_payload += f"""
                 <td style="background:{bg_color}; position:relative; color:{text_color}; padding:2px;">
                     <div style="display:flex; flex-direction:column; align-items:center; justify-content:center;">
-                        <img src="https://espncdn.com{clean_team.upper()}.png&h=40&w=40" width="28" height="18" style="object-fit:contain;"/>
+                        <img src="https://the-odds-api.com{clean_team.upper()}.png" width="28" height="18" style="object-fit:contain;"/>
                         <span style="font-size:8px; font-weight:bold; line-height:1; margin-top:1px;">{clean_team}{has_asterisk}</span>
                     </div>
                     {indicator_icon}
@@ -177,5 +182,7 @@ for bracket_name, registrants in bracket_buckets.items():
         html_iframe_payload += "</tr>"
     html_iframe_payload += "</tbody></table>"
 
-# Scale height parameter to handle all 74 users smoothly
-components.html(html_iframe_payload, height=1200, scrolling=True)
+html_iframe_payload += "</body></html>"
+
+# 🚀 NEW STREAMLIT STANDARD BINDING RULE: Passes raw data src via clean new st.iframe utility
+st.iframe(src=f"data:text/html;charset=utf-8,{html_iframe_payload}", height=1200, scrolling=True)
