@@ -69,8 +69,8 @@ if sorted_tallies:
     for idx, (team, count) in enumerate(sorted_tallies):
         clean_team = team.replace("_SO", "")
         with tally_cols[idx % 6]:
-            # FIX: Switched to The Odds API's stable 3-letter formatted logo CDN link
-            logo_img = "" if clean_team == "BYE" else f'<img src="https://the-odds-api.com{clean_team.upper()}.png" width="24" height="16" style="object-fit:contain;"/>'
+            # FIX: Pull from local app/static path instead of external links
+            logo_img = "" if clean_team == "BYE" else f'<img src="/app/static/{clean_team.upper()}.svg" width="24" height="16" style="object-fit:contain;"/>'
             st.markdown(
                 f"""
                 <div style="background:white; border:1px solid #e2e8f0; padding:6px; border-radius:4px; display:flex; align-items:center; gap:8px; font-family:sans-serif;">
@@ -94,7 +94,6 @@ bracket_buckets = {
     "🔴 Eliminated Competitors": [r for r in regs_res if r["bracket_status"] == "Eliminated"]
 }
 
-# Compile raw HTML grid into a standalone iframe payload layout
 html_iframe_payload = """
 <!DOCTYPE html>
 <html>
@@ -169,11 +168,11 @@ for bracket_name, registrants in bracket_buckets.items():
             if clean_team == "BYE":
                 html_iframe_payload += f'<td style="background:{bg_color}; font-weight:bold; color:{text_color}; position:relative;">BYE{indicator_icon}</td>'
             else:
-                # FIX: Updated logo source mapping string parameter keys cleanly to upper
+                # FIX: Switched layout logic parameters to your internal local hosted static directory path
                 html_iframe_payload += f"""
                 <td style="background:{bg_color}; position:relative; color:{text_color}; padding:2px;">
                     <div style="display:flex; flex-direction:column; align-items:center; justify-content:center;">
-                        <img src="https://the-odds-api.com{clean_team.upper()}.png" width="28" height="18" style="object-fit:contain;"/>
+                        <img src="/app/static/{clean_team.upper()}.svg" width="28" height="18" style="object-fit:contain;"/>
                         <span style="font-size:8px; font-weight:bold; line-height:1; margin-top:1px;">{clean_team}{has_asterisk}</span>
                     </div>
                     {indicator_icon}
@@ -184,6 +183,5 @@ for bracket_name, registrants in bracket_buckets.items():
 
 html_iframe_payload += "</body></html>"
 
-# 🚀 NEW STREAMLIT STANDARD BINDING RULE: Passes raw data src via clean new st.iframe utility
-# 🚀 Fixed: Removed the unexpected scrolling keyword argument
+# Render safely via standard new st.iframe parameters
 st.iframe(src=f"data:text/html;charset=utf-8,{html_iframe_payload}", height=1200)
