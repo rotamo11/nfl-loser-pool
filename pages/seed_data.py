@@ -15,7 +15,7 @@ def seed_pool_database():
     mock_games = [
         # Week 1 Schedule Matrix
         {"week": 1, "away_team": "BUF", "home_team": "KC", "kickoff_time": "2026-09-10T20:20:00Z", "espn_favored_team": "KC", "espn_favored_tier": 3.5, "winner": "KC", "is_shutout": False},
-        {"week": 1, "away_team": "DET", "home_team": "SF", "kickoff_time": "2026-09-13T13:00:00Z", "espn_favored_team": "SF", "espn_favored_tier": 7.0, "winner": "DET", "is_shutout": True}, # SF got shutout!
+        {"week": 1, "away_team": "DET", "home_team": "SF", "kickoff_time": "2026-09-13T13:00:00Z", "espn_favored_team": "SF", "espn_favored_tier": 7.0, "winner": "DET", "is_shutout": True}, 
         {"week": 1, "away_team": "DAL", "home_team": "PHI", "kickoff_time": "2026-09-13T16:25:00Z", "espn_favored_team": "PHI", "espn_favored_tier": 2.5, "winner": "TIE", "is_shutout": False},
         
         # Week 2 Schedule Matrix
@@ -25,7 +25,13 @@ def seed_pool_database():
     ]
     
     for game in mock_games:
-        supabase.table("nfl_schedule").upsert(game, on_conflict="week,away_team,home_team").execute()
+        # FIX: Check if game exists by week and away_team to prevent duplication instead of risking constraint errors
+        existing_game = supabase.table("nfl_schedule").select("id").eq("week", game["week"]).eq("away_team", game["away_team"]).execute().data
+        if existing_game:
+            supabase.table("nfl_schedule").update(game).eq("id", existing_game[0]["id"]).execute()
+        else:
+            supabase.table("nfl_schedule").insert(game).execute()
+            
     st.success("✅ Mock schedule lines mapped.")
 
     # --- 2. GENERATE DUMMY PLAYERS & REGISTER TO BRACKETS ---
@@ -33,17 +39,17 @@ def seed_pool_database():
     teams_pool = ["BUF", "KC", "DET", "SF", "DAL", "PHI", "MIA", "BAL", "CIN", "WAS"]
 
     for name in dummy_names:
-        # Generate fake unique identifier string tokens
         fake_uid = str(uuid.uuid4())
         
-        # Ingest main profile structure
-        supabase.table("users").upsert({
-            "id": fake_uid,
-            "username": name
-        }).execute()
+        # Check if user already exists under this username to avoid duplicate entry constraint failures
+        existing_user = supabase.table("users").select("id").eq("username", name).execute().data
+        if existing_user:
+            fake_uid = existing_user[0]["id"]
+        else:
+            supabase.table("users").insert({"id": fake_uid, "username": name}).execute()
         
-        # Register them into Main and 2nd Chance groups
         for track in ["Main", "2nd_Chance"]:
+            # FIX: Cleaned up ON CONFLICT behavior to match the explicit primary key
             supabase.table("tournament_registrations").upsert({
                 "user_id": fake_uid,
                 "game_type": track,
@@ -51,19 +57,19 @@ def seed_pool_database():
                 "byes_used": 0
             }, on_conflict="user_id,game_type").execute()
             
+            # Clear old mock selections for this user/track combo to allow clean re-runs
+            supabase.table("user_picks").delete().eq("user_id", fake_uid).eq("game_type", track).execute()
+            
             # --- 3. GENERATE RANDOM PICK CHOICES FOR W1 & W2 ---
-            # Week 1 Selections (Processed & Completed)
             w1_pick = random.choice(teams_pool[:6])
-            # Simulating result check matching week 1 schedule winner fields
             w1_state = "Correct" if w1_pick not in ["KC", "DET"] else "Incorrect" 
             if w1_pick == "SF" and w1_state == "Correct": 
-                w1_pick = "SF_SO" # Trigger custom rule exception label for SF getting shutout
+                w1_pick = "SF_SO" 
                 
             supabase.table("user_picks").insert({
                 "user_id": fake_uid, "game_type": track, "week": 1, "team_picked": w1_pick, "pick_state": w1_state
             }).execute()
 
-            # Week 2 Selections (Active, mix of Confirmed and Finalized drafts)
             w2_pick = random.choice([t for t in teams_pool if t != w1_pick.replace("_SO", "")])
             w2_state = random.choice(["Confirmed", "Finalized"])
             
