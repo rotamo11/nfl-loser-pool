@@ -14,7 +14,7 @@ game_mode = st.sidebar.selectbox("🎯 Select Pool Tournament", ["Main Pool", "2
 game_slug = "Main" if game_mode == "Main Pool" else "2nd_Chance"
 current_week = 2  # Manually advance this index as the season rolls on
 
-# --- 1. BRAND HEADER DISPLAY MATRICES (Fixed syntax argument) ---
+# --- 1. BRAND HEADER DISPLAY MATRICES ---
 st.markdown(
     f"""
     <div style="background-color:#000080; padding:20px; border-radius:8px; color:white; margin-bottom:20px; font-family:sans-serif;">
@@ -23,7 +23,7 @@ st.markdown(
             <div>• <b>Through Week 14:</b> Pick 1 team to lose each week</div>
             <div>• <b>Weeks 15-18:</b> Pick 2 teams to lose each week</div>
             <div>• <b>Playoffs:</b> Pick loser of ALL games (Repeats allowed)</div>
-            <div>• <b>Deadlines:</b> NOON ET Sunday or by kickoff for earlier game</div>
+            <div>• <b>Deadlines:</b> NOON ET Sunday or game kickoff time</div>
         </div>
         <div style="margin-top:12px; padding-top:8px; border-top:1px solid #1e3a8a; font-family:monospace; font-size:11px; color:#93c5fd;">
             74 Players | $1850 Purse ($1110 1st / $555 2nd / $185 3rd) | Historical: S. King took 1st for $765
@@ -70,8 +70,8 @@ if sorted_tallies:
     for idx, (team, count) in enumerate(sorted_tallies):
         clean_team = team.replace("_SO", "")
         with tally_cols[idx % 6]:
-            # Hide logo if the selection is a league BYE
-            logo_img = "" if clean_team == "BYE" else f'<img src="https://espncdn.com{clean_team.upper()}.png" width="24" height="16" style="object-fit:contain;"/>'
+            # FIX: Updated to use live, active ESPN Combiner API format
+            logo_img = "" if clean_team == "BYE" else f'<img src="https://espncdn.com{clean_team.upper()}.png&h=40&w=40" width="24" height="16" style="object-fit:contain;"/>'
             st.markdown(
                 f"""
                 <div style="background:white; border:1px solid #e2e8f0; padding:6px; border-radius:4px; display:flex; align-items:center; gap:8px; font-family:sans-serif;">
@@ -95,7 +95,6 @@ bracket_buckets = {
     "🔴 Eliminated Competitors": [r for r in regs_res if r["bracket_status"] == "Eliminated"]
 }
 
-# Compile raw HTML grid into a string to load directly into the component iframe wrapper
 html_iframe_payload = """
 <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; background: #f8fafc; }
@@ -145,7 +144,7 @@ for bracket_name, registrants in bracket_buckets.items():
                 continue
                 
             clean_team = w_pick["team_picked"].replace("_SO", "")
-            has_asterisk = "*" if w_pick["team_picked"].endswith("_SO") else ""
+            has_asterisk = "*" if w_pick["team_picked"].endswith("_SO"] else ""
             
             bg_color = "transparent"
             text_color = "#1e293b"
@@ -165,10 +164,11 @@ for bracket_name, registrants in bracket_buckets.items():
             if clean_team == "BYE":
                 html_iframe_payload += f'<td style="background:{bg_color}; font-weight:bold; color:{text_color}; position:relative;">BYE{indicator_icon}</td>'
             else:
+                # FIX: Updated to uppercase formatting inside the clean combiner cdn layout string
                 html_iframe_payload += f"""
                 <td style="background:{bg_color}; position:relative; color:{text_color}; padding:2px;">
                     <div style="display:flex; flex-direction:column; align-items:center; justify-content:center;">
-                        <img src="https://espncdn.com{clean_team.upper()}.png" width="28" height="18" style="object-fit:contain;"/>
+                        <img src="https://espncdn.com{clean_team.upper()}.png&h=40&w=40" width="28" height="18" style="object-fit:contain;"/>
                         <span style="font-size:8px; font-weight:bold; line-height:1; margin-top:1px;">{clean_team}{has_asterisk}</span>
                     </div>
                     {indicator_icon}
@@ -177,6 +177,5 @@ for bracket_name, registrants in bracket_buckets.items():
         html_iframe_payload += "</tr>"
     html_iframe_payload += "</tbody></table>"
 
-# 🚀 FIX: Render inside an HTML Component Sandbox Frame. 
-# Scale height parameter to avoid internal clipping issues as 74 entries load.
+# Scale height parameter to handle all 74 users smoothly
 components.html(html_iframe_payload, height=1200, scrolling=True)
