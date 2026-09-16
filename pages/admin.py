@@ -199,5 +199,6 @@ else:
                             supabase.table("tournament_registrations").update({
                                 "bracket_status": new_bracket
                             }).eq("user_id", user_id).eq("game_type", admin_slug).execute()
-                            st.success(f"Game results locked! Outcomes evaluated.")st.rerun()
+                            st.success(f"Game results locked! Outcomes evaluated.")
+                            st.rerun()
                         
