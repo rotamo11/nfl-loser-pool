@@ -135,7 +135,7 @@ else:
                 st.markdown(
                     f"""
                     <div style="display:flex; align-items:center; gap:10px; padding-top:10px; font-family:sans-serif;">
-                        <img src="/app/static/{away}.png" width="30" height="20" style="object-fit:contain;"/> 
+                        <img src="/app/static/{away}.svg" width="30" height="20" style="object-fit:contain;"/> 
                         <b>{away}</b> 
                         <span style="color:gray;">@</span> 
                         <img src="/app/static/{home}.svg" width="30" height="20" style="object-fit:contain;"/> 
