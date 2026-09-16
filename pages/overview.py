@@ -185,4 +185,5 @@ for bracket_name, registrants in bracket_buckets.items():
 html_iframe_payload += "</body></html>"
 
 # 🚀 NEW STREAMLIT STANDARD BINDING RULE: Passes raw data src via clean new st.iframe utility
-st.iframe(src=f"data:text/html;charset=utf-8,{html_iframe_payload}", height=1200, scrolling=True)
+# 🚀 Fixed: Removed the unexpected scrolling keyword argument
+st.iframe(src=f"data:text/html;charset=utf-8,{html_iframe_payload}", height=1200)
