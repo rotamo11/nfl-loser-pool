@@ -135,7 +135,7 @@ else:
                         <b>{home}</b>
                     </div>
                     """, 
-                    unsafe_allowed_html=True
+                    unsafe_allow_html=True
                 )
             
             with col_winner:
