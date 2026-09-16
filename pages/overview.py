@@ -87,7 +87,7 @@ else:
     st.info("🔒 Selection tallies remain hidden until your own weekly entry is Finalized.")
 
 # --- 4. RENDER BRACKET MATRIX GRID ---
-st.markdown("<br>### 📋 Complete Tournament Roster Grid", unsafe_allowed_html=True)
+st.markdown("<br>### 📋 Complete Tournament Roster Grid", unsafe_allow_html=True)
 
 # Bucket players into their designated operational brackets
 bracket_buckets = {
