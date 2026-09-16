@@ -131,19 +131,20 @@ else:
             col_match, col_winner, col_shutout, col_action = st.columns([2.5, 2, 1.5, 1.5])
             
             with col_match:
+                # FIX: Points directly to your local static repository images
                 st.markdown(
                     f"""
                     <div style="display:flex; align-items:center; gap:10px; padding-top:10px; font-family:sans-serif;">
-                        <img src="https://the-odds-api.com{away}.png" width="30" height="20" style="object-fit:contain;"/> 
+                        <img src="/app/static/{away}.png" width="30" height="20" style="object-fit:contain;"/> 
                         <b>{away}</b> 
                         <span style="color:gray;">@</span> 
-                        <img src="https://the-odds-api.com{home}.png" width="30" height="20" style="object-fit:contain;"/> 
+                        <img src="/app/static/{home}.svg" width="30" height="20" style="object-fit:contain;"/> 
                         <b>{home}</b>
                     </div>
                     """, 
                     unsafe_allow_html=True
                 )
-            
+           
             with col_winner:
                 winner_selection = st.radio(
                     "Designate Winner:",
