@@ -110,3 +110,124 @@ if st.button("🚀 Execute Sunday Noon ESPN Fallback Routines"):
                         fallback_count += 1
                         
         st.success(f"Processing sequence complete! {bye_burn_count} Byes burned. {fallback_count} Autopicks assigned via live API favorites data.")
+
+
+# ==========================================
+# 🎯 The Admin Score Settler Module
+# ==========================================
+
+st.set_page_config(layout="wide")
+st.title("🎯 Loser Pool Commissioner Engine")
+
+# Controls for targeting week and game track
+admin_week = st.number_input("Configure Processing Targets (Week Num)", min_value=1, max_value=22, value=2)
+admin_mode = st.selectbox("Select Target Roster Pool Group", ["Main Pool", "2nd Chance Game"])
+admin_slug = "Main" if admin_mode == "Main Pool" else "2nd_Chance"
+
+st.markdown("---")
+st.subheader(f"🏁 Score Settler Panel: Week {admin_week}")
+
+# 1. Fetch matchups currently loaded in your database for this week
+schedule_res = supabase.table("nfl_schedule").select("*").eq("week", admin_week).execute().data
+
+if not schedule_res:
+    st.info("No games synced for this week yet. Click the API Sync button above to populate the schedule.")
+else:
+    # 2. Iterate through matches and render the visual settler grid rows
+    for match in schedule_res:
+        match_id = match["id"]
+        away = match["away_team"]
+        home = match["home_team"]
+        
+        # Create clear layout boxes for each game
+        with st.container(border=True):
+            col_match, col_winner, col_shutout, col_action = st.columns([2, 3, 2, 2])
+            
+            with col_match:
+                # Render team abbreviations alongside crisp, padded logos
+                st.markdown(
+                    f"""
+                    <div style="display:flex; align-items:center; gap:10px; padding-top:10px;">
+                        <img src="https://espncdn.com{away.lower()}.png" width="30"/> 
+                        <b>{away}</b> 
+                        <span style="color:gray;">@</span> 
+                        <img src="https://espncdn.com{home.lower()}.png" width="30"/> 
+                        <b>{home}</b>
+                    </div>
+                    """, 
+                    unsafe_allowed_html=True
+                )
+            
+            with col_winner:
+                # Commissioner selector to designate who won the game
+                winner_selection = st.radio(
+                    "Designate Winner:",
+                    options=[away, home, "TIE"],
+                    key=f"winner_{match_id}",
+                    horizontal=True,
+                    label_visibility="collapsed"
+                )
+                
+            with col_shutout:
+                # Checkbox to trigger the custom rule shutout modifier exception
+                is_so = st.checkbox("✴️ Ended in a Shutout", key=f"so_{match_id}")
+                
+            with col_action:
+                # Button to finalize results for this matchup
+                if st.button("Lock Score & Compute", key=f"lock_{match_id}", use_container_width=True):
+                    with st.spinner("Processing player picks..."):
+                        
+                        # A. Update the match results on the schedule table
+                        supabase.table("nfl_schedule").update({
+                            "winner": winner_selection,
+                            "is_shutout": is_so
+                        }).eq("id", match_id).execute()
+                        
+                        # B. Fetch all finalized picks placed against either team in this game
+                        active_picks = supabase.table("user_picks").select("*").eq("game_type", admin_slug).eq("week", admin_week).in_("team_picked", [away, f"{away}_SO", home, f"{home}_SO"]).execute().data
+                        
+                        for pick in active_picks:
+                            chosen_team = pick["team_picked"].replace("_SO", "")
+                            
+                            # Rule Definition: In a Loser Pool, you win if your team LOSES.
+                            # Ties count as an incorrect pick because the team did not lose.
+                            if winner_selection == "TIE":
+                                pick_result = "Incorrect"
+                            elif chosen_team != winner_selection:
+                                pick_result = "Correct"
+                            else:
+                                pick_result = "Incorrect"
+                                
+                            # If it was a correct pick AND a shutout, modify the pick name to allow a reuse later
+                            final_team_name = pick["team_picked"]
+                            if pick_result == "Correct" and is_so and not final_team_name.endswith("_SO"):
+                                final_team_name = f"{chosen_team}_SO"
+                            
+                            # Push evaluation updates back to the picks table
+                            supabase.table("user_picks").update({
+                                "pick_state": pick_result,
+                                "team_picked": final_team_name
+                            }).eq("id", pick["id"]).execute()
+                            
+                            # C. Dynamic Bracket Calculation Engine (Strike Assigner)
+                            # Fetch user's comprehensive history for this tournament tracking file
+                            user_id = pick["user_id"]
+                            all_user_picks = supabase.table("user_picks").select("*").eq("game_type", admin_slug).eq("user_id", user_id).execute().data
+                            
+                            wrong_count = sum(1 for p in all_user_picks if p["pick_state"] == "Incorrect")
+                            
+                            # Rule Enforcer: Group users into their structural brackets based on strike metrics
+                            if wrong_count == 0:
+                                new_bracket = "Loser Bracket"
+                            elif wrong_count == 1:
+                                new_bracket = "Winner Bracket"
+                            else:
+                                new_bracket = "Eliminated"
+                                
+                            # Save updated bracket stand rules down to registration profile indexes
+                            supabase.table("tournament_registrations").update({
+                                "bracket_status": new_bracket
+                            }).eq("user_id", user_id).eq("game_type", admin_slug).execute()
+                            
+                        st.success(f"Game results locked! Pick outcomes evaluated for {len(active_picks)} players.")
+                        st.rerun()
