@@ -172,7 +172,7 @@ for bracket_name, registrants in bracket_buckets.items():
                 html_iframe_payload += f"""
                 <td style="background:{bg_color}; position:relative; color:{text_color}; padding:2px;">
                     <div style="display:flex; flex-direction:column; align-items:center; justify-content:center;">
-                        <img src="/app/static/{clean_team.upper()}.svg" width="28" height="18" style="object-fit:contain;"/>
+                        <img src="https://streamlit.app{clean_team.upper()}.svg" width="28" height="18" style="object-fit:contain;"/>
                         <span style="font-size:8px; font-weight:bold; line-height:1; margin-top:1px;">{clean_team}{has_asterisk}</span>
                     </div>
                     {indicator_icon}
