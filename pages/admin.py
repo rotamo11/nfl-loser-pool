@@ -189,5 +189,15 @@ else:
                             # Recalculate dynamic bracket statuses for pool accounts
                             user_id = pick["user_id"]
                             all_user_picks = supabase.table("user_picks").select("*").eq("game_type", admin_slug).eq("user_id", user_id).execute().data
-                            wrong_count = sum(1 for p in all_user_picks if p["pick_state"] == "Incorrect")if wrong_count == 0:new_bracket = "Loser Bracket"elif wrong_count == 1:new_bracket = "Winner Bracket"else:new_bracket = "Eliminated"supabase.table("tournament_registrations").update({"bracket_status": new_bracket}).eq("user_id", user_id).eq("game_type", admin_slug).execute()st.success(f"Game results locked! Outcomes evaluated.")st.rerun()
+                            wrong_count = sum(1 for p in all_user_picks if p["pick_state"] == "Incorrect")
+                            if wrong_count == 0:
+                                new_bracket = "Loser Bracket"
+                            elif wrong_count == 1:
+                                new_bracket = "Winner Bracket"
+                            else:
+                                new_bracket = "Eliminated"
+                            supabase.table("tournament_registrations").update({
+                                "bracket_status": new_bracket
+                            }).eq("user_id", user_id).eq("game_type", admin_slug).execute()
+                            st.success(f"Game results locked! Outcomes evaluated.")st.rerun()
                         
