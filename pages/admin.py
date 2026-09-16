@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 from supabase import create_client, Client
 
-# Initialize database connections
+# Initialize database connections securely
 URL = st.secrets["SUPABASE_URL"]
 KEY = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(URL, KEY)
@@ -41,21 +41,27 @@ if st.button("🔄 Sync Live NFL Schedule & Spreads from API", use_container_wid
                     favored_tier = 99.0
                     
                     if game.get("bookmakers"):
-                        bookie = game["bookmakers"][0]
-                        market = next((m for m in bookie["markets"] if m["key"] == "spreads"), None)
-                        if market:
-                            outcomes = market["outcomes"]
-                            fav_outcome = min(outcomes, key=lambda x: x["point"])
-                            favored_team = fav_outcome["name"]
-                            favored_tier = abs(fav_outcome["point"])
+                        bookie = game["bookmakers"][0] if isinstance(game["bookmakers"], list) and len(game["bookmakers"]) > 0 else game["bookmakers"]
+                        if isinstance(bookie, dict) and bookie.get("markets"):
+                            market = next((m for m in bookie["markets"] if m["key"] == "spreads"), None)
+                            if market and market.get("outcomes"):
+                                outcomes = market["outcomes"]
+                                fav_outcome = min(outcomes, key=lambda x: x.get("point", 0))
+                                favored_team = fav_outcome["name"]
+                                favored_tier = abs(fav_outcome.get("point", 0))
+                    
+                    # Standardize abbreviations to 3 characters uppercase
+                    clean_away = away_team[:3].upper()
+                    clean_home = home_team[:3].upper()
+                    clean_fav = favored_team[:3].upper()
                     
                     # Upsert data into your live Supabase nfl_schedule table
                     supabase.table("nfl_schedule").upsert({
                         "week": admin_week,
-                        "away_team": away_team[:3].upper(),
-                        "home_team": home_team[:3].upper(),
+                        "away_team": clean_away,
+                        "home_team": clean_home,
                         "kickoff_time": kickoff,
-                        "espn_favored_team": favored_team[:3].upper(),
+                        "espn_favored_team": clean_fav,
                         "espn_favored_tier": favored_tier
                     }).execute()
                     synced_count += 1
@@ -118,20 +124,20 @@ if not schedule_res:
 else:
     for match in schedule_res:
         match_id = match["id"]
-        away = match["away_team"]
-        home = match["home_team"]
+        away = match["away_team"].upper()
+        home = match["home_team"].upper()
         
         with st.container(border=True):
-            col_match, col_winner, col_shutout, col_action = st.columns([2, 2, 1.5, 1.5])
+            col_match, col_winner, col_shutout, col_action = st.columns([2.5, 2, 1.5, 1.5])
             
             with col_match:
                 st.markdown(
                     f"""
-                    <div style="display:flex; align-items:center; gap:10px; padding-top:10px;">
-                        <img src="https://espncdn.com{away.lower()}.png" width="30"/> 
+                    <div style="display:flex; align-items:center; gap:10px; padding-top:10px; font-family:sans-serif;">
+                        <img src="https://the-odds-api.com{away}.png" width="30" height="20" style="object-fit:contain;"/> 
                         <b>{away}</b> 
                         <span style="color:gray;">@</span> 
-                        <img src="https://espncdn.com{home.lower()}.png" width="30"/> 
+                        <img src="https://the-odds-api.com{home}.png" width="30" height="20" style="object-fit:contain;"/> 
                         <b>{home}</b>
                     </div>
                     """, 
@@ -180,22 +186,8 @@ else:
                                 "team_picked": final_team_name
                             }).eq("id", pick["id"]).execute()
                             
-                            # Recalculate dynamic bracket statuses
+                            # Recalculate dynamic bracket statuses for pool accounts
                             user_id = pick["user_id"]
                             all_user_picks = supabase.table("user_picks").select("*").eq("game_type", admin_slug).eq("user_id", user_id).execute().data
-                            
-                            wrong_count = sum(1 for p in all_user_picks if p["pick_state"] == "Incorrect")
-                            
-                            if wrong_count == 0:
-                                new_bracket = "Loser Bracket"
-                            elif wrong_count == 1:
-                                new_bracket = "Winner Bracket"
-                            else:
-                                new_bracket = "Eliminated"
-                                
-                            supabase.table("tournament_registrations").update({
-                                "bracket_status": new_bracket
-                            }).eq("user_id", user_id).eq("game_type", admin_slug).execute()
-                            
-                        st.success(f"Game results locked! Pick outcomes evaluated for {len(active_picks)} players.")
-                        st.rerun()
+                            wrong_count = sum(1 for p in all_user_picks if p["pick_state"] == "Incorrect")if wrong_count == 0:new_bracket = "Loser Bracket"elif wrong_count == 1:new_bracket = "Winner Bracket"else:new_bracket = "Eliminated"supabase.table("tournament_registrations").update({"bracket_status": new_bracket}).eq("user_id", user_id).eq("game_type", admin_slug).execute()st.success(f"Game results locked! Outcomes evaluated.")st.rerun()
+                        
