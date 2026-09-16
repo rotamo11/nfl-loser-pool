@@ -72,13 +72,13 @@ if sorted_tallies:
                     <span style="margin-left:auto; background:#dbeafe; color:#1e40af; font-size:11px; padding:2px 6px; border-radius:10px; font-weight:bold;">{count}</span>
                 </div>
                 """, 
-                unsafe_allowed_html=True
+                unsafe_allow_html=True
             )
 else:
     st.info("🔒 Selection tallies remain hidden until your own weekly entry is Finalized.")
 
 # --- 4. RENDER BRACKET MATRIX GIRD ---
-st.markdown("<br>### 📋 Complete Tournament Roster Grid", unsafe_allowed_html=True)
+st.markdown("<br>### 📋 Complete Tournament Roster Grid", unsafe_allow_html=True)
 
 # Bucket players into their designated operational brackets
 bracket_buckets = {
@@ -92,7 +92,7 @@ for bracket_name, registrants in bracket_buckets.items():
     if not registrants:
         continue
         
-    st.markdown(f"<div style='background:#f1f5f9; padding:6px 12px; font-weight:bold; border-radius:4px; margin-top:15px;'>{bracket_name}</div>", unsafe_allowed_html=True)
+    st.markdown(f"<div style='background:#f1f5f9; padding:6px 12px; font-weight:bold; border-radius:4px; margin-top:15px;'>{bracket_name}</div>", unsafe_allow_html=True)
     
     # Generate interactive HTML table matrix strings
     html_table = """
