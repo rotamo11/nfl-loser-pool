@@ -29,7 +29,7 @@ st.markdown(
         </div>
     </div>
     """, 
-    unsafe_allowed_html=True
+    unsafe_allow_html=True
 )
 
 # --- 2. RETRIEVE LEAGUE AND SELECTION DATA ---
@@ -160,4 +160,4 @@ for bracket_name, registrants in bracket_buckets.items():
         html_table += "</tr>"
         
     html_table += "</tbody></table>"
-    st.markdown(html_table, unsafe_allowed_html=True)
+    st.markdown(html_table, unsafe_allow_html=True)
