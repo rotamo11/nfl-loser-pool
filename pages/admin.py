@@ -2,82 +2,79 @@ import streamlit as st
 import requests
 from supabase import create_client, Client
 
+# Initialize database connections
 URL = st.secrets["SUPABASE_URL"]
 KEY = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(URL, KEY)
 
-# You get this API Key completely free from the-odds-api.com
-# Paste it into your Streamlit Cloud Advanced Secrets!
+# Free API key from the-odds-api.com
 API_KEY = st.secrets.get("THE_ODDS_API_KEY", "YOUR_FREE_API_KEY")
 
 st.set_page_config(layout="wide")
 st.title("🎯 Loser Pool Commissioner Engine")
 
+# Parameter Configuration Matrix Controls
 admin_week = st.number_input("Configure Processing Targets (Week Num)", min_value=1, max_value=22, value=2)
 admin_mode = st.selectbox("Select Target Roster Pool Group", ["Main Pool", "2nd Chance Game"])
 admin_slug = "Main" if admin_mode == "Main Pool" else "2nd_Chance"
 
+st.warning("⚠️ Critical Loop Engine Override: Executing these functions will modify active player statuses.")
+
 # ==========================================
-# 🆕 AUTOMATED REFRESH: LIVE API INGESTION
+# 🔄 STEP 1: SYNC SCHEDULE & ODDS FROM API
 # ==========================================
-if st.button("🔄 Sync Live NFL Schedule & Spreads from API"):
+if st.button("🔄 Sync Live NFL Schedule & Spreads from API", use_container_width=True):
     with st.spinner("Fetching latest lines from The Odds API..."):
-        # Hit the American Football (NFL) spreads market endpoint
         odds_url = f"https://the-odds-api.com{API_KEY}&regions=us&markets=spreads&oddsFormat=american"
-        response = requests.get(odds_url)
-        
-        if response.status_code == 200:
-            games_data = response.json()
-            synced_count = 0
-            
-            for game in games_data:
-                home_team = game["home_team"]
-                away_team = game["away_team"]
-                kickoff = game["commence_time"]
+        try:
+            response = requests.get(odds_url)
+            if response.status_code == 200:
+                games_data = response.json()
+                synced_count = 0
                 
-                # Default backup variables
-                favored_team = "TBD"
-                favored_tier = 99.0  # Higher number means less favored
-                
-                # Look through bookmaker outcomes to find the point spread handicap line
-                if game.get("bookmakers"):
-                    # Use DraftKings or the first bookmaker listed in the JSON return data
-                    bookie = game["bookmakers"][0]
-                    market = next((m for m in bookie["markets"] if m["key"] == "spreads"), None)
-                    if market:
-                        outcomes = market["outcomes"]
-                        # The favorite is whichever team has a negative handicap spread line (e.g., -7)
-                        fav_outcome = min(outcomes, key=lambda x: x["point"])
-                        favored_team = fav_outcome["name"]
-                        favored_tier = abs(fav_outcome["point"]) # Stores the numerical spread value
-                
-                # Standardize team names into 3-letter abbreviations matching your roster
-                # (e.g., "Buffalo Bills" -> "BUF")
-                # Insert or update data on your live Supabase nfl_schedule table grid mapping array
-                supabase.table("nfl_schedule").upsert({
-                    "week": admin_week,
-                    "away_team": away_team[:3].upper(),
-                    "home_team": home_team[:3].upper(),
-                    "kickoff_time": kickoff,
-                    "espn_favored_team": favored_team[:3].upper(),
-                    "espn_favored_tier": favored_tier
-                }).execute()
-                synced_count += 1
-                
-            st.success(f"Successfully loaded and calculated {synced_count} match lines for Week {admin_week}!")
-        else:
-            st.error(f"API Connection Rejected: Error Code {response.status_code}")
+                for game in games_data:
+                    home_team = game["home_team"]
+                    away_team = game["away_team"]
+                    kickoff = game["commence_time"]
+                    
+                    favored_team = "TBD"
+                    favored_tier = 99.0
+                    
+                    if game.get("bookmakers"):
+                        bookie = game["bookmakers"][0]
+                        market = next((m for m in bookie["markets"] if m["key"] == "spreads"), None)
+                        if market:
+                            outcomes = market["outcomes"]
+                            fav_outcome = min(outcomes, key=lambda x: x["point"])
+                            favored_team = fav_outcome["name"]
+                            favored_tier = abs(fav_outcome["point"])
+                    
+                    # Upsert data into your live Supabase nfl_schedule table
+                    supabase.table("nfl_schedule").upsert({
+                        "week": admin_week,
+                        "away_team": away_team[:3].upper(),
+                        "home_team": home_team[:3].upper(),
+                        "kickoff_time": kickoff,
+                        "espn_favored_team": favored_team[:3].upper(),
+                        "espn_favored_tier": favored_tier
+                    }).execute()
+                    synced_count += 1
+                    
+                st.success(f"Successfully loaded and calculated {synced_count} match lines for Week {admin_week}!")
+                st.rerun()
+            else:
+                st.error(f"API Connection Rejected: Error Code {response.status_code}")
+        except Exception as e:
+            st.error(f"API Connection Failed: {str(e)}")
 
 st.markdown("---")
 
 # ==========================================
-# 🚀 AUTOMATED FALLBACK ROUTINES BUTTON
+# 🚀 STEP 2: RUN SUNDAY NOON FALLBACKS
 # ==========================================
-if st.button("🚀 Execute Sunday Noon ESPN Fallback Routines"):
+if st.button("🚀 Execute Sunday Noon ESPN Fallback Routines", use_container_width=True):
     with st.spinner("Re-indexing missing player submittals against league rules..."):
-        
         active_players = supabase.table("tournament_registrations").select("*").eq("game_type", admin_slug).neq("bracket_status", "Eliminated").execute().data
-        # Select matchups that haven't kicked off yet, ordered by the largest spread favorite
         unplayed_matches = supabase.table("nfl_schedule").select("*").eq("week", admin_week).order("espn_favored_tier", desc=True).execute().data
         
         fallback_count = 0
@@ -87,19 +84,15 @@ if st.button("🚀 Execute Sunday Noon ESPN Fallback Routines"):
             existing = supabase.table("user_picks").select("*").eq("user_id", player["user_id"]).eq("game_type", admin_slug).eq("week", admin_week).execute().data
             
             if not existing:
-                # Fallback Step 1 & 2: Burn their single bye alternative if available
                 if player["byes_used"] < 1:
                     supabase.table("user_picks").insert({
                         "user_id": player["user_id"], "game_type": admin_slug, "week": admin_week, "team_picked": "BYE", "pick_state": "Finalized"
                     }).execute()
                     supabase.table("tournament_registrations").update({"byes_used": 1}).eq("user_id", player["user_id"]).eq("game_type", admin_slug).execute()
                     bye_burn_count += 1
-                
-                # Fallback Step 3: Auto-assign the highest favored available team (No repeat checks applied)
                 else:
                     if unplayed_matches:
                         top_favored = unplayed_matches[0]["espn_favored_team"]
-                        
                         supabase.table("user_picks").insert({
                             "user_id": player["user_id"], 
                             "game_type": admin_slug, 
@@ -109,42 +102,29 @@ if st.button("🚀 Execute Sunday Noon ESPN Fallback Routines"):
                         }).execute()
                         fallback_count += 1
                         
-        st.success(f"Processing sequence complete! {bye_burn_count} Byes burned. {fallback_count} Autopicks assigned via live API favorites data.")
-
-
-# ==========================================
-# 🎯 The Admin Score Settler Module
-# ==========================================
-
-st.set_page_config(layout="wide")
-st.title("🎯 Loser Pool Commissioner Engine")
-
-# Controls for targeting week and game track
-admin_week = st.number_input("Configure Processing Targets (Week Num)", min_value=1, max_value=22, value=2)
-admin_mode = st.selectbox("Select Target Roster Pool Group", ["Main Pool", "2nd Chance Game"])
-admin_slug = "Main" if admin_mode == "Main Pool" else "2nd_Chance"
+        st.success(f"Processing complete! {bye_burn_count} Byes burned. {fallback_count} Autopicks assigned via live API favorites.")
+        st.rerun()
 
 st.markdown("---")
-st.subheader(f"🏁 Score Settler Panel: Week {admin_week}")
 
-# 1. Fetch matchups currently loaded in your database for this week
+# ==========================================
+# 🏁 STEP 3: SCORE SETTLER PANEL Matrix
+# ==========================================
+st.subheader(f"🏁 Score Settler Panel: Week {admin_week} ({admin_mode})")
 schedule_res = supabase.table("nfl_schedule").select("*").eq("week", admin_week).execute().data
 
 if not schedule_res:
     st.info("No games synced for this week yet. Click the API Sync button above to populate the schedule.")
 else:
-    # 2. Iterate through matches and render the visual settler grid rows
     for match in schedule_res:
         match_id = match["id"]
         away = match["away_team"]
         home = match["home_team"]
         
-        # Create clear layout boxes for each game
         with st.container(border=True):
-            col_match, col_winner, col_shutout, col_action = st.columns([2, 3, 2, 2])
+            col_match, col_winner, col_shutout, col_action = st.columns([2, 2, 1.5, 1.5])
             
             with col_match:
-                # Render team abbreviations alongside crisp, padded logos
                 st.markdown(
                     f"""
                     <div style="display:flex; align-items:center; gap:10px; padding-top:10px;">
@@ -159,7 +139,6 @@ else:
                 )
             
             with col_winner:
-                # Commissioner selector to designate who won the game
                 winner_selection = st.radio(
                     "Designate Winner:",
                     options=[away, home, "TIE"],
@@ -169,28 +148,22 @@ else:
                 )
                 
             with col_shutout:
-                # Checkbox to trigger the custom rule shutout modifier exception
                 is_so = st.checkbox("✴️ Ended in a Shutout", key=f"so_{match_id}")
                 
             with col_action:
-                # Button to finalize results for this matchup
                 if st.button("Lock Score & Compute", key=f"lock_{match_id}", use_container_width=True):
                     with st.spinner("Processing player picks..."):
                         
-                        # A. Update the match results on the schedule table
                         supabase.table("nfl_schedule").update({
                             "winner": winner_selection,
                             "is_shutout": is_so
                         }).eq("id", match_id).execute()
                         
-                        # B. Fetch all finalized picks placed against either team in this game
                         active_picks = supabase.table("user_picks").select("*").eq("game_type", admin_slug).eq("week", admin_week).in_("team_picked", [away, f"{away}_SO", home, f"{home}_SO"]).execute().data
                         
                         for pick in active_picks:
                             chosen_team = pick["team_picked"].replace("_SO", "")
                             
-                            # Rule Definition: In a Loser Pool, you win if your team LOSES.
-                            # Ties count as an incorrect pick because the team did not lose.
                             if winner_selection == "TIE":
                                 pick_result = "Incorrect"
                             elif chosen_team != winner_selection:
@@ -198,25 +171,21 @@ else:
                             else:
                                 pick_result = "Incorrect"
                                 
-                            # If it was a correct pick AND a shutout, modify the pick name to allow a reuse later
                             final_team_name = pick["team_picked"]
                             if pick_result == "Correct" and is_so and not final_team_name.endswith("_SO"):
                                 final_team_name = f"{chosen_team}_SO"
                             
-                            # Push evaluation updates back to the picks table
                             supabase.table("user_picks").update({
                                 "pick_state": pick_result,
                                 "team_picked": final_team_name
                             }).eq("id", pick["id"]).execute()
                             
-                            # C. Dynamic Bracket Calculation Engine (Strike Assigner)
-                            # Fetch user's comprehensive history for this tournament tracking file
+                            # Recalculate dynamic bracket statuses
                             user_id = pick["user_id"]
                             all_user_picks = supabase.table("user_picks").select("*").eq("game_type", admin_slug).eq("user_id", user_id).execute().data
                             
                             wrong_count = sum(1 for p in all_user_picks if p["pick_state"] == "Incorrect")
                             
-                            # Rule Enforcer: Group users into their structural brackets based on strike metrics
                             if wrong_count == 0:
                                 new_bracket = "Loser Bracket"
                             elif wrong_count == 1:
@@ -224,7 +193,6 @@ else:
                             else:
                                 new_bracket = "Eliminated"
                                 
-                            # Save updated bracket stand rules down to registration profile indexes
                             supabase.table("tournament_registrations").update({
                                 "bracket_status": new_bracket
                             }).eq("user_id", user_id).eq("game_type", admin_slug).execute()
