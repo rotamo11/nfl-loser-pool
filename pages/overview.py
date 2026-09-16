@@ -37,10 +37,19 @@ users_res = supabase.table("users").select("*").execute().data
 regs_res = supabase.table("tournament_registrations").select("*").eq("game_type", game_slug).execute().data
 picks_res = supabase.table("user_picks").select("*").eq("game_type", game_slug).execute().data
 
-# Mock Session Control verification guard rails
-logged_in_uid = st.session_state.get("user", type("Obj", (object,), {"id": None})()).id
-user_current_pick = next((p for p in picks_res if p["user_id"] == logged_in_uid and p["week"] == current_week), None)
-user_is_eliminated = any(r for r in regs_res if r["user_id"] == logged_in_uid and r["bracket_status"] == "Eliminated")
+# 🛡️ FIX: Safe Session Verification Guard
+# Securely gets the logged-in user's ID, defaulting safely to None if they haven't logged in yet
+current_user = st.session_state.get("user", None)
+logged_in_uid = current_user.id if current_user is not None else None
+
+# Check the logged-in user's submission state for the active week
+user_current_pick = None
+if logged_in_uid:
+    user_current_pick = next((p for p in picks_res if p["user_id"] == logged_in_uid and p["week"] == current_week), None)
+
+user_is_eliminated = False
+if logged_in_uid:
+    user_is_eliminated = any(r for r in regs_res if r["user_id"] == logged_in_uid and r["bracket_status"] == "Eliminated")
 
 # Security Rule: Users can only see live boards if they are finalized or out of running
 can_view_live_picks = (user_current_pick and user_current_pick["pick_state"] == "Finalized") or user_is_eliminated
