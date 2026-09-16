@@ -50,7 +50,7 @@ else:
                     <p style="margin:5px 0 0 0; font-size:13px; color:#334155;">{msg['message']}</p>
                 </div>
                 """, 
-                unsafe_allowed_html=True
+                unsafe_allow_html=True
             )
     else:
         st.info("Hey there, you loser!  Tell us why you're no winner!")
