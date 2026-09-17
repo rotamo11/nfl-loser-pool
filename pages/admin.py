@@ -11,7 +11,7 @@ supabase: Client = create_client(URL, KEY)
 API_KEY = st.secrets.get("THE_ODDS_API_KEY", "YOUR_FREE_API_KEY")
 
 st.set_page_config(layout="wide")
-st.title("🎯 Loser Pool Commissioner Engine")
+st.title("Loser Pool Commissioner Engine")
 
 # Parameter Configuration Matrix Controls
 admin_week = st.number_input("Configure Processing Targets (Week Num)", min_value=1, max_value=22, value=2)
@@ -21,9 +21,9 @@ admin_slug = "Main" if admin_mode == "Main Pool" else "2nd_Chance"
 st.warning("⚠️ Critical Loop Engine Override: Executing these functions will modify active player statuses.")
 
 # ==========================================
-# 🔄 STEP 1: SYNC SCHEDULE & ODDS FROM API
+# STEP 1: SYNC SCHEDULE & ODDS FROM API
 # ==========================================
-if st.button("🔄 Sync Live NFL Schedule & Spreads from API", use_container_width=True):
+if st.button("Sync Live NFL Schedule & Spreads from API", use_container_width=True):
     with st.spinner("Fetching latest lines from The Odds API..."):
         odds_url = f"https://the-odds-api.com{API_KEY}&regions=us&markets=spreads&oddsFormat=american"
         try:
@@ -75,10 +75,10 @@ if st.button("🔄 Sync Live NFL Schedule & Spreads from API", use_container_wid
 
 st.markdown("---")
 
-# ==========================================
-# 🚀 STEP 2: RUN SUNDAY NOON FALLBACKS
-# ==========================================
-if st.button("🚀 Execute Sunday Noon ESPN Fallback Routines", use_container_width=True):
+# ========================================
+# STEP 2: RUN SUNDAY NOON FALLBACKS
+# ========================================
+if st.button("Execute Sunday Noon ESPN Fallback Routines", use_container_width=True):
     with st.spinner("Re-indexing missing player submittals against league rules..."):
         active_players = supabase.table("tournament_registrations").select("*").eq("game_type", admin_slug).neq("bracket_status", "Eliminated").execute().data
         unplayed_matches = supabase.table("nfl_schedule").select("*").eq("week", admin_week).order("espn_favored_tier", desc=True).execute().data
@@ -114,9 +114,9 @@ if st.button("🚀 Execute Sunday Noon ESPN Fallback Routines", use_container_wi
 st.markdown("---")
 
 # ==========================================
-# 🏁 STEP 3: SCORE SETTLER PANEL Matrix
+# STEP 3: RESULTS PANEL Matrix
 # ==========================================
-st.subheader(f"🏁 Score Settler Panel: Week {admin_week} ({admin_mode})")
+st.subheader(f"Results Panel: Week {admin_week} ({admin_mode})")
 schedule_res = supabase.table("nfl_schedule").select("*").eq("week", admin_week).execute().data
 
 if not schedule_res:
@@ -154,7 +154,7 @@ else:
                 )
                 
             with col_shutout:
-                is_so = st.checkbox("✴️ Ended in a Shutout", key=f"so_{match_id}")
+                is_so = st.checkbox("Shutout", key=f"so_{match_id}")
                 
             with col_action:
                 if st.button("Lock Score & Compute", key=f"lock_{match_id}", use_container_width=True):
