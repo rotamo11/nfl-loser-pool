@@ -31,7 +31,7 @@ with st.container():
     
     with header_col1:
         # Load your local logo file safely using the guaranteed native image tool
-        st.image("static/nfl-logo-square.png", width=55)
+        st.image("static/nfl-logo-square.png", width=200)
         
     with header_col2:
         # Render your bold header typography strings cleanly on the page frame
