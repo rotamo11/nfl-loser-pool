@@ -20,7 +20,7 @@ import base64
 
 # --- 1. CONVERT LOGO IMAGE TO AN EMBEDDED BASE64 STRING ---
 try:
-    with open("static/nfl-logo-square.png", "rb") as image_file:
+    with open("app/static/nfl-logo-square.png", "rb") as image_file:
         encoded_logo = base64.b64encode(image_file.read()).decode()
     logo_src = f"data:image/png;base64,{encoded_logo}"
 except Exception:
