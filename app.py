@@ -20,7 +20,7 @@ with st.container():
     # Create a wrapper div box to style your custom midnight-blue background frame
     st.markdown(
         """
-        <div style="background-color:#000000; padding:20px 20px 5px 20px; border-top-left-radius:8px; border-top-right-radius:8px; color:white; font-family:sans-serif;">
+        <div style="padding:20px 20px 5px 20px; border-top-left-radius:8px; border-top-right-radius:8px; color:white; font-family:sans-serif;">
         </div>
         """, 
         unsafe_allow_html=True
@@ -50,7 +50,7 @@ with st.container():
     # Close out the background frame smoothly
     st.markdown(
         """
-        <div style="background-color:#000080; padding:10px; border-bottom-left-radius:8px; border-bottom-right-radius:8px; margin-bottom:20px;">
+        <div style="padding:10px; border-bottom-left-radius:8px; border-bottom-right-radius:8px; margin-bottom:20px;">
         </div>
         """, 
         unsafe_allow_html=True
