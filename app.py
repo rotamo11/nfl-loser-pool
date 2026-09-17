@@ -195,7 +195,7 @@ else:
 
             # --- 6. ACTION CONTROLS & THE 3-OPTION DIALOGUE POPUP ---
             st.markdown("---")
-            c_sub, c_res = st.columns()
+            c_sub, c_res = st.columns([1, 1])
             
             # The submit action button is only unlocked once the required number of choices is reached
             submit_disabled = len(st.session_state.selected_teams) != required_picks
