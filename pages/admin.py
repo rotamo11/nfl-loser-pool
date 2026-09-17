@@ -18,7 +18,7 @@ admin_week = st.number_input("Configure Processing Targets (Week Num)", min_valu
 admin_mode = st.selectbox("Select Target Roster Pool Group", ["Main Pool", "2nd Chance Game"])
 admin_slug = "Main" if admin_mode == "Main Pool" else "2nd_Chance"
 
-st.warning("⚠️ Critical Loop Engine Override: Executing these functions will modify active player statuses.")
+st.warning("⚠️ Executing these functions will modify active player statuses.  Besure the correct week is selected and proceed with caution!")
 
 # ==========================================
 # STEP 1: SYNC SCHEDULE & ODDS FROM API
@@ -73,12 +73,12 @@ if st.button("Sync Live NFL Schedule & Spreads from API", use_container_width=Tr
         except Exception as e:
             st.error(f"API Connection Failed: {str(e)}")
 
-st.markdown("---")
+# st.markdown("---")
 
 # ========================================
 # STEP 2: RUN SUNDAY NOON FALLBACKS
 # ========================================
-if st.button("Execute Sunday Noon ESPN Fallback Routines", use_container_width=True):
+if st.button("Execute Deadline Routines", use_container_width=True):
     with st.spinner("Re-indexing missing player submittals against league rules..."):
         active_players = supabase.table("tournament_registrations").select("*").eq("game_type", admin_slug).neq("bracket_status", "Eliminated").execute().data
         unplayed_matches = supabase.table("nfl_schedule").select("*").eq("week", admin_week).order("espn_favored_tier", desc=True).execute().data
