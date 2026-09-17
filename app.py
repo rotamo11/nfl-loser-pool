@@ -24,7 +24,7 @@ try:
         encoded_logo = base64.b64encode(image_file.read()).decode()
     logo_src = f"data:image/png;base64,{encoded_logo}"
 except Exception:
-    # Safe fallback layout text if the file name has a typo or is missing
+    # Safe fallback layout if the file is missing or named incorrectly
     logo_src = ""
 
 # --- 2. RENDER THE BRAND BANNER ---
@@ -33,21 +33,20 @@ if logo_src:
 else:
     logo_html = ""
 
-st.markdown(
+# FIX: Switched from st.markdown to st.html to compile the base64 code cleanly
+st.html(
     f"""
     <div style="background-color:#000080; padding:20px; border-radius:8px; color:white; margin-bottom:20px; font-family:sans-serif;">
         <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 5px;">
             {logo_html}
-            <h1 style="margin:0; font-weight:900; line-height: 1;">2026 NFL LOSER POOL</h1>
+            <h1 style="margin:0; font-weight:900; line-height: 1; color: white;">2026 NFL LOSER POOL</h1>
         </div>
-        <p style="margin:0; font-size:14px; opacity:0.9; padding-left: {65 if logo_src else 0}px;">
+        <p style="margin:0; font-size:14px; opacity:0.9; padding-left: {65 if logo_src else 0}px; color: white;">
             Active Mode: <b>{game_mode}</b> • Submit Week {CURRENT_WEEK} selections below.
         </p>
     </div>
-    """, 
-    unsafe_allow_html=True
+    """
 )
-
 
 # Persistent Helpful Quick Links Sidebar
 st.sidebar.markdown("### 🔗 Quick Links")
