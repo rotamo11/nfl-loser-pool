@@ -55,46 +55,48 @@ can_view_live_picks = (user_current_pick and user_current_pick["pick_state"] == 
 user_map = {u["id"]: u["username"] for u in users_res}
 
 # --- 3. SELECTION TALLY GRID ENGINE (TOP LEFT WINDOW) ---
-st.markdown("### 📊 Weekly Selection Distribution")
-tally_counts = {}
-for p in picks_res:
-    if p["week"] == current_week:
-        if can_view_live_picks:
+st.markdown("### Weekly Selection Distribution")
+
+# Fix: Show privacy lockout notice immediately if player hasn't finalized validation passes
+if not can_view_live_picks:
+    st.info("🔒 Selection tallies remain hidden until your own weekly entry is Finalized.")
+else:
+    tally_counts = {}
+    for p in picks_res:
+        if p["week"] == current_week:
             tally_counts[p["team_picked"]] = tally_counts.get(p["team_picked"], 0) + 1
 
-sorted_tallies = sorted(tally_counts.items(), key=lambda item: (-item, item))
+    sorted_tallies = sorted(tally_counts.items(), key=lambda item: (-item[1], item[0]))
 
-# FIX: Pass an explicit layout specification list to prevent 0-column initialization crashes
-if sorted_tallies:
-    num_tally_cols = min(len(sorted_tallies), 6)
-    if num_tally_cols > 0:
-        tally_cols = st.columns([1] * num_tally_cols)
-        for idx, (team, count) in enumerate(sorted_tallies):
-            clean_team = team.replace("_SO", "")
-            with tally_cols[idx % num_tally_cols]:
-                # FIX: Pull from local app/static path instead of external links
-                logo_img = "" if clean_team == "BYE" else f'<img src="app/static/{clean_team.upper()}.svg" width="24" height="16" style="object-fit:contain;"/>'
-                st.markdown(
-                    f"""
-                    <div style="background:white; border:1px solid #e2e8f0; padding:6px; border-radius:4px; display:flex; align-items:center; gap:8px; font-family:sans-serif;">
-                        {logo_img}
-                        <span style="font-weight:bold; font-size:13px;">{clean_team}</span>
-                        <span style="margin-left:auto; background:#dbeafe; color:#1e40af; font-size:11px; padding:2px 6px; border-radius:10px; font-weight:bold;">{count}</span>
-                    </div>
-                    """, 
-                    unsafe_allow_html=True
-                )
+    if sorted_tallies:
+        num_tally_cols = min(len(sorted_tallies), 6)
+        if num_tally_cols > 0:
+            tally_cols = st.columns([1] * num_tally_cols)
+            for idx, (team, count) in enumerate(sorted_tallies):
+                clean_team = team.replace("_SO", "")
+                with tally_cols[idx % num_tally_cols]:
+                    logo_img = "" if clean_team == "BYE" else f'<img src="app/static/{clean_team.upper()}.svg" width="24" height="16" style="object-fit:contain;"/>'
+                    st.markdown(
+                        f"""
+                        <div style="background:white; border:1px solid #e2e8f0; padding:6px; border-radius:4px; display:flex; align-items:center; gap:8px; font-family:sans-serif;">
+                            {logo_img}
+                            <span style="font-weight:bold; font-size:13px;">{clean_team}</span>
+                            <span style="margin-left:auto; background:#dbeafe; color:#1e40af; font-size:11px; padding:2px 6px; border-radius:10px; font-weight:bold;">{count}</span>
+                        </div>
+                        """, 
+                        unsafe_allow_html=True
+                    )
     else:
-        st.info("🔒 Selection tallies remain hidden until your own weekly entry is Finalized.")
+        st.info("Nobody has placed a submission pick for Week 2 yet.")
 
 # --- 4. RENDER BRACKET MATRIX GRID ---
-st.markdown("<br>### 📋 Complete Tournament Roster Grid", unsafe_allow_html=True)
+st.markdown("<br>### Complete Tournament Roster Grid", unsafe_allow_html=True)
 
 bracket_buckets = {
-    "🟢 Undefeated (Loser's Bracket)": [r for r in regs_res if r["bracket_status"] == "Loser Bracket"],
-    "🟡 One Strike Remaining (Winner's Bracket)": [r for r in regs_res if r["bracket_status"] == "Winner Bracket"],
-    "🔵 Super Bowl Tiebreaker Window": [r for r in regs_res if r["bracket_status"] == "Tiebreaker"],
-    "🔴 Eliminated Competitors": [r for r in regs_res if r["bracket_status"] == "Eliminated"]
+    "🟢 Loser's Bracket": [r for r in regs_res if r["bracket_status"] == "Loser Bracket"],
+    "🟡 Winner's Bracket": [r for r in regs_res if r["bracket_status"] == "Winner Bracket"],
+    "🔵 Tiebreaker": [r for r in regs_res if r["bracket_status"] == "Tiebreaker"],
+    "🔴 Eliminated": [r for r in regs_res if r["bracket_status"] == "Eliminated"]
 }
 
 html_iframe_payload = """
@@ -171,7 +173,7 @@ for bracket_name, registrants in bracket_buckets.items():
             if clean_team == "BYE":
                 html_iframe_payload += f'<td style="background:{bg_color}; font-weight:bold; color:{text_color}; position:relative;">BYE{indicator_icon}</td>'
             else:
-                # 🛡️ Inline SVG Embedded Fix: Reads the file code directly from your static folder
+                # Inline SVG Embedded Fix: Reads the file code directly from your static folder
                 try:
                     with open(f"static/{clean_team.upper()}.svg", "r") as svg_file:
                         svg_code = svg_file.read()
