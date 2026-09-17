@@ -27,7 +27,8 @@ st.warning("⚠️ Executing the functions below will modify active player statu
 # ==========================================
 if st.button("Sync Live NFL Schedule & Spreads from API", use_container_width=True):
     with st.spinner("Fetching latest lines from The Odds API..."):
-        odds_url = f"https://the-odds-api.com{API_KEY}&regions=us&markets=spreads&oddsFormat=american"
+        odds_url = f"https://the-odds-api.com?{API_KEY}&regions=us&markets=spreads&oddsFormat=american"
+
         try:
             response = requests.get(odds_url)
             if response.status_code == 200:
