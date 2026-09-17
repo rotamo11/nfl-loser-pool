@@ -18,9 +18,12 @@ CURRENT_WEEK = 2  # Increment this as the season rolls forward
 # --- Header Brand Banner Matrix ---
 st.markdown(
     f"""
-    <div style="background-color:#000080; padding:20px; border-radius:8px; color:white; margin-bottom:20px;">
-        <h1 style="margin:0; font-weight:900;">2026 NFL LOSER POOL</h1>
-        <p style="margin:5px 0 0 0; font-size:14px; opacity:0.9;">
+    <div style="background-color:#000080; padding:20px; border-radius:8px; color:white; margin-bottom:20px; font-family:sans-serif;">
+        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 5px;">
+            <img src="app/static/nfl-logo-square.png" width="50" height="50" style="object-fit: contain; border-radius: 4px;"/>
+            <h1 style="margin:0; font-weight:900; line-height: 1;">2026 NFL LOSER POOL</h1>
+        </div>
+        <p style="margin:0; font-size:14px; opacity:0.9; padding-left: 65px;">
             Active Mode: <b>{game_mode}</b> • Submit Week {CURRENT_WEEK} selections below.
         </p>
     </div>
@@ -130,7 +133,7 @@ else:
         team_word = "team" if CURRENT_WEEK <= 14 else "teams"
 
         required_picks = 1 if CURRENT_WEEK <= 14 else 2 if CURRENT_WEEK <= 18 else 99
-        st.write(f"### 🏈 Week {CURRENT_WEEK} Matchups — Pick **{required_picks}** {team_word} to Lose")
+        st.write(f"### Week {CURRENT_WEEK} Matchups — Pick **{required_picks}** {team_word} to Lose")
 
         # Fetch scheduled matchups from Supabase
         matchups = supabase.table("nfl_schedule").select("*").eq("week", CURRENT_WEEK).execute().data
