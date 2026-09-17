@@ -103,14 +103,16 @@ else:
         all_picks_res = supabase.table("user_picks").select("*").eq("user_id", user_id).eq("game_type", game_slug).execute().data
         
         # Display horizontal historical strip component
-        st.write("### 📜 Your Season Selection History")
+        st.write("### 📜 Your Season Selection History")# FIX: Only render columns if history count is greater than zero
         if all_picks_res:
-            cols = st.columns(min(len(all_picks_res), 18))
-            for i, p in enumerate(sorted(all_picks_res, key=lambda x: x["week"])):
-                with cols[i % 18]:
-                    clean_t = p["team_picked"].replace("_SO", "")
-                    has_so = "*" if p["team_picked"].endswith("_SO") else ""
-                    st.markdown(f"<div style='border:1px solid #cbd5e1; padding:4px; border-radius:4px; text-align:center; background:#f8fafc; font-size:11px;'>W{p['week']}<br><b>{clean_t}{has_so}</b></div>", unsafe_allow_html=True)
+            num_cols = min(len(all_picks_res), 18)
+            if num_cols > 0:
+                cols = st.columns([1] * num_cols) # Passes an explicit list of widths
+                for i, p in enumerate(sorted(all_picks_res, key=lambda x: x["week"])):
+                    with cols[i % num_cols]:
+                        clean_t = p["team_picked"].replace("_SO", "")
+                        has_so = "*" if p["team_picked"].endswith("_SO") else ""
+                        st.markdown(f"<div style='border:1px solid #cbd5e1; padding:4px; border-radius:4px; text-align:center; background:#f8fafc; font-size:11px;'>W{p['week']}<br><b>{clean_t}{has_so}</b></div>", unsafe_allow_html=True)
         else:
             st.info("No prior weeks on record yet for this season.")
 
