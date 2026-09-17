@@ -16,7 +16,7 @@ st.title("Loser Pool Commissioner Engine")
 # Parameter Configuration Matrix Controls
 admin_week = st.number_input("Configure Processing Targets (Week Num)", min_value=1, max_value=22, value=2)
 admin_mode = st.selectbox("Select Target Roster Pool Group", ["Main Pool", "2nd Chance Game"])
-admin_slug = "Main" if admin_mode == "Main Pool" else "2nd_Chance
+admin_slug = "Main" if admin_mode == "Main Pool" else "2nd_Chance"
 
 st.markdown("---")
 
