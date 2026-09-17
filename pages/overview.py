@@ -72,21 +72,20 @@ if sorted_tallies:
         for idx, (team, count) in enumerate(sorted_tallies):
             clean_team = team.replace("_SO", "")
             with tally_cols[idx % num_tally_cols]:
-
-            # FIX: Pull from local app/static path instead of external links
-            logo_img = "" if clean_team == "BYE" else f'<img src="app/static/{clean_team.upper()}.svg" width="24" height="16" style="object-fit:contain;"/>'
-            st.markdown(
-                f"""
-                <div style="background:white; border:1px solid #e2e8f0; padding:6px; border-radius:4px; display:flex; align-items:center; gap:8px; font-family:sans-serif;">
-                    {logo_img}
-                    <span style="font-weight:bold; font-size:13px;">{clean_team}</span>
-                    <span style="margin-left:auto; background:#dbeafe; color:#1e40af; font-size:11px; padding:2px 6px; border-radius:10px; font-weight:bold;">{count}</span>
-                </div>
-                """, 
-                unsafe_allow_html=True
-            )
-else:
-    st.info("🔒 Selection tallies remain hidden until your own weekly entry is Finalized.")
+                # FIX: Pull from local app/static path instead of external links
+                logo_img = "" if clean_team == "BYE" else f'<img src="app/static/{clean_team.upper()}.svg" width="24" height="16" style="object-fit:contain;"/>'
+                st.markdown(
+                    f"""
+                    <div style="background:white; border:1px solid #e2e8f0; padding:6px; border-radius:4px; display:flex; align-items:center; gap:8px; font-family:sans-serif;">
+                        {logo_img}
+                        <span style="font-weight:bold; font-size:13px;">{clean_team}</span>
+                        <span style="margin-left:auto; background:#dbeafe; color:#1e40af; font-size:11px; padding:2px 6px; border-radius:10px; font-weight:bold;">{count}</span>
+                    </div>
+                    """, 
+                    unsafe_allow_html=True
+                )
+    else:
+        st.info("🔒 Selection tallies remain hidden until your own weekly entry is Finalized.")
 
 # --- 4. RENDER BRACKET MATRIX GRID ---
 st.markdown("<br>### 📋 Complete Tournament Roster Grid", unsafe_allow_html=True)
