@@ -126,8 +126,11 @@ else:
                 used_teams.append(p["team_picked"])
 
         # Determine the number of picks required based on the game rules
+        # Determine the dynamic singular or plural noun spelling structure
+        team_word = "team" if CURRENT_WEEK <= 14 else "teams"
+
         required_picks = 1 if CURRENT_WEEK <= 14 else 2 if CURRENT_WEEK <= 18 else 99
-        st.write(f"### 🏈 Week {CURRENT_WEEK} Matchups — Pick **{required_picks}** Team(s) to Lose")
+        st.write(f"### 🏈 Week {CURRENT_WEEK} Matchups — Pick **{required_picks}** {team_word} to Lose")
 
         # Fetch scheduled matchups from Supabase
         matchups = supabase.table("nfl_schedule").select("*").eq("week", CURRENT_WEEK).execute().data
