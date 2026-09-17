@@ -16,20 +16,38 @@ game_slug = "Main" if game_mode == "Main Pool" else "2nd_Chance"
 CURRENT_WEEK = 2  # Increment this as the season rolls forward
 
 # --- Header Brand Banner Matrix ---
+import base64
+
+# --- 1. CONVERT LOGO IMAGE TO AN EMBEDDED BASE64 STRING ---
+try:
+    with open("static/nfl-logo-square.png", "rb") as image_file:
+        encoded_logo = base64.b64encode(image_file.read()).decode()
+    logo_src = f"data:image/png;base64,{encoded_logo}"
+except Exception:
+    # Safe fallback layout text if the file name has a typo or is missing
+    logo_src = ""
+
+# --- 2. RENDER THE BRAND BANNER ---
+if logo_src:
+    logo_html = f'<img src="{logo_src}" width="50" height="50" style="object-fit: contain; border-radius: 4px;"/>'
+else:
+    logo_html = ""
+
 st.markdown(
     f"""
     <div style="background-color:#000080; padding:20px; border-radius:8px; color:white; margin-bottom:20px; font-family:sans-serif;">
         <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 5px;">
-            <img src="app/static/nfl-logo-square.png" width="50" height="50" style="object-fit: contain; border-radius: 4px;"/>
+            {logo_html}
             <h1 style="margin:0; font-weight:900; line-height: 1;">2026 NFL LOSER POOL</h1>
         </div>
-        <p style="margin:0; font-size:14px; opacity:0.9; padding-left: 65px;">
+        <p style="margin:0; font-size:14px; opacity:0.9; padding-left: {65 if logo_src else 0}px;">
             Active Mode: <b>{game_mode}</b> • Submit Week {CURRENT_WEEK} selections below.
         </p>
     </div>
     """, 
     unsafe_allow_html=True
 )
+
 
 # Persistent Helpful Quick Links Sidebar
 st.sidebar.markdown("### 🔗 Quick Links")
