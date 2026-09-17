@@ -20,14 +20,14 @@ admin_slug = "Main" if admin_mode == "Main Pool" else "2nd_Chance"
 
 st.markdown("---")
 
-st.warning("⚠️ Executing the functions below will modify active player statuses.  Be sure the correct week and pool selected and proceed with caution!")
+st.warning("⚠️ Executing the functions below can modify active player statuses.  Be sure the correct week and pool selected and proceed with caution!")
 
 # ==========================================
 # STEP 1: SYNC SCHEDULE & ODDS FROM API
 # ==========================================
 if st.button("Sync Live NFL Schedule & Spreads from API", use_container_width=True):
     with st.spinner("Fetching latest lines from The Odds API..."):
-        odds_url = f"https://the-odds-api.com?{API_KEY}&regions=us&markets=spreads&oddsFormat=american"
+        odds_url = f"https://the-odds-api.com{API_KEY}&regions=us&markets=spreads&oddsFormat=american"
 
         try:
             response = requests.get(odds_url)
