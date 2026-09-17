@@ -16,9 +16,11 @@ st.title("Loser Pool Commissioner Engine")
 # Parameter Configuration Matrix Controls
 admin_week = st.number_input("Configure Processing Targets (Week Num)", min_value=1, max_value=22, value=2)
 admin_mode = st.selectbox("Select Target Roster Pool Group", ["Main Pool", "2nd Chance Game"])
-admin_slug = "Main" if admin_mode == "Main Pool" else "2nd_Chance"
+admin_slug = "Main" if admin_mode == "Main Pool" else "2nd_Chance
 
-st.warning("⚠️ Executing these functions will modify active player statuses.  Besure the correct week is selected and proceed with caution!")
+st.markdown("---")
+
+st.warning("⚠️ Executing the functions below will modify active player statuses.  Be sure the correct week and pool selected and proceed with caution!")
 
 # ==========================================
 # STEP 1: SYNC SCHEDULE & ODDS FROM API
@@ -72,8 +74,6 @@ if st.button("Sync Live NFL Schedule & Spreads from API", use_container_width=Tr
                 st.error(f"API Connection Rejected: Error Code {response.status_code}")
         except Exception as e:
             st.error(f"API Connection Failed: {str(e)}")
-
-# st.markdown("---")
 
 # ========================================
 # STEP 2: RUN SUNDAY NOON FALLBACKS
