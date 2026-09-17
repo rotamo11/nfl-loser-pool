@@ -150,7 +150,7 @@ else:
                 # Freeze unselected items once they hit their required total
                 limit_reached = len(st.session_state.selected_teams) >= required_picks
                 
-                col_away, col_vs, col_home = st.columns()
+                col_away, col_vs, col_home = st.columns([2.5, 1.0, 2.5])
 
                 with col_away:
                     is_sel_away = away in st.session_state.selected_teams
