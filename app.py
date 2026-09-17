@@ -27,11 +27,11 @@ with st.container():
     )
     
     # Split the row into two columns for your logo image and title text alignment
-    header_col1, header_col2 = st.columns([1, 12])
+    header_col1, header_col2 = st.columns([1, 5])
     
     with header_col1:
         # Load your local logo file safely using the guaranteed native image tool
-        st.image("static/nfl-logo-square.png", width=200)
+        st.image("static/nfl-logo-square.png", width=90)
         
     with header_col2:
         # Render your bold header typography strings cleanly on the page frame
