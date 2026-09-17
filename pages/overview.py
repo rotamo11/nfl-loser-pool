@@ -70,7 +70,7 @@ if sorted_tallies:
         clean_team = team.replace("_SO", "")
         with tally_cols[idx % 6]:
             # FIX: Pull from local app/static path instead of external links
-            logo_img = "" if clean_team == "BYE" else f'<img src="/app/static/{clean_team.upper()}.svg" width="24" height="16" style="object-fit:contain;"/>'
+            logo_img = "" if clean_team == "BYE" else f'<img src="app/static/{clean_team.upper()}.svg" width="24" height="16" style="object-fit:contain;"/>'
             st.markdown(
                 f"""
                 <div style="background:white; border:1px solid #e2e8f0; padding:6px; border-radius:4px; display:flex; align-items:center; gap:8px; font-family:sans-serif;">
@@ -168,11 +168,20 @@ for bracket_name, registrants in bracket_buckets.items():
             if clean_team == "BYE":
                 html_iframe_payload += f'<td style="background:{bg_color}; font-weight:bold; color:{text_color}; position:relative;">BYE{indicator_icon}</td>'
             else:
-                # FIX: Switched layout logic parameters to your internal local hosted static directory path
+                # 🛡️ Inline SVG Embedded Fix: Reads the file code directly from your static folder
+                try:
+                    with open(f"static/{clean_team.upper()}.svg", "r") as svg_file:
+                        svg_code = svg_file.read()
+                    # Wrap the raw SVG code in a styled container to control height/width dynamically
+                    logo_html = f'<div style="width:28px; height:18px; display:inline-block;">{svg_code}</div>'
+                except Exception:
+                    # Fallback to plain text if the file is missing or has a typo
+                    logo_html = f'<b>{clean_team}</b>'
+
                 html_iframe_payload += f"""
                 <td style="background:{bg_color}; position:relative; color:{text_color}; padding:2px;">
                     <div style="display:flex; flex-direction:column; align-items:center; justify-content:center;">
-                        <img src="https://streamlit.app{clean_team.upper()}.svg" width="28" height="18" style="object-fit:contain;"/>
+                        {logo_html}
                         <span style="font-size:8px; font-weight:bold; line-height:1; margin-top:1px;">{clean_team}{has_asterisk}</span>
                     </div>
                     {indicator_icon}
