@@ -64,11 +64,15 @@ for p in picks_res:
 
 sorted_tallies = sorted(tally_counts.items(), key=lambda item: (-item, item))
 
+# FIX: Pass an explicit layout specification list to prevent 0-column initialization crashes
 if sorted_tallies:
-    tally_cols = st.columns(min(len(sorted_tallies), 6))
-    for idx, (team, count) in enumerate(sorted_tallies):
-        clean_team = team.replace("_SO", "")
-        with tally_cols[idx % 6]:
+    num_tally_cols = min(len(sorted_tallies), 6)
+    if num_tally_cols > 0:
+        tally_cols = st.columns([1] * num_tally_cols)
+        for idx, (team, count) in enumerate(sorted_tallies):
+            clean_team = team.replace("_SO", "")
+            with tally_cols[idx % num_tally_cols]:
+
             # FIX: Pull from local app/static path instead of external links
             logo_img = "" if clean_team == "BYE" else f'<img src="app/static/{clean_team.upper()}.svg" width="24" height="16" style="object-fit:contain;"/>'
             st.markdown(
