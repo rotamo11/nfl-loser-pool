@@ -15,37 +15,46 @@ game_slug = "Main" if game_mode == "Main Pool" else "2nd_Chance"
 # Core Configuration State Parameters
 CURRENT_WEEK = 2  # Increment this as the season rolls forward
 
-# --- Header Brand Banner Matrix ---
-import base64
-
-# --- 1. CONVERT LOGO IMAGE TO AN EMBEDDED BASE64 STRING ---
-try:
-    with open("static/nfl-logo-square.png", "rb") as image_file:
-        encoded_logo = base64.b64encode(image_file.read()).decode()
-    logo_src = f"data:image/png;base64,{encoded_logo}"
-except Exception:
-    logo_src = ""
-
-# --- 2. COMPILE AND RENDER THE BRAND BANNER ---
-if logo_src:
-    logo_html = f'<img src="{logo_src}" width="50" height="50" style="object-fit: contain; border-radius: 4px; vertical-align: middle;"/>'
-else:
-    logo_html = ""
-
-# Using a single clean f-string template inside st.markdown prevents layout syntax corruption
-banner_html = f"""
-<div style="background-color:#000080; padding:20px; border-radius:8px; color:white; margin-bottom:20px; font-family:sans-serif;">
-    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 5px;">
-        {logo_html}
-        <h1 style="margin:0; font-weight:900; line-height: 1; color: white;">2026 NFL LOSER POOL</h1>
-    </div>
-    <p style="margin:0; font-size:14px; opacity:0.9; padding-left: {65 if logo_src else 0}px; color: white;">
-        Active Mode: <b>{game_mode}</b> • Submit Week {CURRENT_WEEK} selections below.
-    </p>
-</div>
-"""
-
-st.markdown(banner_html, unsafe_allow_html=True)
+# --- Header Brand Banner Matrix (Native Fix) ---
+with st.container():
+    # Create a wrapper div box to style your custom midnight-blue background frame
+    st.markdown(
+        """
+        <div style="background-color:#000080; padding:20px 20px 5px 20px; border-top-left-radius:8px; border-top-right-radius:8px; color:white; font-family:sans-serif;">
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
+    
+    # Split the row into two columns for your logo image and title text alignment
+    header_col1, header_col2 = st.columns([1, 12])
+    
+    with header_col1:
+        # Load your local logo file safely using the guaranteed native image tool
+        st.image("static/nfl-logo-square.png", width=55)
+        
+    with header_col2:
+        # Render your bold header typography strings cleanly on the page frame
+        st.markdown(
+            f"""
+            <div style="font-family:sans-serif; color:white; padding-top:2px;">
+                <h1 style="margin:0; font-weight:900; line-height:1; color:white; font-size:28px;">2026 NFL LOSER POOL</h1>
+                <p style="margin:6px 0 0 0; font-size:14px; opacity:0.9; color:white;">
+                    Active Mode: <b>{game_mode}</b> • Submit Week {CURRENT_WEEK} selections below.
+                </p>
+            </div>
+            """, 
+            unsafe_allow_html=True
+        )
+        
+    # Close out the background frame smoothly
+    st.markdown(
+        """
+        <div style="background-color:#000080; padding:10px; border-bottom-left-radius:8px; border-bottom-right-radius:8px; margin-bottom:20px;">
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
 
 # Persistent Helpful Quick Links Sidebar
 st.sidebar.markdown("### 🔗 Quick Links")
