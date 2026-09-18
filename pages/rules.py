@@ -21,7 +21,7 @@ st.markdown(
         }
         /* Target the actual logo image element itself */
         [data-testid="stLogo"] img {
-            height: 90px !important;   /* Adjust this pixel value to make it smaller or larger */
+            height: 190px !important;   /* Adjust this pixel value to make it smaller or larger */
             width: auto !important;
             object-fit: contain;
         }
