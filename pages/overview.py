@@ -19,7 +19,7 @@ header_col1, header_col2 = st.columns([1, 5])
 
 with header_col1:
     # Load your local logo file safely using the guaranteed native image tool
-    st.image("static/nfl-logo-square.png", width=250)
+    st.image("static/nfl-logo-square.png", width=150)
     
 with header_col2:
     st.markdown(
