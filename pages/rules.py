@@ -7,14 +7,7 @@ with st.sidebar:
     st.image("static/nfl-logo-square.png", use_container_width=True)
     st.markdown("<hr style='margin: 10px 0 15px 0; border: 0; border-top: 1px solid #cbd5e1;'/>", unsafe_allow_html=True)
 
-# --- PERSISTENT SIDEBAR LOGO ---
-# with st.sidebar:
-#     local_sidebar_path = "static/nfl-logo-square.png"
-#     if os.path.exists(local_sidebar_path):
-#         st.image(local_sidebar_path, use_container_width=True)
-#     else:
-#         st.image("https://espncdn.com", use_container_width=True)
-#     st.markdown("<hr style='margin:10px 0 20px 0;'/>", unsafe_allow_html=True)
+st.markdown("<hr style='margin:10px 0 20px 0;'/>", unsafe_allow_html=True)
 
 st.title("Official Pool Rules & Details")
 st.markdown("---")
