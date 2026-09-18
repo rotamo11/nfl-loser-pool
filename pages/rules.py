@@ -3,7 +3,7 @@ import os
 
 # --- PERSISTENT SIDEBAR LOGO ---
 # st.logo pins the image to the top of the sidebar above the automatic page routes
-local_logo_path = "app/static/nfl-logo-square.png"
+local_logo_path = "static/nfl-logo-square.png"
 if os.path.exists(local_logo_path):
     st.logo(local_logo_path, icon_image=local_logo_path)
 else:
