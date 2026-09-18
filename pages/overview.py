@@ -14,23 +14,31 @@ game_slug = "Main" if game_mode == "Main Pool" else "2nd_Chance"
 current_week = 2  # Manually advance this index as the season rolls on
 
 # --- 1. BRAND HEADER DISPLAY MATRICES ---
-st.markdown(
-    f"""
-    <div style="background-color:#000080; padding:20px; border-radius:8px; color:white; margin-bottom:20px; font-family:sans-serif;">
-        <h1 style="margin:0; font-weight:900; letter-spacing:-1px;">2026 NFL LOSER POOL — {game_mode.upper()}</h1>
-        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:10px; font-size:12px; margin-top:10px; opacity:0.9;">
-            <div>• <b>Through Week 14:</b> Pick 1 team to lose each week</div>
-            <div>• <b>Weeks 15-18:</b> Pick 2 teams to lose each week</div>
-            <div>• <b>Playoffs:</b> Pick loser of ALL games (Repeats allowed)</div>
-            <div>• <b>Deadlines:</b> NOON ET Sunday or game kickoff time</div>
+# Split the row into two columns for your logo image and title text alignment
+header_col1, header_col2 = st.columns([1, 5])
+
+with header_col1:
+    # Load your local logo file safely using the guaranteed native image tool
+    st.image("static/nfl-logo-square.png", width=250)
+    
+with header_col2:
+    st.markdown(
+        f"""
+        <div style="background-color:#000080; padding:20px; border-radius:8px; color:white; margin-bottom:20px; font-family:sans-serif;">
+            <h1 style="margin:0; font-weight:900; letter-spacing:-1px;">2026 NFL LOSER POOL — {game_mode.upper()}</h1>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:10px; font-size:12px; margin-top:10px; opacity:0.9;">
+                <div>• <b>Through Week 14:</b> Pick 1 team to lose each week</div>
+                <div>• <b>Weeks 15-18:</b> Pick 2 teams to lose each week</div>
+                <div>• <b>Playoffs:</b> Pick loser of ALL games (Repeats allowed)</div>
+                <div>• <b>Deadlines:</b> NOON ET Sunday or by kickoff of earlier game</div>
+            </div>
+            <div style="margin-top:12px; padding-top:8px; border-top:1px solid #1e3a8a; font-family:monospace; font-size:11px; color:#93c5fd;">
+                74 Players | $1850 Purse ($1110 1st / $555 2nd / $185 3rd) | Last year's losers: Stephen King took 1st for $765, Amanda Conley took 2nd for $382.50, Bill Kazmierski took 3rd for $127.50
+            </div>
         </div>
-        <div style="margin-top:12px; padding-top:8px; border-top:1px solid #1e3a8a; font-family:monospace; font-size:11px; color:#93c5fd;">
-            74 Players | $1850 Purse ($1110 1st / $555 2nd / $185 3rd) | Historical: S. King took 1st for $765
-        </div>
-    </div>
-    """, 
-    unsafe_allow_html=True
-)
+        """, 
+        unsafe_allow_html=True
+    )
 
 # --- 2. RETRIEVE LEAGUE AND SELECTION DATA ---
 users_res = supabase.table("users").select("*").execute().data
