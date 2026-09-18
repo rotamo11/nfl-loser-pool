@@ -19,7 +19,9 @@ header_col1, header_col2 = st.columns([1, 5])
 
 with header_col1:
     # Load your local logo file safely using the guaranteed native image tool
-    st.image("static/nfl-logo-square.png", width=150)
+    <div style="background-color:#000080; padding:20px; border-radius:8px; color:white; margin-bottom:20px; font-family:sans-serif;">
+        st.image("static/nfl-logo-square.png", width=150)
+    </div>
     
 with header_col2:
     st.markdown(
