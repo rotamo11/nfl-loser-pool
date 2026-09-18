@@ -4,7 +4,7 @@ import os
 # --- 🎯 PERSISTENT TOP-OF-SIDEBAR LOGO (ABOVE NAVIGATION LINKS) ---
 with st.sidebar:
     # Uses a clean container layout to ensure alignment above page links
-    st.image("app/static/nfl-logo-square.png", use_container_width=True)
+    st.image("static/nfl-logo-square.png", use_container_width=True)
     st.markdown("<hr style='margin: 10px 0 15px 0; border: 0; border-top: 1px solid #cbd5e1;'/>", unsafe_allow_html=True)
 
 # --- PERSISTENT SIDEBAR LOGO ---
