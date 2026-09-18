@@ -15,7 +15,7 @@ current_week = 2  # Manually advance this index as the season rolls on
 
 # --- 1. BRAND HEADER DISPLAY MATRICES ---
 # Split the row into two columns for your logo image and title text alignment
-header_col1, header_col2 = st.columns([1, 7])
+header_col1, header_col2 = st.columns([1, 6])
 
 with header_col1:
     # Load your local logo file safely using the guaranteed native image tool
@@ -30,7 +30,7 @@ with header_col1:
 with header_col2:
     st.markdown(
         f"""
-        <div style="background-color:#000080; padding:20px; border-radius:8px; color:white; margin-bottom:20px; font-family:sans-serif;">
+        <div style="background-color:#000080; padding:10px; border-radius:8px; color:white; margin-bottom:10px; font-family:sans-serif;">
             <h1 style="margin:0; font-weight:900; letter-spacing:-1px;">2026 NFL LOSER POOL — {game_mode.upper()}</h1>
             <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:10px; font-size:12px; margin-top:10px; opacity:0.9;">
                 <div>• <b>Through Week 14:</b> Pick 1 team to lose each week</div>
