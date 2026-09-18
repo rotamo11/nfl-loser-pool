@@ -31,7 +31,7 @@ if st.button("🔄 Sync Live NFL Schedule & Spreads from API", use_container_wid
         try:
             # 🛡️ BULLETPROOF URL INJECTION: No concatenations, no string formatting failures
             response = requests.get(
-                f"https://the-odds-api.com{API_KEY}&regions=us&markets=spreads&oddsFormat=american"
+                f"https://the-odds-api.com?apiKey={API_KEY}&regions=us&markets=spreads&oddsFormat=american"
             )            
             # Catch HTTP connection rejections before executing JSON parsers
             if response.status_code != 200:
