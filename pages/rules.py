@@ -2,16 +2,19 @@ import streamlit as st
 import os
 
 # --- PERSISTENT SIDEBAR LOGO ---
+# st.logo pins the image to the top of the sidebar above the automatic page routes
+local_logo_path = "app/static/nfl-logo-square.png"
+if os.path.exists(local_logo_path):
+    st.logo(local_logo_path, icon_image=local_logo_path)
+else:
+    # Stable fallback CDN if the repository hasn't finished building
+    st.logo("https://espncdn.com")
+
+# Optional sidebar text details can still be appended below the links if desired
 with st.sidebar:
-    local_sidebar_path = "static/nfl-logo-square.png"
-    if os.path.exists(local_sidebar_path):
-        st.image(local_sidebar_path, use_container_width=True)
-    else:
-        st.image("https://espncdn.com", use_container_width=True)
+    st.markdown("<div style='text-align:center; color:gray; font-size:11px;'>2026 Commissioner Portal</div>", unsafe_allow_html=True)
 
-st.markdown("<hr style='margin:10px 0 20px 0;'/>", unsafe_allow_html=True)
-
-st.title("Official Pool Rules & Details")
+st.title("📜 Official Pool Rules & Details")
 st.markdown("---")
 
 # --- SECTION 1: CORE GAMEPLAY ---
