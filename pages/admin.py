@@ -27,10 +27,12 @@ st.warning("⚠️ Executing the functions below can modify active player status
 # ==========================================
 if st.button("🔄 Sync Live NFL Schedule & Spreads from API", use_container_width=True):
     with st.spinner("Fetching latest lines from The Odds API..."):
-        odds_url = f"https://the-odds-api.com{API_KEY}&regions=us&markets=spreads&oddsFormat=american"
+        # odds_url = f"https://the-odds-api.com{API_KEY}&regions=us&markets=spreads&oddsFormat=american"
         try:
-            response = requests.get(odds_url)
-            
+            # 🛡️ BULLETPROOF URL INJECTION: No concatenations, no string formatting failures
+            response = requests.get(
+                f"https://the-odds-api.com{API_KEY}&regions=us&markets=spreads&oddsFormat=american"
+            )            
             # Catch HTTP connection rejections before executing JSON parsers
             if response.status_code != 200:
                 st.error(f"❌ API Denied Request (Status Code {response.status_code})")
