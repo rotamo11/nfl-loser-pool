@@ -23,15 +23,19 @@ st.markdown("---")
 st.warning("⚠️ Executing the functions below can modify active player statuses.  Be sure the correct week and pool selected and proceed with caution!")
 
 # ==========================================
-# STEP 1: SYNC SCHEDULE & ODDS FROM API
+# 🔄 STEP 1: SYNC SCHEDULE & ODDS FROM API
 # ==========================================
-if st.button("Sync Live NFL Schedule & Spreads from API", use_container_width=True):
+if st.button("🔄 Sync Live NFL Schedule & Spreads from API", use_container_width=True):
     with st.spinner("Fetching latest lines from The Odds API..."):
-        odds_url = f"https://the-odds-api.com/?regions=us&markets=spreads&oddsFormat=american&apiKey={API_KEY}"
-
+        odds_url = f"https://the-odds-api.com{API_KEY}&regions=us&markets=spreads&oddsFormat=american"
         try:
             response = requests.get(odds_url)
-            if response.status_code == 200:
+            
+            # Catch HTTP connection rejections before executing JSON parsers
+            if response.status_code != 200:
+                st.error(f"❌ API Denied Request (Status Code {response.status_code})")
+                st.code(response.text)
+            else:
                 games_data = response.json()
                 synced_count = 0
                 
@@ -71,8 +75,6 @@ if st.button("Sync Live NFL Schedule & Spreads from API", use_container_width=Tr
                     
                 st.success(f"Successfully loaded and calculated {synced_count} match lines for Week {admin_week}!")
                 st.rerun()
-            else:
-                st.error(f"API Connection Rejected: Error Code {response.status_code}")
         except Exception as e:
             st.error(f"API Connection Failed: {str(e)}")
 
