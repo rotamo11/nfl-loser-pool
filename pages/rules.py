@@ -15,14 +15,14 @@ st.markdown(
     <style>
         /* Target Streamlit's internal visual container wrapper for the sidebar logo */
         [data-testid="stLogo"] {
-            height: 190px !important;  /* Bumps the bounding height constraint up */
-            width: 190px !important;
+            height: 500px !important;  /* Bumps the bounding height constraint up */
+            width: auto !important;
             max-width: 100% !important;
         }
         /* Target the actual logo image element itself */
         [data-testid="stLogo"] img {
-            height: 190px !important;   /* Adjust this pixel value to make it smaller or larger */
-            width: 190px !important;
+            height: 500px !important;   /* Adjust this pixel value to make it smaller or larger */
+            width: auto !important;
             object-fit: contain;
         }
         /* Optional: Add a clean structural cushion space between the enlarged logo and links */
