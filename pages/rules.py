@@ -10,11 +10,35 @@ else:
     # Stable fallback CDN if the repository hasn't finished building
     st.logo("https://espncdn.com")
 
+st.markdown(
+    """
+    <style>
+        /* Target Streamlit's internal visual container wrapper for the sidebar logo */
+        [data-testid="stLogo"] {
+            height: 90px !important;  /* Bumps the bounding height constraint up */
+            width: auto !important;
+            max-width: 100% !important;
+        }
+        /* Target the actual logo image element itself */
+        [data-testid="stLogo"] img {
+            height: 90px !important;   /* Adjust this pixel value to make it smaller or larger */
+            width: auto !important;
+            object-fit: contain;
+        }
+        /* Optional: Add a clean structural cushion space between the enlarged logo and links */
+        [data-testid="stSidebarNav"] {
+            margin-top: 15px !important;
+        }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 # Optional sidebar text details can still be appended below the links if desired
 with st.sidebar:
     st.markdown("<div style='text-align:center; color:gray; font-size:11px;'>2026 Commissioner Portal</div>", unsafe_allow_html=True)
 
-st.title("📜 Official Pool Rules & Details")
+st.title("Official Pool Rules & Details")
 st.markdown("---")
 
 # --- SECTION 1: CORE GAMEPLAY ---
