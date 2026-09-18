@@ -149,6 +149,7 @@ else:
                 winner_selection = st.radio(
                     "Designate Winner:",
                     options=[away, home, "TIE"],
+                    index=None,
                     key=f"winner_{match_id}",
                     horizontal=True,
                     label_visibility="collapsed"
