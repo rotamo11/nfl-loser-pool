@@ -1,11 +1,13 @@
 import streamlit as st
 import os
 
-# --- 🎯 PERSISTENT TOP-OF-SIDEBAR LOGO (ABOVE NAVIGATION LINKS) ---
+# --- PERSISTENT SIDEBAR LOGO ---
 with st.sidebar:
-    # Uses a clean container layout to ensure alignment above page links
-    st.image("static/nfl-logo-square.png", use_container_width=True)
-    st.markdown("<hr style='margin: 10px 0 15px 0; border: 0; border-top: 1px solid #cbd5e1;'/>", unsafe_allow_html=True)
+    local_sidebar_path = "static/nfl-logo-square.png"
+    if os.path.exists(local_sidebar_path):
+        st.image(local_sidebar_path, use_container_width=True)
+    else:
+        st.image("https://espncdn.com", use_container_width=True)
 
 st.markdown("<hr style='margin:10px 0 20px 0;'/>", unsafe_allow_html=True)
 
