@@ -22,7 +22,7 @@ with header_col1:
 #    st.markdown(
 #        f"""
 #            <div style="background-color:#000080; padding:20px; border-radius:8px; color:white; margin-bottom:20px; font-family:sans-serif;">
-                st.image("static/nfl-logo-square.png", width=200)
+                st.image("static/nfl-logo-square.png", width=175)
 #            </div>
 #        """,
 #        unsafe_allow_html=True
