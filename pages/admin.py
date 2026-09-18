@@ -160,47 +160,49 @@ else:
                 
             with col_action:
                 if st.button("Lock Score & Compute", key=f"lock_{match_id}", use_container_width=True):
-                    with st.spinner("Processing player picks..."):
-                        
-                        supabase.table("nfl_schedule").update({
-                            "winner": winner_selection,
-                            "is_shutout": is_so
-                        }).eq("id", match_id).execute()
-                        
-                        active_picks = supabase.table("user_picks").select("*").eq("game_type", admin_slug).eq("week", admin_week).in_("team_picked", [away, f"{away}_SO", home, f"{home}_SO"]).execute().data
-                        
-                        for pick in active_picks:
-                            chosen_team = pick["team_picked"].replace("_SO", "")
+                    # 🛡️ Safety Check: Halt execution if no option was selected
+                    if winner_selection is None:
+                        st.error("Please select a winner before locking the result!")
+                    else:
+                        with st.spinner("Processing player picks..."):
+                            supabase.table("nfl_schedule").update({
+                                "winner": winner_selection,
+                                "is_shutout": is_so
+                            }).eq("id", match_id).execute()
                             
-                            if winner_selection == "TIE":
-                                pick_result = "Incorrect"
-                            elif chosen_team != winner_selection:
-                                pick_result = "Correct"
-                            else:
-                                pick_result = "Incorrect"
+                            active_picks = supabase.table("user_picks").select("*").eq("game_type", admin_slug).eq("week", admin_week).in_("team_picked", [away, f"{away}_SO", home, f"{home}_SO"]).execute().data
+                            
+                            for pick in active_picks:
+                                chosen_team = pick["team_picked"].replace("_SO", "")
                                 
-                            final_team_name = pick["team_picked"]
-                            if pick_result == "Correct" and is_so and not final_team_name.endswith("_SO"):
-                                final_team_name = f"{chosen_team}_SO"
-                            
-                            supabase.table("user_picks").update({
-                                "pick_state": pick_result,
-                                "team_picked": final_team_name
-                            }).eq("id", pick["id"]).execute()
-                            
-                            # Recalculate dynamic bracket statuses for pool accounts
-                            user_id = pick["user_id"]
-                            all_user_picks = supabase.table("user_picks").select("*").eq("game_type", admin_slug).eq("user_id", user_id).execute().data
-                            wrong_count = sum(1 for p in all_user_picks if p["pick_state"] == "Incorrect")
-                            if wrong_count == 0:
-                                new_bracket = "Loser Bracket"
-                            elif wrong_count == 1:
-                                new_bracket = "Winner Bracket"
-                            else:
-                                new_bracket = "Eliminated"
-                            supabase.table("tournament_registrations").update({
-                                "bracket_status": new_bracket
-                            }).eq("user_id", user_id).eq("game_type", admin_slug).execute()
-                            st.success(f"Game results locked! Outcomes evaluated.")
-                            st.rerun()
-                        
+                                if winner_selection == "TIE":
+                                    pick_result = "Incorrect"
+                                elif chosen_team != winner_selection:
+                                    pick_result = "Correct"
+                                else:
+                                    pick_result = "Incorrect"
+                                    
+                                final_team_name = pick["team_picked"]
+                                if pick_result == "Correct" and is_so and not final_team_name.endswith("_SO"):
+                                    final_team_name = f"{chosen_team}_SO"
+                                
+                                supabase.table("user_picks").update({
+                                    "pick_state": pick_result,
+                                    "team_picked": final_team_name
+                                }).eq("id", pick["id"]).execute()
+                                
+                                # Recalculate dynamic bracket statuses for pool accounts
+                                user_id = pick["user_id"]
+                                all_user_picks = supabase.table("user_picks").select("*").eq("game_type", admin_slug).eq("user_id", user_id).execute().data
+                                wrong_count = sum(1 for p in all_user_picks if p["pick_state"] == "Incorrect")
+                                if wrong_count == 0:
+                                    new_bracket = "Loser Bracket"
+                                elif wrong_count == 1:
+                                    new_bracket = "Winner Bracket"
+                                else:
+                                    new_bracket = "Eliminated"
+                                supabase.table("tournament_registrations").update({
+                                    "bracket_status": new_bracket
+                                }).eq("user_id", user_id).eq("game_type", admin_slug).execute()
+                                st.success(f"Game results locked! Outcomes evaluated.")
+                                st.rerun()
