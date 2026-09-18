@@ -27,17 +27,18 @@ st.warning("⚠️ Executing the functions below can modify active player status
 # ==========================================
 if st.button("🔄 Sync Live NFL Schedule & Spreads from API", use_container_width=True):
     with st.spinner("Fetching latest lines from The Odds API..."):
-        # odds_url = f"https://the-odds-api.com{API_KEY}&regions=us&markets=spreads&oddsFormat=american"
+        odds_url = f"https://the-odds-api.com?apiKey={API_KEY}&regions=us&markets=spreads&oddsFormat=american"
         try:
-            # 🛡️ BULLETPROOF URL INJECTION: No concatenations, no string formatting failures
-            response = requests.get(
-                f"https://the-odds-api.com?apiKey={API_KEY}&regions=us&markets=spreads&oddsFormat=american"
-            )            
-            # Catch HTTP connection rejections before executing JSON parsers
+            # 1. Fetch the raw response data package
+            response = requests.get(odds_url)
+            
+            # 2. 🛡️ CRUCIAL GUARD RAIL: Stop immediately if the server didn't return a perfect 200 OK
             if response.status_code != 200:
-                st.error(f"❌ API Denied Request (Status Code {response.status_code})")
-                st.code(response.text)
+                st.error(f"❌ The Odds API Denied the Connection (HTTP Status {response.status_code})")
+                st.markdown("**Here is the exact message your API key returned:**")
+                st.code(response.text) # This reveals the actual API error message on your screen!
             else:
+                # 3. Safe to parse now that we verified it is valid data
                 games_data = response.json()
                 synced_count = 0
                 
@@ -59,12 +60,10 @@ if st.button("🔄 Sync Live NFL Schedule & Spreads from API", use_container_wid
                                 favored_team = fav_outcome["name"]
                                 favored_tier = abs(fav_outcome.get("point", 0))
                     
-                    # Standardize abbreviations to 3 characters uppercase
                     clean_away = away_team[:3].upper()
                     clean_home = home_team[:3].upper()
                     clean_fav = favored_team[:3].upper()
                     
-                    # Upsert data into your live Supabase nfl_schedule table
                     supabase.table("nfl_schedule").upsert({
                         "week": admin_week,
                         "away_team": clean_away,
