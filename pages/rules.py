@@ -1,8 +1,6 @@
 import streamlit as st
 import os
 
-import streamlit as st
-
 # --- 🎯 PERSISTENT TOP-OF-SIDEBAR LOGO (ABOVE NAVIGATION LINKS) ---
 with st.sidebar:
     # Uses a clean container layout to ensure alignment above page links
