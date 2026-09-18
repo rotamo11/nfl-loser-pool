@@ -36,7 +36,7 @@ with header_col2:
                 <div>• <b>Through Week 14:</b> Pick 1 team to lose each week</div>
                 <div>• <b>Weeks 15-18:</b> Pick 2 teams to lose each week</div>
                 <div>• <b>Playoffs:</b> Pick loser of ALL games (Repeats allowed)</div>
-                <div>• <b>Deadlines:</b> NOON ET Sunday or by kickoff of earlier game</div>
+                <div>• <b>Deadlines:</b> NOON ET Sunday or by earlier kickoff</div>
             </div>
             <div style="margin-top:12px; padding-top:8px; border-top:1px solid #1e3a8a; font-family:monospace; font-size:11px; color:#93c5fd;">
                 74 Players | $1850 Purse ($1110 1st / $555 2nd / $185 3rd) | Last year's losers: Stephen King took 1st for $765, Amanda Conley took 2nd for $382.50, Bill Kazmierski took 3rd for $127.50
