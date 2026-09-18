@@ -15,7 +15,7 @@ st.markdown(
     <style>
         /* Target Streamlit's internal visual container wrapper for the sidebar logo */
         [data-testid="stLogo"] {
-            height: 90px !important;  /* Bumps the bounding height constraint up */
+            height: 190px !important;  /* Bumps the bounding height constraint up */
             width: auto !important;
             max-width: 100% !important;
         }
