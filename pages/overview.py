@@ -15,7 +15,7 @@ current_week = 2  # Manually advance this index as the season rolls on
 
 # --- 1. BRAND HEADER DISPLAY MATRICES ---
 # Split the row into two columns for your logo image and title text alignment
-header_col1, header_col2 = st.columns([1, 2])
+header_col1, header_col2 = st.columns([1, 7])
 
 with header_col1:
     # Load your local logo file safely using the guaranteed native image tool
