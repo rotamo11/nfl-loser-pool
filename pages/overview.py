@@ -30,7 +30,7 @@ with header_col2:
                 <div><b>Weeks 15-18:</b> Pick 2 teams to lose each week</div>
                 <div><b>Playoffs:</b> Pick loser of ALL games (Repeats allowed)</div>
             </div>
-            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:10px; font-size:16px; margin-bottom:12px; margin-top:12px; opacity:0.9;">
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:10px; font-size:14px; margin-bottom:12px; margin-top:12px; opacity:0.9;">
                 <div><b>Weekly Deadline:</b> NOON ET Sunday or by kickoff if taking an earlier game</div>
             </div>
             <div style="margin-top:12px; padding-top:8px; border-top:1px solid #1e3a8a; font-family:monospace; font-size:11.5px; color:#93c5fd;">
