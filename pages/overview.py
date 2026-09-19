@@ -9,7 +9,7 @@ supabase: Client = create_client(URL, KEY)
 st.set_page_config(layout="wide")
 
 # Determine active tournament mode filter ruleset
-game_mode = st.sidebar.selectbox("🎯 Select Pool Tournament", ["Main Pool", "2nd Chance Game"])
+game_mode = st.sidebar.selectbox("Select Pool Tournament", ["Main Pool", "2nd Chance Game"])
 game_slug = "Main" if game_mode == "Main Pool" else "2nd_Chance"
 current_week = 2  # Manually advance this index as the season rolls on
 
@@ -19,19 +19,12 @@ header_col1, header_col2 = st.columns([1, 6])
 
 with header_col1:
     # Load your local logo file safely using the guaranteed native image tool
-#    st.markdown(
-#        f"""
-#            <div style="background-color:#000080; padding:20px; border-radius:8px; color:white; margin-bottom:20px; font-family:sans-serif;">
-                st.image("static/loser-logo.png", width=175)
-#            </div>
-#        """,
-#        unsafe_allow_html=True
-#    )    
+    st.image("static/loser-logo.png", width=200)
 with header_col2:
     st.markdown(
         f"""
-        <div style="background-color:#000080; padding:10px; border-radius:8px; color:white; margin-bottom:10px; font-family:sans-serif;">
-            <h1 style="margin:0; font-weight:900; letter-spacing:-1px;">2026 NFL LOSER POOL — {game_mode.upper()}</h1>
+        <div style="padding:10px; border-radius:8px; color:white; margin-bottom:10px; font-family:sans-serif;">
+            <h1 style="margin:0; font-weight:900; letter-spacing:-1px;">2026 NFL Loser Pool &bull; {game_mode} &bull; Week {current_week}</h1>
             <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:10px; font-size:12px; margin-top:10px; opacity:0.9;">
                 <div>• <b>Through Week 14:</b> Pick 1 team to lose each week</div>
                 <div>• <b>Weeks 15-18:</b> Pick 2 teams to lose each week</div>
