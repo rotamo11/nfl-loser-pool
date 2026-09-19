@@ -25,11 +25,13 @@ with header_col2:
         f"""
         <div style="padding:10px; border-radius:8px; color:white; margin-bottom:10px; font-family:sans-serif;">
             <h1 style="margin:0; font-weight:900; letter-spacing:-1px;">2026 NFL Loser Pool &bull; {game_mode} &bull; Week {current_week}</h1>
-            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:10px; font-size:13px; margin-top:10px; opacity:0.9;">
-                <div>• <b>Through Week 14:</b> Pick 1 team to lose each week</div>
-                <div>• <b>Weeks 15-18:</b> Pick 2 teams to lose each week</div>
-                <div>• <b>Playoffs:</b> Pick loser of ALL games (Repeats allowed)</div>
-                <div>• <b>Deadlines:</b> NOON ET Sunday or by earlier kickoff</div>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:10px; font-size:14px; margin-top:10px; opacity:0.9;">
+                <div><b>Through Week 14:</b> Pick 1 team to lose each week</div>
+                <div><b>Weeks 15-18:</b> Pick 2 teams to lose each week</div>
+                <div><b>Playoffs:</b> Pick loser of ALL games (Repeats allowed)</div>
+            </div>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:10px; font-size:14px; margin-top:10px; opacity:0.9;">
+                <div><b>Deadlines:</b> NOON ET Sunday or by kickoff if taking an earlier game</div>
             </div>
             <div style="margin-top:12px; padding-top:8px; border-top:1px solid #1e3a8a; font-family:monospace; font-size:11.5px; color:#93c5fd;">
                 74 Players | $1850 Purse ($1110 1st / $555 2nd / $185 3rd) | Last year's losers: Stephen King took 1st for $765, Amanda Conley took 2nd for $382.50, Bill Kazmierski took 3rd for $127.50
