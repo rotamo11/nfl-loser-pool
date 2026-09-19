@@ -13,7 +13,7 @@ game_mode = st.sidebar.selectbox("Select Pool Tournament", ["Main Pool", "2nd Ch
 game_slug = "Main" if game_mode == "Main Pool" else "2nd_Chance"
 
 # Core Configuration State Parameters
-CURRENT_WEEK = 2  # Increment this as the season rolls forward
+current_week = 2  # Increment this as the season rolls forward
 
 # --- 1. BRAND HEADER DISPLAY MATRICES ---
 # Split the row into two columns for your logo image and title text alignment
