@@ -23,7 +23,7 @@ with header_col1:
 with header_col2:
     st.markdown(
         f"""
-        <div style="padding:10px; border-radius:8px; color:white; margin-bottom:10px; font-family:sans-serif;">
+        <div style="padding:10px; border-radius:8px; color:white; margin-bottom:10px; margin-top:10px; font-family:sans-serif;">
             <h1 style="margin:0; font-weight:900; letter-spacing:-1px;">2026 NFL Loser Pool &bull; {game_mode} &bull; Week {current_week}</h1>
             <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:10px; font-size:14px; margin-top:10px; opacity:0.9;">
                 <div><b>Through Week 14:</b> Pick 1 team to lose each week</div>
