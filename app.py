@@ -142,13 +142,13 @@ else:
 
         # Determine the number of picks required based on the game rules
         # Determine the dynamic singular or plural noun spelling structure
-        team_word = "team" if CURRENT_WEEK <= 14 else "teams"
+        team_word = "team" if current_week <= 14 else "teams"
 
-        required_picks = 1 if CURRENT_WEEK <= 14 else 2 if CURRENT_WEEK <= 18 else 99
-        st.write(f"### Week {CURRENT_WEEK} Matchups — Pick **{required_picks}** {team_word} to Lose")
+        required_picks = 1 if current_week <= 14 else 2 if current_week <= 18 else 99
+        st.write(f"### Week {current_week} Matchups — Pick **{required_picks}** {team_word} to Lose")
 
         # Fetch scheduled matchups from Supabase
-        matchups = supabase.table("nfl_schedule").select("*").eq("week", CURRENT_WEEK).execute().data
+        matchups = supabase.table("nfl_schedule").select("*").eq("week", current_week).execute().data
 
         # Track active form selections across the current session state object
         if "selected_teams" not in st.session_state:
@@ -164,8 +164,8 @@ else:
                 home = match["home_team"]
 
                 # Enforce dynamic duplicate lockout validation checks
-                away_is_used = away in used_teams and CURRENT_WEEK <= 18
-                home_is_used = home in used_teams and CURRENT_WEEK <= 18
+                away_is_used = away in used_teams and current_week <= 18
+                home_is_used = home in used_teams and current_week <= 18
 
                 # Freeze unselected items once they hit their required total
                 limit_reached = len(st.session_state.selected_teams) >= required_picks
@@ -239,7 +239,7 @@ else:
                         # Saves to database but leaves status open as an editable draft
                         for team in st.session_state.selected_teams:
                             supabase.table("user_picks").upsert({
-                                "user_id": user_id, "game_type": game_slug, "week": CURRENT_WEEK, "team_picked": team, "pick_state": "Confirmed"
+                                "user_id": user_id, "game_type": game_slug, "week": current_week, "team_picked": team, "pick_state": "Confirmed"
                             }, on_conflict="user_id,game_type,week,team_picked").execute()
                         st.session_state.show_confirmation_modal = False
                         st.success("Draft saved successfully!")
@@ -252,7 +252,7 @@ else:
                             supabase.table("user_picks").upsert({
                                 "user_id": user_id, 
                                 "game_type": game_slug, 
-                                "week": CURRENT_WEEK, 
+                                "week": current_week, 
                                 "team_picked": team, 
                                 "pick_state": "Finalized"
                             }, on_conflict="user_id,game_type,week,team_picked").execute()
