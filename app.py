@@ -57,7 +57,7 @@ if not st.session_state.user:
     st.subheader("🔒 Competitor Login Portal")
     
     # 🧪 MASQUERADE / TESTING MODE OVERRIDE
-    testing_mode = st.checkbox("🧪 Enable Developer Masquerade Mode (Testing Only)")
+    testing_mode = st.checkbox("Enable Developer Masquerade Mode (Testing Only)")
     
     if testing_mode:
         try:
@@ -96,7 +96,7 @@ if not st.session_state.user:
                 st.error("Authentication rejected. Verify your email and password.")
 else:
     # Button to quickly log out and switch users during testing
-    if st.sidebar.button("🚪 Log Out / Clear Session"):
+    if st.sidebar.button("Log Out"):
         st.session_state.user = None
         st.session_state.selected_teams = []
         st.rerun()
@@ -118,7 +118,7 @@ else:
         all_picks_res = supabase.table("user_picks").select("*").eq("user_id", user_id).eq("game_type", game_slug).execute().data
         
         # Display horizontal historical strip component
-        st.write("### 📜 Your Season Selection History")# FIX: Only render columns if history count is greater than zero
+        st.write("Your Season Selection History")# FIX: Only render columns if history count is greater than zero
         if all_picks_res:
             num_cols = min(len(all_picks_res), 18)
             if num_cols > 0:
