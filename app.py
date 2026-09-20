@@ -204,8 +204,8 @@ else:
                 away = match["away_team"].upper()
                 home = match["home_team"].upper()
             
-                away_is_used = away in used_teams and CURRENT_WEEK <= 18
-                home_is_used = home in used_teams and CURRENT_WEEK <= 18
+                away_is_used = away in used_teams and current_week <= 18
+                home_is_used = home in used_teams and current_week <= 18
             
                 limit_reached = len(st.session_state.selected_teams) >= required_picks
                 
