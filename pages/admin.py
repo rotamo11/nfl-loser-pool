@@ -10,6 +10,10 @@ supabase: Client = create_client(URL, KEY)
 # Free API key from the-odds-api.com
 API_KEY = st.secrets.get("THE_ODDS_API_KEY", "YOUR_FREE_API_KEY")
 
+# Main Navigation & Persistent Mode Toggles
+game_mode = st.sidebar.selectbox("Select Pool Tournament", ["Main Pool", "2nd Chance Game"])
+game_slug = "Main" if game_mode == "Main Pool" else "2nd_Chance"
+
 # Sets #1d3d70ff for Main Pool and #974706 for 2nd Chance Game
 sidebar_bg = "#1d3d70ff" if game_slug == "Main" else "#974706"
 
