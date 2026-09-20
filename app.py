@@ -160,7 +160,7 @@ else:
                         st.markdown(
                             f"""
                             <div style="border:1px solid #cbd5e1; padding:6px 4px; border-radius:4px; text-align:center; background:#000000; font-size:12px; font-family:sans-serif; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
-                                <span style="color:#64748b; font-size:12px; font-weight:bold; display:block; margin-bottom:2px;">Wk {p['week']}</span>
+                                <span style="color:#64748b; font-size:12px; font-weight:bold; display:block; margin-bottom:2px;">Week {p['week']}</span>
                                 <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;">
                                     <img src="app/static/{clean_t.upper()}.svg" width="28" height="18" style="object-fit:contain;"/>
                                     <b style="color:#cbd5e1; font-size:12px;">{clean_t.upper()}{has_so}</b>
@@ -199,60 +199,76 @@ else:
             st.info("No matchups loaded for this week yet. The commissioner will push the active schedule shortly.")
         else:
             # --- 5. RENDER THE SELECTION MATCHUP ROWS ---
-            for match in matchups:
-                m_id = match["id"]
-                away = match["away_team"]
-                away_logo = "app/static/{away}.svg"
-                home = match["home_team"]
-                home_logo = "app/static/{home}.svg"
-
-                # Enforce dynamic duplicate lockout validation checks
-                away_is_used = away in used_teams and current_week <= 18
-                home_is_used = home in used_teams and current_week <= 18
-
-                # Freeze unselected items once they hit their required total
-                limit_reached = len(st.session_state.selected_teams) >= required_picks
+        for match in matchups:
+            m_id = match["id"]
+            away = match["away_team"].upper()
+            home = match["home_team"].upper()
+        
+            away_is_used = away in used_teams and CURRENT_WEEK <= 18
+            home_is_used = home in used_teams and CURRENT_WEEK <= 18
+        
+            limit_reached = len(st.session_state.selected_teams) >= required_picks
+            
+            # Create the column grid for the matchup line
+            # [Logo, Button, VS text, Button, Logo]
+            col_a_logo, col_a_btn, col_vs, col_h_btn, col_h_logo = st.columns([0.6, 2.5, 0.6, 2.5, 0.6])
+        
+            # --- AWAY TEAM COLUMN ---
+            with col_a_logo:
+                try:
+                    with open(f"static/{away}.svg", "r") as f:
+                        svg_code = f.read()
+                    st.markdown(f'<div style="width:32px; height:24px; padding-top:6px;">{svg_code}</div>', unsafe_allow_html=True)
+                except Exception:
+                    st.write("") # Silent empty container if file has a typo
+                    
+            with col_a_btn:
+                is_sel_away = away in st.session_state.selected_teams
+                dis_away = away_is_used or (limit_reached and not is_sel_away)
+                btn_label_away = f"{away} (Used)" if away_is_used else f"{away}"
                 
-                col_away, col_vs, col_home = st.columns([2.5, 1.0, 2.5])
-
-                with col_away:
-                    is_sel_away = away in st.session_state.selected_teams
-                    dis_away = away_is_used or (limit_reached and not is_sel_away)
-                    
-                    # Layout wrapping text, flags, and team identifiers
-                    btn_label_away = f"{away} (Already Used)" if away_is_used else f"{away}"
-                    if st.button(btn_label_away, key=f"btn_a_{m_id}", disabled=dis_away, type="primary" if is_sel_away else "secondary", use_container_width=True):
-                        if is_sel_away:
-                            st.session_state.selected_teams.remove(away)
+                if st.button(btn_label_away, key=f"btn_a_{m_id}", disabled=dis_away, type="primary" if is_sel_away else "secondary", use_container_width=True):
+                    if is_sel_away:
+                        st.session_state.selected_teams.remove(away)
+                    else:
+                        st.session_state.selected_teams.append(away)
+                    st.rerun()
+        
+            # --- MIDPOINT VS TEXT ---
+            with col_vs:
+                st.markdown("<center style='color:#64748b; font-size:12px; font-weight:bold; padding-top:8px;'>@</center>", unsafe_allow_html=True)
+        
+            # --- HOME TEAM COLUMN ---
+            with col_h_btn:
+                is_sel_home = home in st.session_state.selected_teams
+                dis_home = home_is_used or (limit_reached and not is_sel_home)
+                btn_label_home = f"{home} (Used)" if home_is_used else f"{home}"
+                
+                if st.button(btn_label_home, key=f"btn_h_{m_id}", disabled=dis_home, type="primary" if is_sel_home else "secondary", use_container_width=True):
+                    if is_sel_home:
+                        st.session_state.selected_teams.remove(home)
+                    else:
+                        st.session_state.selected_teams.append(home)
+                    st.rerun()
+        
+            with col_h_logo:
+                try:
+                    with open(f"static/{home}.svg", "r") as f:
+                        svg_code = f.read()
+                    st.markdown(f'<div style="width:32px; height:24px; padding-top:6px;">{svg_code}</div>', unsafe_allow_html=True)
+                except Exception:
+                    st.write("")
+        
+                    # Optional: Allow selecting a league Bye option slot
+                    st.markdown("---")
+                    is_bye_selected = "BYE" in st.session_state.selected_teams
+                    dis_bye = (reg_profile[0]["byes_used"] >= 1) or (limit_reached and not is_bye_selected)
+                    if st.button("Use My Bye", type="primary" if is_bye_selected else "secondary", disabled=dis_bye):
+                        if is_bye_selected:
+                            st.session_state.selected_teams.remove("BYE")
                         else:
-                            st.session_state.selected_teams.append(away)
+                            st.session_state.selected_teams.append("BYE")
                         st.rerun()
-
-                with col_vs:
-                    st.markdown("<center style='color:gray; font-size:12px; padding-top:6px;'>@</center>", unsafe_allow_html=True)
-
-                with col_home:
-                    is_sel_home = home in st.session_state.selected_teams
-                    dis_home = home_is_used or (limit_reached and not is_sel_home)
-                    
-                    btn_label_home = f"{home} (Already Used)" if home_is_used else f"{home}"
-                    if st.button(btn_label_home, key=f"btn_h_{m_id}", disabled=dis_home, type="primary" if is_sel_home else "secondary", use_container_width=True):
-                        if is_sel_home:
-                            st.session_state.selected_teams.remove(home)
-                        else:
-                            st.session_state.selected_teams.append(home)
-                        st.rerun()
-
-            # Optional: Allow selecting a league Bye option slot
-            st.markdown("---")
-            is_bye_selected = "BYE" in st.session_state.selected_teams
-            dis_bye = (reg_profile[0]["byes_used"] >= 1) or (limit_reached and not is_bye_selected)
-            if st.button("Use My Bye", type="primary" if is_bye_selected else "secondary", disabled=dis_bye):
-                if is_bye_selected:
-                    st.session_state.selected_teams.remove("BYE")
-                else:
-                    st.session_state.selected_teams.append("BYE")
-                st.rerun()
 
             # --- 6. ACTION CONTROLS & THE 3-OPTION DIALOGUE POPUP ---
             st.markdown("---")
