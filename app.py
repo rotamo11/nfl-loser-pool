@@ -30,6 +30,8 @@ with st.sidebar:
     st.page_link("pages/admin.py", label="Admin")
     st.page_link("pages/seed_data.py", label="Seed Data")
 
+    st.markdown("<hr style='margin:10px 0 15px 0; border:0; border-top:1px solid #cbd5e1;'/>", unsafe_allow_html=True)
+    
     # 2. Main Game Mode Selector
     game_mode = st.selectbox("Select Pool Tournament", ["Main Pool", "2nd Chance Game"])
     game_slug = "Main" if game_mode == "Main Pool" else "2nd_Chance"
