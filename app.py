@@ -207,7 +207,7 @@ else:
                     dis_away = away_is_used or (limit_reached and not is_sel_away)
                     
                     # Layout wrapping text, flags, and team identifiers
-                    btn_label_away = f"<img src="app/static/{home}.svg" width="30" height="20" style="object-fit:contain;"/>{away} (Already Used)" if away_is_used else f"<img src="app/static/{home}.svg" width="30" height="20" style="object-fit:contain;"/>{away}"
+                    btn_label_away = f"{away} (Already Used)" if away_is_used else f"{away}"
                     if st.button(btn_label_away, key=f"btn_a_{m_id}", disabled=dis_away, type="primary" if is_sel_away else "secondary", use_container_width=True):
                         if is_sel_away:
                             st.session_state.selected_teams.remove(away)
@@ -249,7 +249,7 @@ else:
             submit_disabled = len(st.session_state.selected_teams) != required_picks
             
             with c_sub:
-                if st.button("🚀 Submit Selection", disabled=submit_disabled, use_container_width=True):
+                if st.button("Submit Selection", disabled=submit_disabled, use_container_width=True):
                     st.session_state.show_confirmation_modal = True
 
             with c_res:
