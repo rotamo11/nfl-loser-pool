@@ -12,8 +12,8 @@ st.set_page_config(layout="wide")
 # --- CUSTOM SIDEBAR CONFIGURATION ---
 with st.sidebar:
     # 1. Main Game Mode Selector
-    game_mode = st.selectbox("Select Pool Tournament", ["Main Pool", "2nd Chance Game"])
-    game_slug = "Main" if game_mode == "Main Pool" else "2nd_Chance"
+    game_mode = st.selectbox("Select Pool Tournament", ["Main", "2nd Chance"])
+    game_slug = "Main" if game_mode == "Main" else "2nd_Chance"
     CURRENT_WEEK = 2  
 
     # 2. Dynamic Theme Profile Mapping
@@ -41,15 +41,15 @@ with st.sidebar:
     )
         
     st.markdown("<hr style='margin:10px 0 15px 0; border:0; border-top:1px solid rgba(255,255,255,0.3);'/>", unsafe_allow_html=True)
-    st.markdown("<h3 style='margin:0 0 10px 0; font-size:14px;'>Tournament Menu</h3>", unsafe_allow_html=True)
+    # st.markdown("<h3 style='margin:0 0 10px 0; font-size:14px;'>Menu</h3>", unsafe_allow_html=True)
     
     # 3. Streamlit Standard Page Routing Links Matrix
-    st.page_link("app.py", label="Picks", icon="🔐")
-    st.page_link("pages/overview.py", label="Results", icon="📈")
-    st.page_link("pages/chat.py", label="Smack", icon="🗣️")
-    st.page_link("pages/rules.py", label="Rules", icon="📝")
-    st.page_link("pages/admin.py", label="Admin", icon="🛠️")
-    st.page_link("pages/seed_data.py", label="Seed Data", icon="🌱")
+    st.page_link("app.py", label="Picks")
+    st.page_link("pages/overview.py", label="Results")
+    st.page_link("pages/chat.py", label="Smack")
+    st.page_link("pages/rules.py", label="Rules")
+    st.page_link("pages/admin.py", label="Admin")
+    st.page_link("pages/seed_data.py", label="Seed Data")
     
 # --- UNIFIED MASTER FRAME BRAND HEADER (Theme-Adaptive) ---
 header_col1, header_col2 = st.columns([1, 5])
