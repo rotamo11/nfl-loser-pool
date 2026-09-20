@@ -16,6 +16,31 @@ current_week = 2  # Manually advance this index as the season rolls on
 # Sets #1d3d70ff for Main Pool and #974706 for 2nd Chance Game
 sidebar_bg = "#1d3d70ff" if game_slug == "Main" else "#974706"
 
+st.markdown(
+    f"""
+    <style>
+        /* Targets the main sidebar panel container */
+        [data-testid="stSidebar"] {{
+            background-color: {sidebar_bg} !important;
+        }}
+        
+        /* Optional: Forces all text/labels inside the sidebar to remain white and legible */
+        [data-testid="stSidebar"] .stText, 
+        [data-testid="stSidebar"] p, 
+        [data-testid="stSidebar"] h3,
+        [data-testid="stSidebar"] label {{
+            color: white !important;
+        }}
+        
+        /* Optional: Makes the selectbox dropdown label text white */
+        [data-testid="stSidebar"] div[data-baseweb="select"] div {{
+            color: #1e293b !important; /* Keeps internal dropdown text dark for readability */
+        }}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 # --- 1. BRAND HEADER DISPLAY MATRICES ---
 # Split the row into two columns for your logo image and title text alignment
 header_col1, header_col2 = st.columns([1, 6])
