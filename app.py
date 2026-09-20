@@ -75,17 +75,17 @@ with header_col2:
         st.markdown("Pick 2 teams to lose")
     with metric_col3:
         st.caption("**Playoffs**")
-        st.markdown("Pick loser of ALL games each week")
+        st.markdown("Pick ALL losers (repeats allowed")
         
     # 3. Deadline Summary Row
-    st.info(f"**Weekly Deadline:** Noon ET Sunday, or by kickoff if earlier game")
+    st.info(f"**Weekly Deadline:** Noon ET Sunday, or by kickoff of earlier game")
     
     # 4. Financials & History Footer Strip
     st.html(
         """
-        <div style="margin-top:10px; padding-top:8px; border-top:1px solid rgba(128,128,128,0.2); font-family:monospace; font-size:12px; color:#3b82f6; font-weight:bold;">
+        <div style="margin-top:10px; padding-top:8px; border-top:1px solid rgba(128,128,128,0.2); font-family:monospace; font-size:14px; color:#3b82f6; font-weight:bold;">
             74 Players | $1850 Purse ($1110 1st / $555 2nd / $185 3rd) <br>
-            <span style="opacity:0.7; font-weight:normal; font-size:11.5px; color:var(--text-color);">
+            <span style="opacity:0.7; font-weight:normal; font-size:14px; color:var(--text-color);">
                 Last Year's Losers: S. King ($765) • A. Conley ($382.50) • B. Kazmierski ($127.50)
             </span>
         </div>
