@@ -259,13 +259,13 @@ else:
 
             # --- 7. THE SPECIFIED 3-BRANCH CONFIRMATION FLOW WINDOW ---
             if st.session_state.get("show_confirmation_modal", False):
-                st.markdown("### ⚠️ Final Verification Check Required")
-                st.warning(f"You are selecting: **{', '.join(st.session_state.selected_teams)}** to lose their game(s).")
+                st.markdown("### Confirm or Finalize?")
+                st.warning(f"You are selecting the following to lose: **{', '.join(st.session_state.selected_teams)}** ")
                 
                 m_c1, m_c2, m_c3 = st.columns(3)
                 
                 with m_c1:
-                    if st.button("Option 2: Confirm Pick (Can still edit, Overview not available)", use_container_width=True):
+                    if st.button("Confirm Pick (can still edit, Overview not available)", use_container_width=True):
                         # Saves to database but leaves status open as an editable draft
                         for team in st.session_state.selected_teams:
                             supabase.table("user_picks").upsert({
@@ -276,7 +276,7 @@ else:
                         st.rerun()
 
                 with m_c2:
-                    if st.button("Option 3: Finalize Pick (Locks entry, Overview available)", use_container_width=True):
+                    if st.button("Finalize Pick (locks entry, Overview available)", use_container_width=True):
                         # Locks down the decision completely and opens up master overview visualization access
                         for team in st.session_state.selected_teams:
                             supabase.table("user_picks").upsert({
@@ -292,6 +292,6 @@ else:
                         st.rerun()
 
                 with m_c3:
-                    if st.button("Option 1: Cancel", use_container_width=True):
+                    if st.button("Cancel", use_container_width=True):
                         st.session_state.show_confirmation_modal = False
                         st.rerun()
