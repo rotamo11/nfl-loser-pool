@@ -218,7 +218,7 @@ else:
                     try:
                         with open(f"static/{away}.svg", "r") as f:
                             svg_code = f.read()
-                        st.markdown(f'<div style="width:32px; height:24px; padding-top:6px;">{svg_code}</div>', unsafe_allow_html=True)
+                        st.markdown(f'<div style="height:24px; padding-top:6px;">{svg_code}</div>', unsafe_allow_html=True)
                     except Exception:
                         st.write("") # Silent empty container if file has a typo
                         
