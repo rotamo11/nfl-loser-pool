@@ -95,24 +95,33 @@ except Exception:
     header_logo_src = ""
 
 active_title_mode = "Main Game" if game_slug == "Main" else "2nd Chance Game"
-if header_logo_src:
-    header_html = f"""
-    <div style="display:flex; align-items:center; gap:15px; margin-bottom:25px; font-family:sans-serif;">
-        <img src="{header_logo_src}" width="65" height="65" style="object-fit:contain;"/>
-        <h2 style="margin:0; font-weight:900; color:#1e293b; letter-spacing:-0.5px;">
-            2026 Loser Pool &bull; {active_title_mode} &bull; Week {CURRENT_WEEK}
-        </h2>
-    </div>
-    """
-else:
-    header_html = f"""
-    <div style="margin-bottom:25px; font-family:sans-serif;">
-        <h2 style="margin:0; font-weight:900; color:#1e293b;">
-            2026 Loser Pool &bull; {active_title_mode} &bull; Week {CURRENT_WEEK}
-        </h2>
-    </div>
-    """
-st.markdown(header_html, unsafe_allow_html=True)
+# --- 1. BRAND HEADER DISPLAY MATRICES ---
+# Split the row into two columns for your logo image and title text alignment
+header_col1, header_col2 = st.columns([1, 6])
+
+with header_col1:
+    # Load your local logo file safely using the guaranteed native image tool
+    st.image("static/loser-logo.png", width=200)
+with header_col2:
+    st.markdown(
+        f"""
+        <div style="padding:10px; border-radius:8px; color:white; margin-bottom:12px; font-family:sans-serif;">
+            <h1 style="margin:0; font-weight:900; letter-spacing:-1px;">2026 NFL Loser Pool &bull; {game_mode} &bull; Week {current_week}</h1>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:10px; font-size:14px; margin-bottom:12px; margin-top:12px; opacity:0.9;">
+                <div><b>Through Week 14:</b> Pick 1 team to lose each week</div>
+                <div><b>Weeks 15-18:</b> Pick 2 teams to lose each week</div>
+                <div><b>Playoffs:</b> Pick loser of ALL games (Repeats allowed)</div>
+            </div>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:10px; font-size:14px; margin-bottom:12px; margin-top:12px; opacity:0.9;">
+                <div><b>Weekly Deadline:</b> Noon ET Sunday or by kickoff if taking an earlier game</div>
+            </div>
+            <div style="margin-top:12px; padding-top:8px; border-top:1px solid #1e3a8a; font-family:monospace; font-size:11.5px; color:#93c5fd;">
+                74 Players | $1850 Purse ($1110 1st / $555 2nd / $185 3rd) | Last year's losers: Stephen King took 1st for $765, Amanda Conley took 2nd for $382.50, Bill Kazmierski took 3rd for $127.50
+            </div>
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
 
 # --- USER SELECTION AUTHENTICATION & OVERRIDES GATES ---
 if 'user' not in st.session_state:
