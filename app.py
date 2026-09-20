@@ -155,7 +155,7 @@ else:
                     with cols[i % num_cols]:
                         clean_t = p["team_picked"].replace("_SO", "")
                         has_so = "*" if p["team_picked"].endswith("_SO") else ""
-                        st.markdown(f"<div style='border:1px solid #cbd5e1; padding:4px; border-radius:4px; text-align:center; background:#f8fafc; font-size:11px;'>W{p['week']}<br><b>{clean_t}{has_so}</b></div>", unsafe_allow_html=True)
+                        st.markdown(f"<div style='border:1px solid #cbd5e1; padding:4px; border-radius:4px; text-align:center; background:#1d3d70ff; font-size:12px;'>W{p['week']}<br><b>{clean_t}{has_so}</b></div>", unsafe_allow_html=True)
         else:
             st.info("No prior weeks on record yet for this season.")
 
@@ -249,7 +249,7 @@ else:
             submit_disabled = len(st.session_state.selected_teams) != required_picks
             
             with c_sub:
-                if st.button("Submit", disabled=submit_disabled, use_container_width=True):
+                if st.button("Continue", disabled=submit_disabled, use_container_width=True):
                     st.session_state.show_confirmation_modal = True
 
             with c_res:
