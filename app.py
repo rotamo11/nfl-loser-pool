@@ -161,9 +161,9 @@ else:
             for match in matchups:
                 m_id = match["id"]
                 away = match["away_team"]
-                away_logo = st.image("static/"[away].png", width=30)
+                away_logo = {away}".svg" # st.image("static/"[away]".svg", width=30)
                 home = match["home_team"]
-                home_logo = st.image("static/"[home].png", width=30)
+                home_logo = {away}".svg" # st.image("static/"[home]".svg", width=30)
 
                 # Enforce dynamic duplicate lockout validation checks
                 away_is_used = away in used_teams and current_week <= 18
