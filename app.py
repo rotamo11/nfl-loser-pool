@@ -63,6 +63,10 @@ with header_col1:
 
 with header_col2:
     # var(--text-color) forces the title text to stay white in dark mode or black in light mode automatically
+    # Note: Keeping the HTML string un-indented and flat prevents Streamlit code leak bugs
+    header_markdown_content = f"""<div style="font-family:sans-serif; color:var(--text-color); padding-top:5px;"><h1 style="margin:0; font-weight:900; font-size:32px; letter-spacing:-1px;">2026 NFL Loser Pool &bull; {game_mode} &bull; Week {CURRENT_WEEK}</h1><div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:15px; font-size:13px; margin-top:12px; opacity:0.85; font-weight:500;"><div><b>Wk 1-14:</b> Pick 1 team to lose</div><div><b>Wk 15-18:</b> Pick 2 teams to lose</div><div><b>Playoffs:</b> Pick loser of ALL games</div></div><p style="margin:10px 0 0 0; font-size:13px; opacity:0.85;"><b>Weekly Deadline:</b> Noon ET Sunday, or kickoff time for earlier games.</p><div style="margin-top:14px; padding-top:10px; border-top:1px solid rgba(128,128,128,0.2); font-family:monospace; font-size:11.5px; color:#3b82f6;">74 Players | $1850 Purse ($1110 1st / $555 2nd / $185 3rd) <br><span style="opacity:0.7; color:var(--text-color);">Last Year's Losers: S. King ($765) • A. Conley ($382.50) • B. Kazmierski ($127.50)</span></div></div>"""
+    st.markdown(header_markdown_content, unsafe_allow_html=True)
+
     st.markdown(
         f"""
         <div style="font-family:sans-serif; color: var(--text-color); padding-top:5px;">
@@ -77,7 +81,7 @@ with header_col2:
             </div>
             
             <p style="margin:10px 0 0 0; font-size:13px; opacity:0.85;">
-                <b>Weekly Deadline:</b> Noon ET Sunday, or kickoff time for earlier games.
+                <b>Weekly Deadline:</b> Noon ET Sunday, or by kickoff for earlier game
             </p>
             
             <div style="margin-top:14px; padding-top:10px; border-top:1px solid rgba(128,128,128,0.2); font-family:monospace; font-size:11.5px; color: #3b82f6;">
