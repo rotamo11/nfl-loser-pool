@@ -51,8 +51,8 @@ with st.sidebar:
     st.page_link("pages/admin.py", label="Admin")
     st.page_link("pages/seed_data.py", label="Seed Data")
     
-# --- UNIFIED MASTER FRAME BRAND HEADER (Theme-Adaptive) ---
-header_col1, header_col2 = st.columns([1, 5])
+# --- UNIFIED MASTER FRAME BRAND HEADER (Theme-Adaptive Native Fix) ---
+header_col1, header_col2 = st.columns([1, 4])
 
 with header_col1:
     local_logo = "static/loser-logo.png"
@@ -62,38 +62,36 @@ with header_col1:
         st.image("https://espncdn.com", use_container_width=True)
 
 with header_col2:
-    # var(--text-color) forces the title text to stay white in dark mode or black in light mode automatically
-    # Note: Keeping the HTML string un-indented and flat prevents Streamlit code leak bugs
-    header_markdown_content = f"""<div style="font-family:sans-serif; color:var(--text-color); padding-top:5px;"><h1 style="margin:0; font-weight:900; font-size:32px; letter-spacing:-1px;">2026 NFL Loser Pool &bull; {game_mode} &bull; Week {CURRENT_WEEK}</h1><div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:15px; font-size:13px; margin-top:12px; opacity:0.85; font-weight:500;"><div><b>Wk 1-14:</b> Pick 1 team to lose</div><div><b>Wk 15-18:</b> Pick 2 teams to lose</div><div><b>Playoffs:</b> Pick loser of ALL games</div></div><p style="margin:10px 0 0 0; font-size:13px; opacity:0.85;"><b>Weekly Deadline:</b> Noon ET Sunday, or kickoff time for earlier games.</p><div style="margin-top:14px; padding-top:10px; border-top:1px solid rgba(128,128,128,0.2); font-family:monospace; font-size:11.5px; color:#3b82f6;">74 Players | $1850 Purse ($1110 1st / $555 2nd / $185 3rd) <br><span style="opacity:0.7; color:var(--text-color);">Last Year's Losers: S. King ($765) • A. Conley ($382.50) • B. Kazmierski ($127.50)</span></div></div>"""
-    st.markdown(header_markdown_content, unsafe_allow_html=True)
-
-    st.markdown(
-        f"""
-        <div style="font-family:sans-serif; color: var(--text-color); padding-top:5px;">
-            <h1 style="margin:0; font-weight:900; font-size:32px; letter-spacing:-1px;">
-                2026 NFL Loser Pool &bull; {game_mode} &bull; Week {CURRENT_WEEK}
-            </h1>
-            
-            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:15px; font-size:13px; margin-top:12px; opacity:0.85; font-weight:500;">
-                <div><b>Wk 1-14:</b> Pick 1 team to lose</div>
-                <div><b>Wk 15-18:</b> Pick 2 teams to lose</div>
-                <div><b>Playoffs:</b> Pick loser of ALL games</div>
-            </div>
-            
-            <p style="margin:10px 0 0 0; font-size:13px; opacity:0.85;">
-                <b>Weekly Deadline:</b> Noon ET Sunday, or by kickoff for earlier game
-            </p>
-            
-            <div style="margin-top:14px; padding-top:10px; border-top:1px solid rgba(128,128,128,0.2); font-family:monospace; font-size:11.5px; color: #3b82f6;">
-                74 Players | $1850 Purse ($1110 1st / $555 2nd / $185 3rd) <br>
-                <span style="opacity:0.7; color: var(--text-color);">
-                    Last Year's Losers: S. King ($765) • A. Conley ($382.50) • B. Kazmierski ($127.50)
-                </span>
-            </div>
+    # 1. Main Title
+    st.html(f"<h1 style='margin:0; font-weight:900; font-size:32px; letter-spacing:-1px;'>2026 NFL Loser Pool &bull; {game_mode} &bull; Week {CURRENT_WEEK}</h1>")
+    
+    # 2. Rule Parameters Grid Rows
+    metric_col1, metric_col2, metric_col3 = st.columns(3)
+    with metric_col1:
+        st.caption("**Weeks 1-14**")
+        st.markdown("Pick 1 team to lose")
+    with metric_col2:
+        st.caption("**Weeks 15-18**")
+        st.markdown("Pick 2 teams to lose")
+    with metric_col3:
+        st.caption("**Playoffs**")
+        st.markdown("Pick loser of ALL games each week")
+        
+    # 3. Deadline Summary Row
+    st.info(f"**Weekly Deadline:** Noon ET Sunday, or by kickoff if earlier game")
+    
+    # 4. Financials & History Footer Strip
+    st.html(
+        """
+        <div style="margin-top:10px; padding-top:8px; border-top:1px solid rgba(128,128,128,0.2); font-family:monospace; font-size:12px; color:#3b82f6; font-weight:bold;">
+            74 Players | $1850 Purse ($1110 1st / $555 2nd / $185 3rd) <br>
+            <span style="opacity:0.7; font-weight:normal; font-size:11.5px; color:var(--text-color);">
+                Last Year's Losers: S. King ($765) • A. Conley ($382.50) • B. Kazmierski ($127.50)
+            </span>
         </div>
-        """, 
-        unsafe_allow_html=True
+        """
     )
+
 st.markdown("---")
 
 # --- USER SELECTION AUTHENTICATION & OVERRIDES GATES ---
