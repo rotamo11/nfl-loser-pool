@@ -66,7 +66,7 @@ with header_col2:
     # st.html(f"<h1 style='margin:0; font-weight:900; font-size:32px; letter-spacing:-1px;'>2026 NFL Loser Pool &bull; {game_mode} &bull; Week {CURRENT_WEEK}</h1>")
     st.html(
         f"""
-        <div style="display: flex; align-items: flex-end; height: 100px; padding-bottom: 5px;">
+        <div style="display: flex; align-items: flex-end; height: 70px; padding-bottom: 5px;">
             <h1 style="margin:0; font-weight:900; font-size:32px; letter-spacing:-1px;">
                 2026 NFL Loser Pool &bull; {game_mode} &bull; Week {CURRENT_WEEK}
             </h1>
