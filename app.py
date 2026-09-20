@@ -146,7 +146,7 @@ else:
         all_picks_res = supabase.table("user_picks").select("*").eq("user_id", user_id).eq("game_type", game_slug).execute().data
         
         # Display horizontal historical strip component
-        st.write("Your Season Selection History")# FIX: Only render columns if history count is greater than zero
+        st.write("Your Season Selection History (asterisk denotes a shutout)")# FIX: Only render columns if history count is greater than zero
         if all_picks_res:
             num_cols = min(len(all_picks_res), 18)
             if num_cols > 0:
@@ -155,7 +155,7 @@ else:
                     with cols[i % num_cols]:
                         clean_t = p["team_picked"].replace("_SO", "")
                         has_so = "*" if p["team_picked"].endswith("_SO") else ""
-                        st.markdown(f"<div style='border:1px solid #cbd5e1; padding:4px; border-radius:4px; text-align:center; background:#1d3d70ff; font-size:12px;'>W{p['week']}<br><b>{clean_t}{has_so}</b></div>", unsafe_allow_html=True)
+                        st.markdown(f"<div style='border:1px solid #cbd5e1; padding:4px; border-radius:4px; text-align:center; background:#1d3d70ff; font-size:12px;'>Wk {p['week']}<br><b><img src="app/static/{clean_t}.svg" width="30" height="20" style="object-fit:contain;"/>{clean_t}{has_so}</b></div>", unsafe_allow_html=True)
         else:
             st.info("No prior weeks on record yet for this season.")
 
