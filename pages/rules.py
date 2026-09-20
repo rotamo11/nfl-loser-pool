@@ -1,38 +1,40 @@
 import streamlit as st
 import os
 
-# --- PERSISTENT SIDEBAR LOGO ---
-# st.logo pins the image to the top of the sidebar above the automatic page routes
-local_logo_path = "static/nfl-logo-square.png"
-if os.path.exists(local_logo_path):
-    st.logo(local_logo_path, icon_image=local_logo_path)
-else:
-    # Stable fallback CDN if the repository hasn't finished building
-    st.logo("https://espncdn.com")
+# 2. Main Navigation & Persistent Mode Toggles
+game_mode = st.sidebar.selectbox("Select Pool Tournament", ["Main Pool", "2nd Chance Game"])
+game_slug = "Main" if game_mode == "Main Pool" else "2nd_Chance"
 
-st.markdown(
-    """
-    <style>
-        /* Target Streamlit's internal visual container wrapper for the sidebar logo */
-        [data-testid="stLogo"] {
-            height: 500px !important;  /* Bumps the bounding height constraint up */
-            width: auto !important;
-            max-width: 100% !important;
-        }
-        /* Target the actual logo image element itself */
-        [data-testid="stLogo"] img {
-            height: 500px !important;   /* Adjust this pixel value to make it smaller or larger */
-            width: auto !important;
-            object-fit: contain;
-        }
-        /* Optional: Add a clean structural cushion space between the enlarged logo and links */
-        [data-testid="stSidebarNav"] {
-            margin-top: 15px !important;
-        }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+# Core Configuration State Parameters
+current_week = 2  # Increment this as the season rolls forward
+
+# --- 1. BRAND HEADER DISPLAY MATRICES ---
+# Split the row into two columns for your logo image and title text alignment
+header_col1, header_col2 = st.columns([1, 6])
+
+with header_col1:
+    # Load your local logo file safely using the guaranteed native image tool
+    st.image("static/loser-logo.png", width=200)
+with header_col2:
+    st.markdown(
+        f"""
+        <div style="padding:10px; border-radius:8px; color:white; margin-bottom:12px; font-family:sans-serif;">
+            <h1 style="margin:0; font-weight:900; letter-spacing:-1px;">2026 NFL Loser Pool &bull; {game_mode} &bull; Week {current_week}</h1>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:10px; font-size:14px; margin-bottom:12px; margin-top:12px; opacity:0.9;">
+                <div><b>Through Week 14:</b> Pick 1 team to lose each week</div>
+                <div><b>Weeks 15-18:</b> Pick 2 teams to lose each week</div>
+                <div><b>Playoffs:</b> Pick loser of ALL games (Repeats allowed)</div>
+            </div>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:10px; font-size:14px; margin-bottom:12px; margin-top:12px; opacity:0.9;">
+                <div><b>Weekly Deadline:</b> Noon ET Sunday or by kickoff if taking an earlier game</div>
+            </div>
+            <div style="margin-top:12px; padding-top:8px; border-top:1px solid #1e3a8a; font-family:monospace; font-size:11.5px; color:#93c5fd;">
+                74 Players | $1850 Purse ($1110 1st / $555 2nd / $185 3rd) | Last year's losers: Stephen King took 1st for $765, Amanda Conley took 2nd for $382.50, Bill Kazmierski took 3rd for $127.50
+            </div>
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
 
 # Optional sidebar text details can still be appended below the links if desired
 with st.sidebar:
