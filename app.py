@@ -159,7 +159,7 @@ else:
                         # FIX: Cleaned up quote nesting syntax and mapped the inline local SVG file correctly
                         st.markdown(
                             f"""
-                            <div style="border:1px solid #1d3d70ff; padding:6px 4px; border-radius:4px; text-align:center; background:#cbd5e1; font-size:12px; font-family:sans-serif; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                            <div style="border:1px solid #cbd5e1; padding:6px 4px; border-radius:4px; text-align:center; background:#000000; font-size:12px; font-family:sans-serif; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
                                 <span style="color:#64748b; font-size:10px; font-weight:bold; display:block; margin-bottom:2px;">Wk {p['week']}</span>
                                 <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;">
                                     <img src="app/static/{clean_t.upper()}.svg" width="28" height="18" style="object-fit:contain;"/>
