@@ -189,9 +189,9 @@ else:
             for match in matchups:
                 m_id = match["id"]
                 away = match["away_team"]
-                # away_logo = {away}".svg" # st.image("static/"[away]".svg", width=30)
+                away_logo = "app/static/{away}.svg"
                 home = match["home_team"]
-                # home_logo = {away}".svg" # st.image("static/"[home]".svg", width=30)
+                home_logo = "app/static/{home}.svg"
 
                 # Enforce dynamic duplicate lockout validation checks
                 away_is_used = away in used_teams and current_week <= 18
@@ -207,7 +207,7 @@ else:
                     dis_away = away_is_used or (limit_reached and not is_sel_away)
                     
                     # Layout wrapping text, flags, and team identifiers
-                    btn_label_away = f"{away} (Already Used)" if away_is_used else f"{away}"
+                    btn_label_away = f"<img src="app/static/{home}.svg" width="30" height="20" style="object-fit:contain;"/>{away} (Already Used)" if away_is_used else f"<img src="app/static/{home}.svg" width="30" height="20" style="object-fit:contain;"/>{away}"
                     if st.button(btn_label_away, key=f"btn_a_{m_id}", disabled=dis_away, type="primary" if is_sel_away else "secondary", use_container_width=True):
                         if is_sel_away:
                             st.session_state.selected_teams.remove(away)
