@@ -64,11 +64,15 @@ with header_col1:
 with header_col2:
     # 1. Main Title
     # st.html(f"<h1 style='margin:0; font-weight:900; font-size:32px; letter-spacing:-1px;'>2026 NFL Loser Pool &bull; {game_mode} &bull; Week {CURRENT_WEEK}</h1>")
-    <div style="display: flex; align-items: flex-end; height: 100px; padding-bottom: 5px;">
-        <h1 style="margin:0; font-weight:900; font-size:32px; letter-spacing:-1px;">
-            2026 NFL Loser Pool &bull; {game_mode} &bull; Week {CURRENT_WEEK}
-        </h1>
-    </div>
+    st.html(
+        f"""
+        <div style="display: flex; align-items: flex-end; height: 100px; padding-bottom: 5px;">
+            <h1 style="margin:0; font-weight:900; font-size:32px; letter-spacing:-1px;">
+                2026 NFL Loser Pool &bull; {game_mode} &bull; Week {CURRENT_WEEK}
+            </h1>
+        </div>
+        """
+    )
     
     # 2. Rule Parameters Grid Rows
     metric_col1, metric_col2, metric_col3 = st.columns(3)
