@@ -55,8 +55,6 @@ with st.sidebar:
     st.page_link("pages/rules.py", label="Rules")
     st.page_link("pages/admin.py", label="Admin")
     st.page_link("pages/seed_data.py", label="Seed Data")
-
-    st.markdown("<hr style='margin:10px 0 15px 0; border:0; border-top:1px solid #cbd5e1;'/>", unsafe_allow_html=True)
     
 # --- DYNAMIC BACKGROUND PATTERN COLOR ENGINE ---
 sidebar_bg = "#1d3d70ff" if game_slug == "Main" else "#974706"
