@@ -288,7 +288,7 @@ else:
             st.markdown("---")
             is_bye_selected = "BYE" in st.session_state.selected_teams
             dis_bye = (reg_profile[0]["byes_used"] >= 1) or (limit_reached and not is_bye_selected)
-            if st.button("Use Weekly League Bye Option", type="primary" if is_bye_selected else "secondary", disabled=dis_bye):
+            if st.button("Use My Bye", type="primary" if is_bye_selected else "secondary", disabled=dis_bye):
                 if is_bye_selected: st.session_state.selected_teams.remove("BYE")
                 else: st.session_state.selected_teams.append("BYE")
                 st.rerun()
