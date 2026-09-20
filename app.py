@@ -59,26 +59,6 @@ with st.sidebar:
 # --- DYNAMIC BACKGROUND PATTERN COLOR ENGINE ---
 sidebar_bg = "#1d3d70ff" if game_slug == "Main" else "#974706"
 
-st.markdown(
-    f"""
-    <style>
-        [data-testid="stSidebar"] {{
-            background-color: {sidebar_bg} !important;
-        }}
-        [data-testid="stSidebar"] .stText, 
-        [data-testid="stSidebar"] p, 
-        [data-testid="stSidebar"] h3,
-        [data-testid="stSidebar"] label {{
-            color: white !important;
-        }}
-        [data-testid="stSidebar"] div[data-baseweb="select"] div {{
-            color: #1e293b !important;
-        }}
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
 # --- UNIFIED TOP FRAME TEXT TITLE BANNER HEADER ---
 try:
     with open("static/loser-logo.png", "rb") as image_file:
