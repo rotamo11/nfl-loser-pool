@@ -1,6 +1,5 @@
 import streamlit as st
 from supabase import create_client, Client
-import base64
 import os
 
 # --- DATABASE SETUP ---
@@ -12,89 +11,86 @@ st.set_page_config(layout="wide")
 
 # --- CUSTOM SIDEBAR CONFIGURATION ---
 with st.sidebar:
-    # Main Game Mode Selector
+    # 1. Main Game Mode Selector
     game_mode = st.selectbox("Select Pool Tournament", ["Main Pool", "2nd Chance Game"])
     game_slug = "Main" if game_mode == "Main Pool" else "2nd_Chance"
     CURRENT_WEEK = 2  
 
-    # Sets #1d3d70ff for Main Pool and #974706 for 2nd Chance Game
-    sidebar_bg = "#1d3d70ff" if game_slug == "Main" else "#974706"
+    # 2. Dynamic Theme Profile Mapping
+    sidebar_bg = "#1d3d70" if game_slug == "Main" else "#974706"
     
     st.markdown(
         f"""
         <style>
-            /* Targets the main sidebar panel container */
+            /* Dynamic sidebar color assignment */
             [data-testid="stSidebar"] {{
                 background-color: {sidebar_bg} !important;
             }}
-            
-            /* Optional: Forces all text/labels inside the sidebar to remain white and legible */
-            [data-testid="stSidebar"] .stText, 
-            [data-testid="stSidebar"] p, 
-            [data-testid="stSidebar"] h3,
-            [data-testid="stSidebar"] label {{
-                color: white !important;
+            /* Overwrite sidebar text to remain clean white across modes */
+            [data-testid="stSidebar"] .stText, [data-testid="stSidebar"] p, 
+            [data-testid="stSidebar"] h3, [data-testid="stSidebar"] label {{
+                color: #ffffff !important;
             }}
-            
-            /* Optional: Makes the selectbox dropdown label text white */
+            /* Force dropdown selection text contrast values */
             [data-testid="stSidebar"] div[data-baseweb="select"] div {{
-                color: #1e293b !important; /* Keeps internal dropdown text dark for readability */
+                color: #1e293b !important;
             }}
         </style>
         """,
         unsafe_allow_html=True
     )
         
-    st.markdown("<hr style='margin:10px 0 15px 0; border:0; border-top:1px solid #cbd5e1;'/>", unsafe_allow_html=True)
-     
-    st.markdown("<br>Tournament Menu", unsafe_allow_html=True)
-    # 3. Mandated Custom Navigation Folder Structure Routes Matrix
-    st.page_link("app.py", label="Selections")
-    st.page_link("pages/overview.py", label="Overview")
-    st.page_link("pages/chat.py", label="Smack")
-    st.page_link("pages/rules.py", label="Rules")
-    st.page_link("pages/admin.py", label="Admin")
-    st.page_link("pages/seed_data.py", label="Seed Data")
+    st.markdown("<hr style='margin:10px 0 15px 0; border:0; border-top:1px solid rgba(255,255,255,0.3);'/>", unsafe_allow_html=True)
+    st.markdown("<h3 style='margin:0 0 10px 0; font-size:14px;'>Tournament Menu</h3>", unsafe_allow_html=True)
     
-# --- DYNAMIC BACKGROUND PATTERN COLOR ENGINE ---
-sidebar_bg = "#1d3d70ff" if game_slug == "Main" else "#974706"
-
-# --- UNIFIED TOP FRAME TEXT TITLE BANNER HEADER ---
-try:
-    with open("static/loser-logo.png", "rb") as image_file:
-        encoded_logo = base64.b64encode(image_file.read()).decode()
-    header_logo_src = f"data:image/png;base64,{encoded_logo}"
-except Exception:
-    header_logo_src = ""
-
-active_title_mode = "Main Game" if game_slug == "Main" else "2nd Chance Game"
-# --- 1. BRAND HEADER DISPLAY MATRICES ---
-# Split the row into two columns for your logo image and title text alignment
-header_col1, header_col2 = st.columns([1, 6])
+    # 3. Streamlit Standard Page Routing Links Matrix
+    st.page_link("app.py", label="Picks", icon="🔐")
+    st.page_link("pages/overview.py", label="Results", icon="📈")
+    st.page_link("pages/chat.py", label="Smack", icon="🗣️")
+    st.page_link("pages/rules.py", label="Rules", icon="📝")
+    st.page_link("pages/admin.py", label="Admin", icon="🛠️")
+    st.page_link("pages/seed_data.py", label="Seed Data", icon="🌱")
+    
+# --- UNIFIED MASTER FRAME BRAND HEADER (Theme-Adaptive) ---
+header_col1, header_col2 = st.columns([1, 5])
 
 with header_col1:
-    # Load your local logo file safely using the guaranteed native image tool
-    st.image("static/loser-logo.png", width=200)
+    local_logo = "static/loser-logo.png"
+    if os.path.exists(local_logo):
+        st.image(local_logo, use_container_width=True)
+    else:
+        st.image("https://espncdn.com", use_container_width=True)
+
 with header_col2:
+    # var(--text-color) forces the title text to stay white in dark mode or black in light mode automatically
     st.markdown(
         f"""
-        <div style="padding:10px; border-radius:8px; color:white; margin-bottom:12px; font-family:sans-serif;">
-            <h1 style="margin:0; font-weight:900; letter-spacing:-1px;">2026 NFL Loser Pool &bull; {game_mode} &bull; Week {CURRENT_WEEK}</h1>
-            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:10px; font-size:14px; margin-bottom:12px; margin-top:12px; opacity:0.9;">
-                <div><b>Through Week 14:</b> Pick 1 team to lose each week</div>
-                <div><b>Weeks 15-18:</b> Pick 2 teams to lose each week</div>
-                <div><b>Playoffs:</b> Pick loser of ALL games (Repeats allowed)</div>
+        <div style="font-family:sans-serif; color: var(--text-color); padding-top:5px;">
+            <h1 style="margin:0; font-weight:900; font-size:32px; letter-spacing:-1px;">
+                2026 NFL Loser Pool &bull; {game_mode} &bull; Week {CURRENT_WEEK}
+            </h1>
+            
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:15px; font-size:13px; margin-top:12px; opacity:0.85; font-weight:500;">
+                <div><b>Wk 1-14:</b> Pick 1 team to lose</div>
+                <div><b>Wk 15-18:</b> Pick 2 teams to lose</div>
+                <div><b>Playoffs:</b> Pick loser of ALL games</div>
             </div>
-            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:10px; font-size:14px; margin-bottom:12px; margin-top:12px; opacity:0.9;">
-                <div><b>Weekly Deadline:</b> Noon ET Sunday or by kickoff if taking an earlier game</div>
-            </div>
-            <div style="margin-top:12px; padding-top:8px; border-top:1px solid #1e3a8a; font-family:monospace; font-size:11.5px; color:#93c5fd;">
-                74 Players | $1850 Purse ($1110 1st / $555 2nd / $185 3rd) | Last year's losers: Stephen King took 1st for $765, Amanda Conley took 2nd for $382.50, Bill Kazmierski took 3rd for $127.50
+            
+            <p style="margin:10px 0 0 0; font-size:13px; opacity:0.85;">
+                <b>Weekly Deadline:</b> Noon ET Sunday, or kickoff time for earlier games.
+            </p>
+            
+            <div style="margin-top:14px; padding-top:10px; border-top:1px solid rgba(128,128,128,0.2); font-family:monospace; font-size:11.5px; color: #3b82f6;">
+                74 Players | $1850 Purse ($1110 1st / $555 2nd / $185 3rd) <br>
+                <span style="opacity:0.7; color: var(--text-color);">
+                    Last Year's Losers: S. King ($765) • A. Conley ($382.50) • B. Kazmierski ($127.50)
+                </span>
             </div>
         </div>
         """, 
         unsafe_allow_html=True
     )
+st.markdown("---")
 
 # --- USER SELECTION AUTHENTICATION & OVERRIDES GATES ---
 if 'user' not in st.session_state:
