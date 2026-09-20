@@ -13,13 +13,13 @@ st.set_page_config(layout="wide")
 # --- CUSTOM SIDEBAR CONFIGURATION ---
 with st.sidebar:
     # 1. Permanent Brand Anchor Logo
-    local_sidebar_logo = "static/loser-logo.png"
-    if os.path.exists(local_sidebar_logo):
-        st.image(local_sidebar_logo, use_container_width=True)
-    else:
-        st.image("https://espncdn.com", use_container_width=True)
+    #local_sidebar_logo = "static/loser-logo.png"
+    #if os.path.exists(local_sidebar_logo):
+    #    st.image(local_sidebar_logo, use_container_width=True)
+    #else:
+    #    st.image("https://espncdn.com", use_container_width=True)
         
-    st.markdown("<hr style='margin:10px 0 15px 0; border:0; border-top:1px solid #cbd5e1;'/>", unsafe_allow_html=True)
+    #st.markdown("<hr style='margin:10px 0 15px 0; border:0; border-top:1px solid #cbd5e1;'/>", unsafe_allow_html=True)
     
     # 2. Main Game Mode Selector
     game_mode = st.selectbox("Select Pool Tournament", ["Main Pool", "2nd Chance Game"])
