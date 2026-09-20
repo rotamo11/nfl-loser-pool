@@ -52,7 +52,7 @@ with st.sidebar:
     st.page_link("pages/seed_data.py", label="Seed Data")
     
 # --- UNIFIED MASTER FRAME BRAND HEADER (Theme-Adaptive Native Fix) ---
-header_col1, header_col2 = st.columns([1, 6])
+header_col1, header_col2 = st.columns([1, 5])
 
 with header_col1:
     local_logo = "static/loser-logo.png"
