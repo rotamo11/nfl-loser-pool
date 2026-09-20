@@ -216,7 +216,7 @@ else:
                         st.rerun()
 
                 with col_vs:
-                    st.markdown("<center style='color:gray; font-size:11px; padding-top:6px;'>VS</center>", unsafe_allow_html=True)
+                    st.markdown("<center style='color:gray; font-size:12px; padding-top:6px;'>@</center>", unsafe_allow_html=True)
 
                 with col_home:
                     is_sel_home = home in st.session_state.selected_teams
@@ -249,11 +249,11 @@ else:
             submit_disabled = len(st.session_state.selected_teams) != required_picks
             
             with c_sub:
-                if st.button("Submit Selection", disabled=submit_disabled, use_container_width=True):
+                if st.button("Submit", disabled=submit_disabled, use_container_width=True):
                     st.session_state.show_confirmation_modal = True
 
             with c_res:
-                if st.button("Reset Form", use_container_width=True):
+                if st.button("Reset", use_container_width=True):
                     st.session_state.selected_teams = []
                     st.rerun()
 
@@ -265,18 +265,18 @@ else:
                 m_c1, m_c2, m_c3 = st.columns(3)
                 
                 with m_c1:
-                    if st.button("Option 2: Confirm Pick (Allows later edits)", use_container_width=True):
+                    if st.button("Option 2: Confirm Pick (Can still edit, Overview not available)", use_container_width=True):
                         # Saves to database but leaves status open as an editable draft
                         for team in st.session_state.selected_teams:
                             supabase.table("user_picks").upsert({
                                 "user_id": user_id, "game_type": game_slug, "week": current_week, "team_picked": team, "pick_state": "Confirmed"
                             }, on_conflict="user_id,game_type,week,team_picked").execute()
                         st.session_state.show_confirmation_modal = False
-                        st.success("Draft saved successfully!")
+                        st.success("Your pick has been Confirmed and can still be edited - it will become Finalized once the deadline passes")
                         st.rerun()
 
                 with m_c2:
-                    if st.button("Option 3: Finalize Pick (Locks entry entirely)", use_container_width=True):
+                    if st.button("Option 3: Finalize Pick (Locks entry, Overview available)", use_container_width=True):
                         # Locks down the decision completely and opens up master overview visualization access
                         for team in st.session_state.selected_teams:
                             supabase.table("user_picks").upsert({
@@ -292,6 +292,6 @@ else:
                         st.rerun()
 
                 with m_c3:
-                    if st.button("Option 1: Go Back / Cancel", use_container_width=True):
+                    if st.button("Option 1: Cancel", use_container_width=True):
                         st.session_state.show_confirmation_modal = False
                         st.rerun()
