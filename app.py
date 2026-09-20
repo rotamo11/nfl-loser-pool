@@ -155,7 +155,20 @@ else:
                     with cols[i % num_cols]:
                         clean_t = p["team_picked"].replace("_SO", "")
                         has_so = "*" if p["team_picked"].endswith("_SO") else ""
-                        st.markdown(f"<div style='border:1px solid #cbd5e1; padding:4px; border-radius:4px; text-align:center; background:#1d3d70ff; font-size:12px;'>Wk {p['week']}<br><b><img src="app/static/{clean_t}.svg" width="30" height="20" style="object-fit:contain;"/>{clean_t}{has_so}</b></div>", unsafe_allow_html=True)
+                        # st.markdown(f"<div style='border:1px solid #cbd5e1; padding:4px; border-radius:4px; text-align:center; background:#1d3d70ff; font-size:12px;'>Wk {p['week']}<br><b><img src="app/static/{clean_t}.svg" width="30" height="20" style="object-fit:contain;"/>{clean_t}{has_so}</b></div>", unsafe_allow_html=True)
+                        # FIX: Cleaned up quote nesting syntax and mapped the inline local SVG file correctly
+                        st.markdown(
+                            f"""
+                            <div style="border:1px solid #cbd5e1; padding:6px 4px; border-radius:4px; text-align:center; background:#ffffff; font-size:12px; font-family:sans-serif; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                                <span style="color:#64748b; font-size:10px; font-weight:bold; display:block; margin-bottom:2px;">Wk {p['week']}</span>
+                                <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;">
+                                    <img src="app/static/{clean_t.upper()}.svg" width="28" height="18" style="object-fit:contain;"/>
+                                    <b style="color:#1e293b; font-size:11px;">{clean_t.upper()}{has_so}</b>
+                                </div>
+                            </div>
+                            """, 
+                            unsafe_allow_html=True
+                        )
         else:
             st.info("No prior weeks on record yet for this season.")
 
