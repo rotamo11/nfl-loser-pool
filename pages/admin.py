@@ -10,6 +10,34 @@ supabase: Client = create_client(URL, KEY)
 # Free API key from the-odds-api.com
 API_KEY = st.secrets.get("THE_ODDS_API_KEY", "YOUR_FREE_API_KEY")
 
+# Sets #1d3d70ff for Main Pool and #974706 for 2nd Chance Game
+sidebar_bg = "#1d3d70ff" if game_slug == "Main" else "#974706"
+
+st.markdown(
+    f"""
+    <style>
+        /* Targets the main sidebar panel container */
+        [data-testid="stSidebar"] {{
+            background-color: {sidebar_bg} !important;
+        }}
+        
+        /* Optional: Forces all text/labels inside the sidebar to remain white and legible */
+        [data-testid="stSidebar"] .stText, 
+        [data-testid="stSidebar"] p, 
+        [data-testid="stSidebar"] h3,
+        [data-testid="stSidebar"] label {{
+            color: white !important;
+        }}
+        
+        /* Optional: Makes the selectbox dropdown label text white */
+        [data-testid="stSidebar"] div[data-baseweb="select"] div {{
+            color: #1e293b !important; /* Keeps internal dropdown text dark for readability */
+        }}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 st.set_page_config(layout="wide")
 st.title("Loser Pool Commissioner Engine")
 
