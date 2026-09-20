@@ -218,7 +218,15 @@ else:
                     try:
                         with open(f"static/{away}.svg", "r") as f:
                             svg_code = f.read()
-                        st.markdown(f'<div style="height:20px; padding-top:6px;">{svg_code}</div>', unsafe_allow_html=True)
+                        st.markdown(
+                            f"""
+                            <div style="width:32px; height:24px; padding-top:6px; margin:0 auto; display:flex; align-items:center;">
+                                <style>div svg {{ width: 100% !important; height: 100% !important; }}</style>
+                                {svg_code}
+                            </div>
+                            """, 
+                            unsafe_allow_html=True
+                        )
                     except Exception:
                         st.write("") # Silent empty container if file has a typo
                         
@@ -255,7 +263,15 @@ else:
                     try:
                         with open(f"static/{home}.svg", "r") as f:
                             svg_code = f.read()
-                        st.markdown(f'<div style="width:32px; height:24px; padding-top:6px;">{svg_code}</div>', unsafe_allow_html=True)
+                        st.markdown(
+                            f"""
+                            <div style="width:32px; height:24px; padding-top:6px; margin:0 auto; display:flex; align-items:center;">
+                                <style>div svg {{ width: 100% !important; height: 100% !important; }}</style>
+                                {svg_code}
+                            </div>
+                            """, 
+                            unsafe_allow_html=True
+                        )
                     except Exception:
                         st.write("")
             
