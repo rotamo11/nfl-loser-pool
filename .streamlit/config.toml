@@ -1,2 +1,6 @@
 [server]
 enableStaticServing = true
+
+[client]
+# THIS HIDES THE AUTOMATIC LEFT NAVIGATION MENU ENTIRELY
+showSidebarNavigation = false
