@@ -12,7 +12,7 @@ st.set_page_config(layout="wide")
 # --- CUSTOM SIDEBAR CONFIGURATION ---
 with st.sidebar:
     # 1. Main Game Mode Selector
-    game_mode = st.selectbox("Select Pool Tournament", ["Main", "2nd Chance"])
+    game_mode = st.selectbox("Select Pool", ["Main", "2nd Chance"])
     game_slug = "Main" if game_mode == "Main" else "2nd_Chance"
     CURRENT_WEEK = 2  
 
@@ -63,6 +63,7 @@ with header_col1:
 
 with header_col2:
     # 1. Main Title
+    st.html(f"<h1 style='margin:0; font-weight:900; font-size:32px; letter-spacing:-1px;'></h1>")
     st.html(f"<h1 style='margin:0; font-weight:900; font-size:32px; letter-spacing:-1px;'>2026 NFL Loser Pool &bull; {game_mode} &bull; Week {CURRENT_WEEK}</h1>")
     
     # 2. Rule Parameters Grid Rows
