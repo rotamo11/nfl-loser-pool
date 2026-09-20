@@ -12,27 +12,7 @@ st.set_page_config(layout="wide")
 
 # --- CUSTOM SIDEBAR CONFIGURATION ---
 with st.sidebar:
-    # 1. Permanent Brand Anchor Logo
-    #local_sidebar_logo = "static/loser-logo.png"
-    #if os.path.exists(local_sidebar_logo):
-    #    st.image(local_sidebar_logo, use_container_width=True)
-    #else:
-    #    st.image("https://espncdn.com", use_container_width=True)
-        
-    #st.markdown("<hr style='margin:10px 0 15px 0; border:0; border-top:1px solid #cbd5e1;'/>", unsafe_allow_html=True)
-     
-    st.markdown("<br>Tournament Menu", unsafe_allow_html=True)
-    # 3. Mandated Custom Navigation Folder Structure Routes Matrix
-    st.page_link("app.py", label="Selections")
-    st.page_link("pages/overview.py", label="Overview")
-    st.page_link("pages/chat.py", label="Smack")
-    st.page_link("pages/rules.py", label="Rules")
-    st.page_link("pages/admin.py", label="Admin")
-    st.page_link("pages/seed_data.py", label="Seed Data")
-
-    st.markdown("<hr style='margin:10px 0 15px 0; border:0; border-top:1px solid #cbd5e1;'/>", unsafe_allow_html=True)
-    
-    # 2. Main Game Mode Selector
+    # Main Game Mode Selector
     game_mode = st.selectbox("Select Pool Tournament", ["Main Pool", "2nd Chance Game"])
     game_slug = "Main" if game_mode == "Main Pool" else "2nd_Chance"
     CURRENT_WEEK = 2  
@@ -64,6 +44,20 @@ with st.sidebar:
         """,
         unsafe_allow_html=True
     )
+        
+    st.markdown("<hr style='margin:10px 0 15px 0; border:0; border-top:1px solid #cbd5e1;'/>", unsafe_allow_html=True)
+     
+    st.markdown("<br>Tournament Menu", unsafe_allow_html=True)
+    # 3. Mandated Custom Navigation Folder Structure Routes Matrix
+    st.page_link("app.py", label="Selections")
+    st.page_link("pages/overview.py", label="Overview")
+    st.page_link("pages/chat.py", label="Smack")
+    st.page_link("pages/rules.py", label="Rules")
+    st.page_link("pages/admin.py", label="Admin")
+    st.page_link("pages/seed_data.py", label="Seed Data")
+
+    st.markdown("<hr style='margin:10px 0 15px 0; border:0; border-top:1px solid #cbd5e1;'/>", unsafe_allow_html=True)
+    
 # --- DYNAMIC BACKGROUND PATTERN COLOR ENGINE ---
 sidebar_bg = "#1d3d70ff" if game_slug == "Main" else "#974706"
 
