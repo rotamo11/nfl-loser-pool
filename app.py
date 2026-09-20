@@ -25,15 +25,43 @@ with st.sidebar:
     game_mode = st.selectbox("Select Pool Tournament", ["Main Pool", "2nd Chance Game"])
     game_slug = "Main" if game_mode == "Main Pool" else "2nd_Chance"
     CURRENT_WEEK = 2  
+
+    # Sets #1d3d70ff for Main Pool and #974706 for 2nd Chance Game
+    sidebar_bg = "#1d3d70ff" if game_slug == "Main" else "#974706"
     
-    st.markdown("<br>### 🗂️ Tournament Menu", unsafe_allow_html=True)
+    st.markdown(
+        f"""
+        <style>
+            /* Targets the main sidebar panel container */
+            [data-testid="stSidebar"] {{
+                background-color: {sidebar_bg} !important;
+            }}
+            
+            /* Optional: Forces all text/labels inside the sidebar to remain white and legible */
+            [data-testid="stSidebar"] .stText, 
+            [data-testid="stSidebar"] p, 
+            [data-testid="stSidebar"] h3,
+            [data-testid="stSidebar"] label {{
+                color: white !important;
+            }}
+            
+            /* Optional: Makes the selectbox dropdown label text white */
+            [data-testid="stSidebar"] div[data-baseweb="select"] div {{
+                color: #1e293b !important; /* Keeps internal dropdown text dark for readability */
+            }}
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+    
+    st.markdown("<br>Tournament Menu", unsafe_allow_html=True)
     # 3. Mandated Custom Navigation Folder Structure Routes Matrix
-    st.page_link("app.py", label="🏈 Player Selection Portal", icon="🔐")
-    st.page_link("pages/overview.py", label="📊 Master Standings Overview", icon="📈")
-    st.page_link("pages/chat.py", label="💬 Locker Room Chat Lounge", icon="🗣️")
-    st.page_link("pages/rules.py", label="📜 Official Pool Rules", icon="📝")
-    st.page_link("pages/admin.py", label="🎯 Commissioner Control Board", icon="🛠️")
-    st.page_link("pages/seed_data.py", label="🧬 Seed Dashboard Parameters", icon="🌱")
+    st.page_link("app.py", label="Selections")
+    st.page_link("pages/overview.py", label="Overview")
+    st.page_link("pages/chat.py", label="Smack")
+    st.page_link("pages/rules.py", label="Rules")
+    st.page_link("pages/admin.py", label="Admin")
+    st.page_link("pages/seed_data.py", label="Seed Data")
 
 # --- DYNAMIC BACKGROUND PATTERN COLOR ENGINE ---
 sidebar_bg = "#1d3d70ff" if game_slug == "Main" else "#974706"
@@ -113,8 +141,8 @@ if st.session_state.force_password_change:
                 st.error(f"Failed to update password: {str(e)}")
 
 elif not st.session_state.user:
-    st.subheader("🔒 Competitor Login Portal")
-    testing_mode = st.checkbox("🧪 Enable Developer Masquerade Mode (Testing Only)")
+    st.subheader("Competitor Login Portal")
+    testing_mode = st.checkbox("Enable Developer Masquerade Mode (Testing Only)")
     
     if testing_mode:
         try:
@@ -147,7 +175,7 @@ elif not st.session_state.user:
             except Exception:
                 st.error("Authentication rejected. Verify your email and password.")
 else:
-    if st.sidebar.button("🚪 Log Out / Clear Session"):
+    if st.sidebar.button("Log Out"):
         st.session_state.user = None
         st.session_state.selected_teams = []
         st.session_state.force_password_change = False
@@ -159,7 +187,7 @@ else:
     if not reg_profile:
         st.warning("You are not registered in this specific pool track. Toggle your sidebar filter options.")
     elif reg_profile[0]["bracket_status"] == "Eliminated":
-        st.error("🔴 You have been Eliminated from this tournament track. Form access is locked, but you can navigate to the Overview page in the sidebar.")
+        st.error("You have been Eliminated from this tournament track. Form access is locked, but you can navigate to the Overview page in the sidebar.")
     else:
         player_status = reg_profile[0]["bracket_status"]
         st.caption(f"Status: **{player_status}**")
@@ -167,7 +195,7 @@ else:
         # --- RECOVER USER COMPREHENSIVE SELECTION RECORDS ---
         all_picks_res = supabase.table("user_picks").select("*").eq("user_id", user_id).eq("game_type", game_slug).execute().data
         
-        st.write("### 📜 Your Season Selection History")
+        st.write("### Your Season Selection History")
         if all_picks_res:
             num_cols = min(len(all_picks_res), 18)
             if num_cols > 0:
@@ -178,11 +206,11 @@ else:
                         has_so = "*" if p["team_picked"].endswith("_SO") else ""
                         st.markdown(
                             f"""
-                            <div style="border:1px solid #cbd5e1; padding:6px 4px; border-radius:4px; text-align:center; background:#ffffff; font-size:12px; font-family:sans-serif; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
-                                <span style="color:#64748b; font-size:10px; font-weight:bold; display:block; margin-bottom:2px;">Wk {p['week']}</span>
+                            <div style="border:1px solid #cbd5e1; padding:6px 4px; border-radius:4px; text-align:center; background:#000000; font-size:12px; font-family:sans-serif; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                                <span style="color:#cbd5e1; font-size:12px; font-weight:bold; display:block; margin-bottom:2px;">Weekk {p['week']}</span>
                                 <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;">
                                     <img src="app/static/{clean_t.upper()}.svg" width="28" height="18" style="object-fit:contain;"/>
-                                    <b style="color:#1e293b; font-size:11px;">{clean_t.upper()}{has_so}</b>
+                                    <b style="color:#cbd5e1; font-size:12px;">{clean_t.upper()}{has_so}</b>
                                 </div>
                             </div>
                             """, 
@@ -200,7 +228,7 @@ else:
         # Singular vs. Plural string mapping rule definitions
         team_word = "team" if CURRENT_WEEK <= 14 else "teams"
         required_picks = 1 if CURRENT_WEEK <= 14 else 2 if CURRENT_WEEK <= 18 else 99
-        st.write(f"### 🏈 Matchup Lines — Pick **{required_picks}** {team_word} to Lose")
+        st.write(f"### Matchups — Pick **{required_picks}** {team_word} to Lose")
 
         matchups = supabase.table("nfl_schedule").select("*").eq("week", CURRENT_WEEK).execute().data
 
@@ -258,7 +286,7 @@ else:
             st.markdown("---")
             is_bye_selected = "BYE" in st.session_state.selected_teams
             dis_bye = (reg_profile[0]["byes_used"] >= 1) or (limit_reached and not is_bye_selected)
-            if st.button("🌟 Use Weekly League Bye Option", type="primary" if is_bye_selected else "secondary", disabled=dis_bye):
+            if st.button("Use Weekly League Bye Option", type="primary" if is_bye_selected else "secondary", disabled=dis_bye):
                 if is_bye_selected: st.session_state.selected_teams.remove("BYE")
                 else: st.session_state.selected_teams.append("BYE")
                 st.rerun()
@@ -269,28 +297,28 @@ else:
             submit_disabled = len(st.session_state.selected_teams) != required_picks
             
             with c_sub:
-                if st.button("🚀 Submit Selection", disabled=submit_disabled, use_container_width=True):
+                if st.button("Submit", disabled=submit_disabled, use_container_width=True):
                     st.session_state.show_confirmation_modal = True
             with c_res:
-                if st.button("Reset Form", use_container_width=True):
+                if st.button("Reset", use_container_width=True):
                     st.session_state.selected_teams = []
                     st.rerun()
 
             # --- 7. THREE-OPTION VERIFICATION DIALOGUE POPUP ---
             if st.session_state.get("show_confirmation_modal", False):
-                st.markdown("### ⚠️ Final Verification Check Required")
-                st.warning(f"You are selecting: **{', '.join(st.session_state.selected_teams)}** to lose their game(s).")
+                st.markdown("### Confirmed or Finalized?")
+                st.warning(f"You are selecting the following to lose: **{', '.join(st.session_state.selected_teams)}** ")
                 
                 m_c1, m_c2, m_c3 = st.columns(3)
                 with m_c1:
-                    if st.button("Option 2: Confirm Pick (Allows later edits)", use_container_width=True):
+                    if st.button("Confirm Pick (can still edit, Overview not visible)", use_container_width=True):
                         for team in st.session_state.selected_teams:
                             supabase.table("user_picks").upsert({"user_id": user_id, "game_type": game_slug, "week": CURRENT_WEEK, "team_picked": team, "pick_state": "Confirmed"}, on_conflict="user_id,game_type,week,team_picked").execute()
                         st.session_state.show_confirmation_modal = False
-                        st.success("Draft saved successfully!")
+                        st.success("Pick has been Confirmed and will become Finalized once the deadline passes")
                         st.rerun()
                 with m_c2:
-                    if st.button("Option 3: Finalize Pick (Locks entry entirely)", use_container_width=True):
+                    if st.button("Finalize Pick (locks entry, Overview is visible)", use_container_width=True):
                         for team in st.session_state.selected_teams:
                             supabase.table("user_picks").upsert({"user_id": user_id, "game_type": game_slug, "week": CURRENT_WEEK, "team_picked": team, "pick_state": "Finalized"}, on_conflict="user_id,game_type,week,team_picked").execute()
                         st.session_state.show_confirmation_modal = False
