@@ -52,7 +52,7 @@ with st.sidebar:
     st.page_link("pages/seed_data.py", label="Seed Data")
     
 # --- UNIFIED MASTER FRAME BRAND HEADER (Theme-Adaptive Native Fix) ---
-header_col1, header_col2 = st.columns([1, 4])
+header_col1, header_col2 = st.columns([1, 6])
 
 with header_col1:
     local_logo = "static/loser-logo.png"
@@ -63,7 +63,6 @@ with header_col1:
 
 with header_col2:
     # 1. Main Title
-    st.html(f"<h1 style='margin:0; font-weight:900; font-size:32px; letter-spacing:-1px;'></h1>")
     st.html(f"<h1 style='margin:0; font-weight:900; font-size:32px; letter-spacing:-1px;'>2026 NFL Loser Pool &bull; {game_mode} &bull; Week {CURRENT_WEEK}</h1>")
     
     # 2. Rule Parameters Grid Rows
