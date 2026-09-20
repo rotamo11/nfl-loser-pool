@@ -13,6 +13,9 @@ game_mode = st.sidebar.selectbox("Select Pool Tournament", ["Main Pool", "2nd Ch
 game_slug = "Main" if game_mode == "Main Pool" else "2nd_Chance"
 current_week = 2  # Manually advance this index as the season rolls on
 
+# Sets #1d3d70ff for Main Pool and #974706 for 2nd Chance Game
+sidebar_bg = "#1d3d70ff" if game_slug == "Main" else "#974706"
+
 # --- 1. BRAND HEADER DISPLAY MATRICES ---
 # Split the row into two columns for your logo image and title text alignment
 header_col1, header_col2 = st.columns([1, 6])
