@@ -41,7 +41,6 @@ with st.sidebar:
     )
         
     st.markdown("<hr style='margin:10px 0 15px 0; border:0; border-top:1px solid rgba(255,255,255,0.3);'/>", unsafe_allow_html=True)
-    # st.markdown("<h3 style='margin:0 0 10px 0; font-size:14px;'>Menu</h3>", unsafe_allow_html=True)
     
     # 3. Streamlit Standard Page Routing Links Matrix
     st.page_link("app.py", label="Picks")
@@ -63,7 +62,6 @@ with header_col1:
 
 with header_col2:
     # 1. Main Title
-    # st.html(f"<h1 style='margin:0; font-weight:900; font-size:32px; letter-spacing:-1px;'>2026 NFL Loser Pool &bull; {game_mode} &bull; Week {CURRENT_WEEK}</h1>")
     st.html(
         f"""
         <div style="display: flex; align-items: flex-end; height: 85px; padding-bottom: 5px;">
@@ -114,7 +112,7 @@ logged_in_uid = current_user.id if current_user is not None else None
 
 user_current_pick = None
 if logged_in_uid:
-    user_current_pick = next((p for p in picks_res if p["user_id"] == logged_in_uid and p["week"] == current_week), None)
+    user_current_pick = next((p for p in picks_res if p["user_id"] == logged_in_uid and p["week"] == CURRENT_WEEK), None)
 
 user_is_eliminated = False
 if logged_in_uid:
@@ -134,7 +132,7 @@ if not can_view_live_picks:
 else:
     tally_counts = {}
     for p in picks_res:
-        if p["week"] == current_week:
+        if p["week"] == CURRENT_WEEK:
             tally_counts[p["team_picked"]] = tally_counts.get(p["team_picked"], 0) + 1
 
     sorted_tallies = sorted(tally_counts.items(), key=lambda item: (-item[1], item[0]))
@@ -218,7 +216,7 @@ for bracket_name, registrants in bracket_buckets.items():
                 html_iframe_payload += '<td style="background:#fafafa;"></td>'
                 continue
                 
-            if w == current_week and not can_view_live_picks:
+            if w == CURRENT_WEEK and not can_view_live_picks:
                 icon_tag = "🔒 Confirmed" if w_pick["pick_state"] == "Confirmed" else "🔒 Hidden"
                 html_iframe_payload += f'<td style="color:#94a3b8; font-size:10px; background:#f1f5f9; font-weight:bold;">{icon_tag}</td>'
                 continue
