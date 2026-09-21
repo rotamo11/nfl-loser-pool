@@ -84,7 +84,7 @@ with header_col2:
         st.markdown("Pick 2 teams to lose")
     with metric_col3:
         st.caption("**Playoffs**")
-        st.markdown("Pick ALL losers (repeats allowed")
+        st.markdown("Pick ALL losers (repeats allowed)")
         
     # 3. Deadline Summary Row
     st.info(f"**Weekly Deadline:** Noon ET Sunday, or by kickoff of earlier game")
@@ -124,13 +124,13 @@ if st.session_state.force_password_change:
                 supabase.auth.update_user({"password": new_pw.strip()})
                 supabase.table("users").update({"first_login_complete": True}).eq("id", st.session_state.user.id).execute()
                 st.session_state.force_password_change = False
-                st.success("Password updated successfully! Welcome to the pool.")
+                st.success("Password updated successfully! Welcome, you loser, you!")
                 st.rerun()
             except Exception as e:
                 st.error(f"Failed to update password: {str(e)}")
 
 elif not st.session_state.user:
-    st.subheader("Competitor Login Portal")
+    st.subheader("Login")
     testing_mode = st.checkbox("Enable Developer Masquerade Mode (Testing Only)")
     
     if testing_mode:
@@ -150,7 +150,7 @@ elif not st.session_state.user:
         except Exception as e:
             st.error(f"Could not load users for masquerade: {str(e)}")
     else:
-        email = st.text_input("Registered Email Address")
+        email = st.text_input("Email Address")
         password = st.text_input("Password", type="password")
         if st.button("Log In", use_container_width=True):
             try:
