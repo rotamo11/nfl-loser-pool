@@ -134,7 +134,8 @@ else:
         if p["week"] == CURRENT_WEEK:
             tally_counts[p["team_picked"]] = tally_counts.get(p["team_picked"], 0) + 1
 
-    sorted_tallies = sorted(tally_counts.items(), key=lambda item: (-item, item))
+    # FIX: Map precise indices: -item[1] sorts count descending, item[0] sorts name alphabetically ascending
+    sorted_tallies = sorted(tally_counts.items(), key=lambda item: (-item[1], item[0]))
 
     if sorted_tallies:
         # Create a horizontal row layout utilizing up to 10 low-profile inline slots
