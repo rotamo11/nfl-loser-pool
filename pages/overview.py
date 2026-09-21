@@ -285,5 +285,15 @@ for bracket_name, registrants in bracket_buckets.items():
 html_iframe_payload += "</body></html>"
 
 # Native modern rendering frame setup configuration
-st.iframe(src=f"data:text/html;charset=utf-8,{html_iframe_payload}", height=1200)
+# st.iframe(src=f"data:text/html;charset=utf-8,{html_iframe_payload}", height=1200)
+
+import base64
+
+# 🚀 THE ABSOLUTE FIX: Encode the entire document as a base64 string
+# This wraps raw SVG code securely, preventing the browser from clipping the text stream
+encoded_payload = base64.b64encode(html_iframe_payload.encode("utf-8")).decode("utf-8")
+
+# Pass the safe base64 token data stream directly to the iframe frame
+st.iframe(src=f"data:text/html;base64,{encoded_payload}", height=1200)
+
 
