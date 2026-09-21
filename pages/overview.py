@@ -127,7 +127,7 @@ user_map = {u["id"]: u["username"] for u in users_res}
 st.markdown("### 📊 Weekly Selection Distribution")
 
 if not can_view_live_picks:
-    st.info("🔒 Selection tallies remain hidden until your own weekly entry is Finalized.")
+    st.info("Selection tallies remain hidden until your own weekly entry is Finalized.")
 else:
     tally_counts = {}
     for p in picks_res:
@@ -169,12 +169,12 @@ else:
                     except Exception:
                         st.markdown(f"**{clean_team}** `{count}`")
     else:
-        st.info("🏈 Nobody has placed a submission pick for this week yet.")
+        st.info("Nobody has placed a submission pick for this week yet.")
 
 st.markdown("---")
 
 # --- MASTER TOURNAMENT ROSTER GRID ---
-st.markdown("### 📋 Complete Tournament Roster Grid")
+st.markdown("### Complete Tournament Roster Grid")
 
 bracket_buckets = {
     "Loser's Bracket": [r for r in regs_res if r["bracket_status"] == "Loser Bracket"],
@@ -253,13 +253,13 @@ for bracket_name, registrants in bracket_buckets.items():
             if w_pick["pick_state"] == "Correct":
                 bg_color = "#008000"
                 text_color = "white"
-                indicator_icon = '<span style="position:absolute; bottom:1px; right:3px; color:white; font-size:9px; font-weight:900;">✓</span>'
+                indicator_icon = '<span style="position:absolute; bottom:1px; right:3px; color:white; font-size:9px; font-weight:900;"></span>'
             elif w_pick["pick_state"] == "Incorrect":
                 bg_color = "#FF0000"
                 text_color = "white"
-                indicator_icon = '<span style="position:absolute; bottom:1px; right:3px; color:white; font-size:9px; font-weight:900;">X</span>'
+                indicator_icon = '<span style="position:absolute; bottom:1px; right:3px; color:white; font-size:9px; font-weight:900;"></span>'
             elif w_pick["pick_state"] == "Finalized":
-                indicator_icon = '<span style="position:absolute; bottom:1px; right:3px; font-size:8px;">🔒</span>'
+                indicator_icon = '<span style="position:absolute; bottom:1px; right:3px; font-size:8px;"></span>'
                 
             if clean_team == "BYE":
                 html_iframe_payload += f'<td style="background:{bg_color}; font-weight:bold; color:{text_color}; position:relative;">BYE{indicator_icon}</td>'
