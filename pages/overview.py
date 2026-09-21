@@ -153,9 +153,12 @@ else:
                         with open(f"static/{clean_team.upper()}.svg", "r") as svg_file:
                             svg_code = svg_file.read()
                         
-                        # FIX: Flat-mapping all markup strings into a unified st.html call 
-                        # This eliminates markdown parsing failures and stops code from leaking onto the page
-                        flat_html_tally = f"""<div style="display:flex; align-items:center; gap:6px; font-family:sans-serif; margin-bottom:8px;"><div style="width:24px; height:16px; display:flex; align-items:center;"><style>div svg {{ width:100% !important; height:100% !important; }}</style>{svg_code}</div><span style="font-weight:bold; font-size:14px; color:var(--text-color);">{count}</span></div>"""
+                        # FIX: Direct String Injection forces the SVG to exactly 24x16px natively
+                        # This eliminates zero-pixel rendering bugs inside st.html components
+                        inline_svg = svg_code.replace("<svg", "<svg style='width:24px; height:16px;'")
+                        
+                        # Pack into an ultra-clean horizontal layout block
+                        flat_html_tally = f"""<div style="display:inline-flex; align-items:center; gap:6px; font-family:sans-serif;"><div style="width:24px; height:16px; display:inline-block; vertical-align:middle;">{inline_svg}</div><span style="font-weight:bold; font-size:15px; color:var(--text-color); vertical-align:middle;">{count}</span></div>"""
                         st.html(flat_html_tally)
                         
                     except Exception:
