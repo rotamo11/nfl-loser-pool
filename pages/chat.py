@@ -43,7 +43,7 @@ with st.sidebar:
     # 3. Streamlit Standard Page Routing Links Matrix
     st.page_link("app.py", label="Picks")
     st.page_link("pages/overview.py", label="Results")
-    st.page_link("pages/chat.py", label="Smack")
+    st.page_link("pages/chat.py", label="Chat")
     st.page_link("pages/rules.py", label="Rules")
     st.page_link("pages/admin.py", label="Admin")
     st.page_link("pages/seed_data.py", label="Seed Data")
@@ -100,7 +100,7 @@ with header_col2:
 st.markdown("---")
 
 st.set_page_config(layout="wide")
-st.subheader("Loser Pool Locker Room Smack")
+st.subheader("Locker Room Chat")
 
 if 'user' not in st.session_state or not st.session_state.user:
     st.warning("🔒 You must be logged into the main page to access the live chat room.")
