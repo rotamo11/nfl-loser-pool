@@ -239,17 +239,11 @@ else:
 
                 with col_a_logo:
                     try:
-                        with open(f"static/{away}.svg", "r") as f: svg_code = f.read()
-                        # FIX: Added 'matchup-logo-box' class scope to target ONLY this div's SVG
-                        st.markdown(
-                            f"""
-                            <div class="matchup-logo-box" style="width:32px; height:24px; padding-top:6px; margin:0 auto; display:flex; align-items:center;">
-                                <style>.matchup-logo-box svg {{ width:100% !important; height:100% !important; }}</style>
-                                {svg_code}
-                            </div>
-                            """, 
-                            unsafe_allow_html=True
-                        )
+                        with open(f"static/{away}.svg", "r") as f:
+                            svg_code = f.read()
+                        # THE FIXED INLINE ENFORCER: Forces the vector paths to 100% bounds inside the tag properties
+                        clean_svg = svg_code.replace("<svg", "<svg style='width:100%; height:100%; display:block;'")
+                        st.markdown(f'<div style="width:32px; height:24px; padding-top:6px; margin:0 auto; display:flex; align-items:center;">{clean_svg}</div>', unsafe_allow_html=True)
                     except Exception: st.write("")
                     
                 with col_a_btn:
@@ -275,17 +269,11 @@ else:
 
                 with col_h_logo:
                     try:
-                        with open(f"static/{home}.svg", "r") as f: svg_code = f.read()
-                        # FIX: Added matching class scope block here to isolate home vector parameters
-                        st.markdown(
-                            f"""
-                            <div class="matchup-logo-box" style="width:32px; height:24px; padding-top:6px; margin:0 auto; display:flex; align-items:center;">
-                                <style>.matchup-logo-box svg {{ width:100% !important; height:100% !important; }}</style>
-                                {svg_code}
-                            </div>
-                            """, 
-                            unsafe_allow_html=True
-                        )
+                        with open(f"static/{home}.svg", "r") as f:
+                            svg_code = f.read()
+                        # THE FIXED INLINE ENFORCER: Forces the vector paths to 100% bounds inside the tag properties
+                        clean_svg = svg_code.replace("<svg", "<svg style='width:100%; height:100%; display:block;'")
+                        st.markdown(f'<div style="width:32px; height:24px; padding-top:6px; margin:0 auto; display:flex; align-items:center;">{clean_svg}</div>', unsafe_allow_html=True)
                     except Exception: st.write("")
 
             st.markdown("---")
