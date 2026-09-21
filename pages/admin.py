@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 from supabase import create_client, Client
+import os
 
 # Initialize database connections securely
 URL = st.secrets["SUPABASE_URL"]
