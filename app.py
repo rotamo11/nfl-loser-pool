@@ -7,8 +7,6 @@ URL = st.secrets["SUPABASE_URL"]
 KEY = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(URL, KEY)
 
-st.set_page_config(layout="wide")
-
 # --- CUSTOM SIDEBAR CONFIGURATION ---
 with st.sidebar:
     # 1. Main Game Mode Selector
@@ -103,6 +101,8 @@ with header_col2:
 
 st.markdown("---")
 
+st.set_page_config(layout="wide")
+
 # --- USER SELECTION AUTHENTICATION & OVERRIDES GATES ---
 if 'user' not in st.session_state:
     st.session_state.user = None
@@ -176,10 +176,12 @@ else:
     if not reg_profile:
         st.warning("You are not registered in this specific pool track. Toggle your sidebar filter options.")
     elif reg_profile[0]["bracket_status"] == "Eliminated":
-        st.error("You have been Eliminated from this tournament track. Form access is locked, but you can navigate to the Overview page in the sidebar.")
+        st.error("You have been Eliminated from this tournament. Pick submission access is locked, but you can navigate to the Results page in the sidebar.")
     else:
         player_status = reg_profile[0]["bracket_status"]
-        st.caption(f"Status: **{player_status}**")
+        st.title(f"Status: **{player_status}**")
+        # st.set_page_config(layout="wide")
+        # st.title("Commissioner Tools")
 
         # --- RECOVER USER COMPREHENSIVE SELECTION RECORDS ---
         all_picks_res = supabase.table("user_picks").select("*").eq("user_id", user_id).eq("game_type", game_slug).execute().data
