@@ -1,6 +1,7 @@
 import streamlit as st
 from supabase import create_client, Client
 import os
+import base64
 
 # Initialize database connection context
 URL = st.secrets["SUPABASE_URL"]
@@ -176,10 +177,10 @@ st.markdown("---")
 st.markdown("### 📋 Complete Tournament Roster Grid")
 
 bracket_buckets = {
-    "🟢 Undefeated (Loser's Bracket)": [r for r in regs_res if r["bracket_status"] == "Loser Bracket"],
-    "🟡 One Strike Remaining (Winner's Bracket)": [r for r in regs_res if r["bracket_status"] == "Winner Bracket"],
-    "🔵 Super Bowl Tiebreaker Window": [r for r in regs_res if r["bracket_status"] == "Tiebreaker"],
-    "🔴 Eliminated Competitors": [r for r in regs_res if r["bracket_status"] == "Eliminated"]
+    "Loser's Bracket": [r for r in regs_res if r["bracket_status"] == "Loser Bracket"],
+    "Winner's Bracket": [r for r in regs_res if r["bracket_status"] == "Winner Bracket"],
+    "Tiebreaker": [r for r in regs_res if r["bracket_status"] == "Tiebreaker"],
+    "Eliminated": [r for r in regs_res if r["bracket_status"] == "Eliminated"]
 }
 
 # Base iframe document construction layout template properties
@@ -238,7 +239,7 @@ for bracket_name, registrants in bracket_buckets.items():
                 continue
                 
             if w == CURRENT_WEEK and not can_view_live_picks:
-                icon_tag = "🔒 Confirmed" if w_pick["pick_state"] == "Confirmed" else "🔒 Hidden"
+                icon_tag = "Confirmed" if w_pick["pick_state"] == "Confirmed" else "Hidden"
                 html_iframe_payload += f'<td style="color:#94a3b8; font-size:10px; background:rgba(0,0,0,0.05); font-weight:bold;">{icon_tag}</td>'
                 continue
                 
@@ -284,12 +285,6 @@ for bracket_name, registrants in bracket_buckets.items():
 
 html_iframe_payload += "</body></html>"
 
-# Native modern rendering frame setup configuration
-# st.iframe(src=f"data:text/html;charset=utf-8,{html_iframe_payload}", height=1200)
-
-import base64
-
-# 🚀 THE ABSOLUTE FIX: Encode the entire document as a base64 string
 # This wraps raw SVG code securely, preventing the browser from clipping the text stream
 encoded_payload = base64.b64encode(html_iframe_payload.encode("utf-8")).decode("utf-8")
 
