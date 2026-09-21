@@ -112,7 +112,7 @@ logged_in_uid = current_user.id if current_user is not None else None
 
 user_current_pick = None
 if logged_in_uid:
-    user_current_pick = next((p for p in picks_res if p["user_id"] == logged_in_uid and p["week"] == current_week), None)
+    user_current_pick = next((p for p in picks_res if p["user_id"] == logged_in_uid and p["week"] == CURRENT_WEEK), None)
 
 user_is_eliminated = False
 if logged_in_uid:
@@ -130,7 +130,7 @@ if not can_view_live_picks:
 else:
     tally_counts = {}
     for p in picks_res:
-        if p["week"] == current_week:
+        if p["week"] == CURRENT_WEEK:
             tally_counts[p["team_picked"]] = tally_counts.get(p["team_picked"], 0) + 1
 
     sorted_tallies = sorted(tally_counts.items(), key=lambda item: (-item[1], item[0]))
@@ -237,7 +237,7 @@ for bracket_name, registrants in bracket_buckets.items():
                 html_iframe_payload += '<td></td>'
                 continue
                 
-            if w == current_week and not can_view_live_picks:
+            if w == CURRENT_WEEK and not can_view_live_picks:
                 icon_tag = "🔒 Confirmed" if w_pick["pick_state"] == "Confirmed" else "🔒 Hidden"
                 html_iframe_payload += f'<td style="color:#94a3b8; font-size:10px; background:rgba(0,0,0,0.05); font-weight:bold;">{icon_tag}</td>'
                 continue
