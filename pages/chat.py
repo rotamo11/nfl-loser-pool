@@ -7,6 +7,8 @@ URL = st.secrets["SUPABASE_URL"]
 KEY = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(URL, KEY)
 
+st.set_page_config(layout="wide")
+
 # --- CUSTOM SIDEBAR CONFIGURATION ---
 with st.sidebar:
     # 1. Main Game Mode Selector
@@ -99,7 +101,6 @@ with header_col2:
 
 st.markdown("---")
 
-st.set_page_config(layout="wide")
 st.subheader("Locker Room Chat")
 
 if 'user' not in st.session_state or not st.session_state.user:
