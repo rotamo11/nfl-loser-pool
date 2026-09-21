@@ -15,7 +15,6 @@ with st.sidebar:
     # 1. Main Game Mode Selector
     game_mode = st.selectbox("Select Pool", ["Main", "2nd Chance"])
     game_slug = "Main" if game_mode == "Main" else "2nd_Chance"
-    CURRENT_WEEK = 2  
 
     # 2. Dynamic Theme Profile Mapping
     sidebar_bg = "#1d3d70" if game_slug == "Main" else "#974706"
@@ -286,11 +285,11 @@ else:
                 used_teams.append(p["team_picked"])
 
         # Singular vs. Plural string mapping rule definitions
-        team_word = "team" if CURRENT_WEEK <= 14 else "teams"
-        required_picks = 1 if CURRENT_WEEK <= 14 else 2 if CURRENT_WEEK <= 18 else 99
+        team_word = "team" if CALCULATED_CURRENT_WEEK <= 14 else "teams"
+        required_picks = 1 if CALCULATED_CURRENT_WEEK <= 14 else 2 if CALCULATED_CURRENT_WEEK <= 18 else 6 if CALCULATED_CURRENT_WEEK == 19 else 4 if CALCULATED_CURRENT_WEEK == 20 else 2 if CALCULATED_CURRENT_WEEK == 21 else 1 if CALCULATED_CURRENT_WEEK == 22 else 99
         st.write(f"### Matchups — Pick **{required_picks}** {team_word} to Lose")
 
-        matchups = supabase.table("nfl_schedule").select("*").eq("week", CURRENT_WEEK).execute().data
+        matchups = supabase.table("nfl_schedule").select("*").eq("week", CALCULATED_CURRENT_WEEK).execute().data
 
         if "selected_teams" not in st.session_state:
             st.session_state.selected_teams = []
@@ -304,8 +303,8 @@ else:
                 away = match["away_team"].upper()
                 home = match["home_team"].upper()
 
-                away_is_used = away in used_teams and CURRENT_WEEK <= 18
-                home_is_used = home in used_teams and CURRENT_WEEK <= 18
+                away_is_used = away in used_teams and CALCULATED_CURRENT_WEEK <= 18
+                home_is_used = home in used_teams and CALCULATED_CURRENT_WEEK <= 18
                 limit_reached = len(st.session_state.selected_teams) >= required_picks
                 
                 col_a_logo, col_a_btn, col_vs, col_h_btn, col_h_logo = st.columns([0.6, 2.5, 0.4, 2.5, 0.6])
@@ -379,14 +378,14 @@ else:
                 with m_c1:
                     if st.button("Confirm Pick (can still edit, Overview not visible)", use_container_width=True):
                         for team in st.session_state.selected_teams:
-                            supabase.table("user_picks").upsert({"user_id": user_id, "game_type": game_slug, "week": CURRENT_WEEK, "team_picked": team, "pick_state": "Confirmed"}, on_conflict="user_id,game_type,week,team_picked").execute()
+                            supabase.table("user_picks").upsert({"user_id": user_id, "game_type": game_slug, "week": CALCULATED_CURRENT_WEEK, "team_picked": team, "pick_state": "Confirmed"}, on_conflict="user_id,game_type,week,team_picked").execute()
                         st.session_state.show_confirmation_modal = False
                         st.success("Pick has been Confirmed and will become Finalized once the deadline passes")
                         st.rerun()
                 with m_c2:
                     if st.button("Finalize Pick (locks entry, Overview is visible)", use_container_width=True):
                         for team in st.session_state.selected_teams:
-                            supabase.table("user_picks").upsert({"user_id": user_id, "game_type": game_slug, "week": CURRENT_WEEK, "team_picked": team, "pick_state": "Finalized"}, on_conflict="user_id,game_type,week,team_picked").execute()
+                            supabase.table("user_picks").upsert({"user_id": user_id, "game_type": game_slug, "week": CALCULATED_CURRENT_WEEK, "team_picked": team, "pick_state": "Finalized"}, on_conflict="user_id,game_type,week,team_picked").execute()
                         st.session_state.show_confirmation_modal = False
                         st.balloons()
                         st.success("Pick locked down! Overview accessibility unlocked.")
