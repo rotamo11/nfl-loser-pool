@@ -174,7 +174,7 @@ else:
     reg_profile = supabase.table("tournament_registrations").select("*").eq("user_id", user_id).eq("game_type", game_slug).execute().data
     
     if not reg_profile:
-        st.warning("You are not registered in this specific pool track. Toggle your sidebar filter options.")
+        st.warning("You are not registered in this specific pool. Toggle your sidebar filter options.")
     elif reg_profile[0]["bracket_status"] == "Eliminated":
         st.error("You have been Eliminated from this tournament. Pick submission access is locked, but you can navigate to the Results page in the sidebar.")
     else:
