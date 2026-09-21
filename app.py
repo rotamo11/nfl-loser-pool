@@ -244,12 +244,30 @@ else:
     reg_profile = supabase.table("tournament_registrations").select("*").eq("user_id", user_id).eq("game_type", game_slug).execute().data
     
     if not reg_profile:
-        st.warning("You are not registered in this specific pool. Toggle your sidebar filter options.")
+        st.warning("You are not registered in this specific pool track. Toggle your sidebar filter options.")
     elif reg_profile[0]["bracket_status"] == "Eliminated":
-        st.error("You have been Eliminated from this tournament. Pick submission access is locked, but you can navigate to the Overview page in the sidebar.")
+        st.error("You have been Eliminated from this game. Form access is locked, but you can navigate to the Overview page in the sidebar.")
     else:
+        # 1. Recover the current player's clean bracket text status string
         player_status = reg_profile[0]["bracket_status"]
-        st.subheader(f"Status: **{player_status}**")
+        
+        # 2. Dynamic Roster Counter: Query all active profiles registered to this game track
+        all_regs = supabase.table("tournament_registrations").select("bracket_status").eq("game_type", game_slug).execute().data
+        
+        # Count only players who do NOT have an 'Eliminated' status string profile flag
+        remaining_count = sum(1 for r in all_regs if r["bracket_status"] != "Eliminated")
+        
+        # 3. Render the responsive Flexbox status baseline bar
+        # var(--text-color) forces matching contrast automatically across light & dark theme shifts
+        st.markdown(
+            f"""
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 15px; font-family: sans-serif; font-size: 14px; font-weight: 500; color: var(--text-color); opacity: 0.85;">
+                <div>Status for <b>{st.session_state.user.username}</b>: <span style="color: #10b981;">{player_status}</span></div>
+                <div style="text-align: right;">Remaining Players: <b>{remaining_count}</b></div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
         # --- RECOVER USER COMPREHENSIVE SELECTION RECORDS ---
         all_picks_res = supabase.table("user_picks").select("*").eq("user_id", user_id).eq("game_type", game_slug).execute().data
