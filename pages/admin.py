@@ -104,13 +104,13 @@ with st.sidebar:
         # Extract the trailing integer for regular season weeks (e.g., "Week 2" -> 2)
         SELECTED_WEEK = int(clean_label.split(" ")[1])
 
-st.markdown("<hr style='margin:10px 0 15px 0; border:0; border-top:1px solid rgba(255,255,255,0.3);'/>", unsafe_allow_html=True)
-
-# Basic navigation paths open to every pool competitor
-st.page_link("app.py", label="Picks")
-st.page_link("pages/overview.py", label="Overview")
-st.page_link("pages/chat.py", label="Chat")
-st.page_link("pages/rules.py", label="Rules")
+    st.markdown("<hr style='margin:10px 0 15px 0; border:0; border-top:1px solid rgba(255,255,255,0.3);'/>", unsafe_allow_html=True)
+    
+    # Basic navigation paths open to every pool competitor
+    st.page_link("app.py", label="Picks")
+    st.page_link("pages/overview.py", label="Overview")
+    st.page_link("pages/chat.py", label="Chat")
+    st.page_link("pages/rules.py", label="Rules")
 
 # ROLE GATE: Check if the logged-in session belongs to a valid administrator
 is_logged_in_admin = False
