@@ -45,7 +45,7 @@ with st.sidebar:
     
     # 3. Streamlit Standard Page Routing Links Matrix
     st.page_link("app.py", label="Picks")
-    st.page_link("pages/overview.py", label="Results")
+    st.page_link("pages/overview.py", label="Overview")
     st.page_link("pages/chat.py", label="Chat")
     st.page_link("pages/rules.py", label="Rules")
     st.page_link("pages/admin.py", label="Admin")
@@ -153,19 +153,11 @@ else:
                         with open(f"static/{clean_team.upper()}.svg", "r") as svg_file:
                             svg_code = svg_file.read()
                         
-                        # Injects ultra low-profile horizontal layout: logo and count side-by-side
-                        st.markdown(
-                            f"""
-                            <div style="display:flex; align-items:center; gap:6px; font-family:sans-serif; margin-bottom:8px;">
-                                <div style="width:24px; height:16px; display:flex; align-items:center;">
-                                    <style>div svg {{ width:100% !important; height:100% !important; }}</style>
-                                    {svg_code}
-                                </div>
-                                <span style="font-weight:bold; font-size:14px; color:var(--text-color);">{count}</span>
-                            </div>
-                            """, 
-                            unsafe_allow_html=True
-                        )
+                        # FIX: Flat-mapping all markup strings into a unified st.html call 
+                        # This eliminates markdown parsing failures and stops code from leaking onto the page
+                        flat_html_tally = f"""<div style="display:flex; align-items:center; gap:6px; font-family:sans-serif; margin-bottom:8px;"><div style="width:24px; height:16px; display:flex; align-items:center;"><style>div svg {{ width:100% !important; height:100% !important; }}</style>{svg_code}</div><span style="font-weight:bold; font-size:14px; color:var(--text-color);">{count}</span></div>"""
+                        st.html(flat_html_tally)
+                        
                     except Exception:
                         st.markdown(f"**{clean_team}** `{count}`")
     else:
