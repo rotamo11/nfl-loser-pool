@@ -18,6 +18,7 @@ with st.sidebar:
     # 1. Main Game Mode Selector
     game_mode = st.selectbox("Select Pool", ["Main", "2nd Chance"])
     game_slug = "Main" if game_mode == "Main" else "2nd_Chance"
+    admin_week = st.number_input("Process Target Week", min_value=1, max_value=22, value=2)
     CURRENT_WEEK = 2  
 
     # 2. Dynamic Theme Profile Mapping
@@ -133,10 +134,10 @@ if not is_authenticated_admin and not st.toggle("Bypassing Admin Check for Stagi
     st.stop()
 
 # --- SEGREGATED ADMINISTRATION CONSOLE TABS ---
-tab_scores, tab_users = st.tabs(["🏁 Game & Score Processing", "👥 League Roster Management"])
+tab_scores, tab_users = st.tabs(["Score & Schedule Processing", "Manage Users"])
 
 # ==========================================
-# 🏁 TAB 1: SCORE AND SCHEDULE PROCESSING
+# TAB 1: SCORE AND SCHEDULE PROCESSING
 # ==========================================
 with tab_scores:
     st.warning("Executing the functions below will modify active player statuses.")
@@ -267,7 +268,7 @@ with tab_scores:
                                 st.rerun()
 
 # ==========================================
-# TAB 2: ROSTER & PROFILE MANAGEMENT
+# TAB 2: MANAGE USERS
 # ==========================================
 with tab_users:
     st.subheader("Manage Users")
