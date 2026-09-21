@@ -43,7 +43,6 @@ with st.sidebar:
     )
         
     st.markdown("<hr style='margin:10px 0 15px 0; border:0; border-top:1px solid rgba(255,255,255,0.3);'/>", unsafe_allow_html=True)
-    # st.markdown("<h3 style='margin:0 0 10px 0; font-size:14px;'>Menu</h3>", unsafe_allow_html=True)
     
     # 3. Streamlit Standard Page Routing Links Matrix
     st.page_link("app.py", label="Picks")
@@ -65,7 +64,6 @@ with header_col1:
 
 with header_col2:
     # 1. Main Title
-    # st.html(f"<h1 style='margin:0; font-weight:900; font-size:32px; letter-spacing:-1px;'>2026 NFL Loser Pool &bull; {game_mode} &bull; Week {CURRENT_WEEK}</h1>")
     st.html(
         f"""
         <div style="display: flex; align-items: flex-end; height: 85px; padding-bottom: 5px;">
