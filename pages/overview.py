@@ -160,7 +160,7 @@ else:
                         svg_data_url = f"data:image/svg+xml;base64,{encoded_svg}"
                         
                         # 3. Compile horizontal layout string block
-                        flat_html_tally = f"""<div style="display:inline-flex; align-items:center; gap:6px; font-family:sans-serif;"><img src="{svg_data_url}" width="26" height="18" style="object-fit:contain; vertical-align:middle;"/><br />{clean_team}<span style="font-weight:bold; font-size:15px; color:var(--text-color); vertical-align:middle;">{count}</span></div>"""
+                        flat_html_tally = f"""<div style="display:inline-flex; align-items:center; gap:6px; font-family:sans-serif;"><img src="{svg_data_url}" width="26" height="18" style="object-fit:contain; vertical-align:middle;"/><span style="font-weight:bold; font-size:15px; color:var(--text-color); vertical-align:middle;">{count}<br />{clean_team}</span></div>"""
                         st.html(flat_html_tally)
                         
                     except Exception:
