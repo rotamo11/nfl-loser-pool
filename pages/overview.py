@@ -101,7 +101,7 @@ with header_col2:
 
 st.markdown("---")
 
-# --- 2. RETRIEVE LEAGUE AND SELECTION DATA ---
+# --- RETRIEVE LEAGUE AND SELECTION DATA ---
 users_res = supabase.table("users").select("*").execute().data
 regs_res = supabase.table("tournament_registrations").select("*").eq("game_type", game_slug).execute().data
 picks_res = supabase.table("user_picks").select("*").eq("game_type", game_slug).execute().data
@@ -112,74 +112,95 @@ logged_in_uid = current_user.id if current_user is not None else None
 
 user_current_pick = None
 if logged_in_uid:
-    user_current_pick = next((p for p in picks_res if p["user_id"] == logged_in_uid and p["week"] == CURRENT_WEEK), None)
+    user_current_pick = next((p for p in picks_res if p["user_id"] == logged_in_uid and p["week"] == current_week), None)
 
 user_is_eliminated = False
 if logged_in_uid:
     user_is_eliminated = any(r for r in regs_res if r["user_id"] == logged_in_uid and r["bracket_status"] == "Eliminated")
 
-# Security Rule: Users can only see live boards if they are finalized or out of running
+# Privacy Lockout Validation Check
 can_view_live_picks = (user_current_pick and user_current_pick["pick_state"] == "Finalized") or user_is_eliminated
-
 user_map = {u["id"]: u["username"] for u in users_res}
 
-# --- 3. SELECTION TALLY GRID ENGINE (TOP LEFT WINDOW) ---
-st.markdown("### Weekly Selection Distribution")
+# --- MINIMALIST LOW-PROFILE SELECTION DISTRIBUTION GRID ---
+st.markdown("### 📊 Weekly Selection Distribution")
 
-# Fix: Show privacy lockout notice immediately if player hasn't finalized validation passes
 if not can_view_live_picks:
     st.info("🔒 Selection tallies remain hidden until your own weekly entry is Finalized.")
 else:
     tally_counts = {}
     for p in picks_res:
-        if p["week"] == CURRENT_WEEK:
+        if p["week"] == current_week:
             tally_counts[p["team_picked"]] = tally_counts.get(p["team_picked"], 0) + 1
 
     sorted_tallies = sorted(tally_counts.items(), key=lambda item: (-item[1], item[0]))
 
     if sorted_tallies:
-        num_tally_cols = min(len(sorted_tallies), 6)
-        if num_tally_cols > 0:
-            tally_cols = st.columns([1] * num_tally_cols)
-            for idx, (team, count) in enumerate(sorted_tallies):
-                clean_team = team.replace("_SO", "")
-                with tally_cols[idx % num_tally_cols]:
-                    logo_img = "" if clean_team == "BYE" else f'<img src="app/static/{clean_team.upper()}.svg" width="24" height="16" style="object-fit:contain;"/>'
-                    st.markdown(
-                        f"""
-                        <div style="background:white; border:1px solid #e2e8f0; padding:6px; border-radius:4px; display:flex; align-items:center; gap:8px; font-family:sans-serif;">
-                            {logo_img}
-                            <span style="font-weight:bold; font-size:13px;">{clean_team}</span>
-                            <span style="margin-left:auto; background:#dbeafe; color:#1e40af; font-size:11px; padding:2px 6px; border-radius:10px; font-weight:bold;">{count}</span>
-                        </div>
-                        """, 
-                        unsafe_allow_html=True
-                    )
+        # Create a horizontal row layout utilizing up to 10 low-profile inline slots
+        num_tally_cols = min(len(sorted_tallies), 10)
+        tally_cols = st.columns(num_tally_cols)
+        
+        for idx, (team, count) in enumerate(sorted_tallies):
+            clean_team = team.replace("_SO", "")
+            col_target = tally_cols[idx % num_tally_cols]
+            
+            with col_target:
+                if clean_team == "BYE":
+                    st.markdown(f"**BYE** `{count}`")
+                else:
+                    try:
+                        with open(f"static/{clean_team.upper()}.svg", "r") as svg_file:
+                            svg_code = svg_file.read()
+                        
+                        # Injects ultra low-profile horizontal layout: logo and count side-by-side
+                        st.markdown(
+                            f"""
+                            <div style="display:flex; align-items:center; gap:6px; font-family:sans-serif; margin-bottom:8px;">
+                                <div style="width:24px; height:16px; display:flex; align-items:center;">
+                                    <style>div svg {{ width:100% !important; height:100% !important; }}</style>
+                                    {svg_code}
+                                </div>
+                                <span style="font-weight:bold; font-size:14px; color:var(--text-color);">{count}</span>
+                            </div>
+                            """, 
+                            unsafe_allow_html=True
+                        )
+                    except Exception:
+                        st.markdown(f"**{clean_team}** `{count}`")
     else:
-        st.info("Nobody has placed a submission pick for Week 2 yet.")
+        st.info("🏈 Nobody has placed a submission pick for this week yet.")
 
-# --- 4. RENDER BRACKET MATRIX GRID ---
-st.markdown("<br>### Complete Tournament Roster Grid", unsafe_allow_html=True)
+st.markdown("---")
+
+# --- MASTER TOURNAMENT ROSTER GRID ---
+st.markdown("### 📋 Complete Tournament Roster Grid")
 
 bracket_buckets = {
-    "Loser's Bracket": [r for r in regs_res if r["bracket_status"] == "Loser Bracket"],
-    "Winner's Bracket": [r for r in regs_res if r["bracket_status"] == "Winner Bracket"],
-    "Tiebreaker": [r for r in regs_res if r["bracket_status"] == "Tiebreaker"],
-    "Eliminated": [r for r in regs_res if r["bracket_status"] == "Eliminated"]
+    "🟢 Undefeated (Loser's Bracket)": [r for r in regs_res if r["bracket_status"] == "Loser Bracket"],
+    "🟡 One Strike Remaining (Winner's Bracket)": [r for r in regs_res if r["bracket_status"] == "Winner Bracket"],
+    "🔵 Super Bowl Tiebreaker Window": [r for r in regs_res if r["bracket_status"] == "Tiebreaker"],
+    "🔴 Eliminated Competitors": [r for r in regs_res if r["bracket_status"] == "Eliminated"]
 }
 
+# Base iframe document construction layout template properties
 html_iframe_payload = """
 <!DOCTYPE html>
 <html>
 <head>
 <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; background: #f8fafc; padding: 10px; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; background: transparent; padding: 10px; }
+    @media (prefers-color-scheme: dark) { body { color: #f8fafc; } }
     .bracket-title { background:#e2e8f0; padding:8px 12px; font-weight:bold; border-radius:4px; margin-top:20px; color:#334155; font-size:13px; }
     table { width:100%; border-collapse:collapse; background:white; font-size:12px; margin-top:5px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    @media (prefers-color-scheme: dark) { table { background: #1e293b; } }
     th { background:#334155; color:white; padding:8px; border:1px solid #cbd5e1; font-weight:bold; }
-    td { border:1px solid #cbd5e1; padding:4px; text-align:center; vertical-align:middle; }
+    @media (prefers-color-scheme: dark) { th { border: 1px solid #475569; } }
+    td { border:1px solid #cbd5e1; padding:4px; text-align:center; vertical-align:middle; color: #1e293b; }
+    @media (prefers-color-scheme: dark) { td { border: 1px solid #475569; color: #f8fafc; } }
     .player-name { text-align:left; font-weight:bold; color:#1e293b; background:#f8fafc; padding-left:8px; min-width:150px; }
+    @media (prefers-color-scheme: dark) { .player-name { background: #1e293b; color: #f8fafc; } }
     .bye-cell { font-family:monospace; text-align:center; background:#f8fafc; }
+    @media (prefers-color-scheme: dark) { .bye-cell { background: #1e293b; } }
 </style>
 </head>
 <body>
@@ -213,19 +234,19 @@ for bracket_name, registrants in bracket_buckets.items():
             w_pick = next((p for p in picks_res if p["user_id"] == reg["user_id"] and p["week"] == w), None)
             
             if not w_pick:
-                html_iframe_payload += '<td style="background:#fafafa;"></td>'
+                html_iframe_payload += '<td></td>'
                 continue
                 
-            if w == CURRENT_WEEK and not can_view_live_picks:
+            if w == current_week and not can_view_live_picks:
                 icon_tag = "🔒 Confirmed" if w_pick["pick_state"] == "Confirmed" else "🔒 Hidden"
-                html_iframe_payload += f'<td style="color:#94a3b8; font-size:10px; background:#f1f5f9; font-weight:bold;">{icon_tag}</td>'
+                html_iframe_payload += f'<td style="color:#94a3b8; font-size:10px; background:rgba(0,0,0,0.05); font-weight:bold;">{icon_tag}</td>'
                 continue
                 
             clean_team = w_pick["team_picked"].replace("_SO", "")
             has_asterisk = "*" if w_pick["team_picked"].endswith("_SO") else ""
             
             bg_color = "transparent"
-            text_color = "#1e293b"
+            text_color = "inherit"
             indicator_icon = ""
             
             if w_pick["pick_state"] == "Correct":
@@ -242,14 +263,11 @@ for bracket_name, registrants in bracket_buckets.items():
             if clean_team == "BYE":
                 html_iframe_payload += f'<td style="background:{bg_color}; font-weight:bold; color:{text_color}; position:relative;">BYE{indicator_icon}</td>'
             else:
-                # Inline SVG Embedded Fix: Reads the file code directly from your static folder
                 try:
                     with open(f"static/{clean_team.upper()}.svg", "r") as svg_file:
                         svg_code = svg_file.read()
-                    # Wrap the raw SVG code in a styled container to control height/width dynamically
-                    logo_html = f'<div style="width:28px; height:18px; display:inline-block;">{svg_code}</div>'
+                    logo_html = f'<div style="width:28px; height:18px; display:inline-block; margin:0 auto;"><style>svg {{ width:100% !important; height:100% !important; }}</style>{svg_code}</div>'
                 except Exception:
-                    # Fallback to plain text if the file is missing or has a typo
                     logo_html = f'<b>{clean_team}</b>'
 
                 html_iframe_payload += f"""
@@ -266,5 +284,6 @@ for bracket_name, registrants in bracket_buckets.items():
 
 html_iframe_payload += "</body></html>"
 
-# Render safely via standard new st.iframe parameters
+# Native modern rendering frame setup configuration
 st.iframe(src=f"data:text/html;charset=utf-8,{html_iframe_payload}", height=1200)
+
