@@ -1,11 +1,71 @@
 import streamlit as st
 from supabase import create_client, Client
 import os
+import datetime
 
 # --- DATABASE SETUP ---
 URL = st.secrets["SUPABASE_URL"]
 KEY = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(URL, KEY)
+
+# --- AUTOMATIC SEASON TIMELINE RECKONER ---
+# Week 1 Wednesday anchor timestamp (September 9, 2026 at 00:00:00)
+SEASON_START_WEDNESDAY = datetime.datetime(2026, 9, 9, 0, 0, 0)
+now = datetime.datetime.now()
+
+# Calculate the elapsed weeks since kickoff
+if now < SEASON_START_WEDNESDAY:
+    CALCULATED_CURRENT_WEEK = 1
+else:
+    elapsed_days = (now - SEASON_START_WEDNESDAY).days
+    CALCULATED_CURRENT_WEEK = min(22, (elapsed_days // 7) + 1)
+
+# Helper function to convert numeric weeks to custom regular season or playoff string labels
+def get_week_label(week_num):
+    if week_num == 19:
+        return "Wildcard"
+    elif week_num == 20:
+        return "Divisional"
+    elif week_num == 21:
+        return "Conference"
+    elif week_num == 22:
+        return "Super Bowl"
+    else:
+        return f"Week {week_num}"
+
+# --- SIDEBAR INTERFACE ENHANCEMENT ---
+with st.sidebar:
+    week_options = []
+    for w in range(1, 23):
+        base_label = get_week_label(w)
+        # Append current tag to the active week calculation
+        if w == CALCULATED_CURRENT_WEEK:
+            week_options.append(f"{base_label} (current)")
+        else:
+            week_options.append(base_label)
+            
+    # Default automatically to the calculated current week row index matching the browser time
+    selected_week_label = st.selectbox(
+        "📆 Select Target Pool Week", 
+        options=week_options, 
+        index=CALCULATED_CURRENT_WEEK - 1
+    )
+    
+    # --- Reverse Map the Selection Label Back into a Clear Database Week Integer ---
+    # Strip the (current) tag out if present
+    clean_label = selected_week_label.replace(" (current)", "")
+    
+    if "Wildcard" in clean_label:
+        SELECTED_WEEK = 19
+    elif "Divisional" in clean_label:
+        SELECTED_WEEK = 20
+    elif "Conference" in clean_label:
+        SELECTED_WEEK = 21
+    elif "Super Bowl" in clean_label:
+        SELECTED_WEEK = 22
+    else:
+        # Extract the trailing integer for regular season weeks (e.g., "Week 2" -> 2)
+        SELECTED_WEEK = int(clean_label.split(" ")[1])
 
 st.set_page_config(layout="wide")
 
