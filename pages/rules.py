@@ -2,6 +2,39 @@ import streamlit as st
 import os
 import datetime
 
+st.set_page_config(layout="wide")
+
+# --- CUSTOM SIDEBAR CONFIGURATION ---
+with st.sidebar:
+    # 1. Main Game Mode Selector
+    game_mode = st.selectbox("Select Pool", ["Main", "2nd Chance"])
+    game_slug = "Main" if game_mode == "Main" else "2nd_Chance"
+    CURRENT_WEEK = 2  
+
+    # 2. Dynamic Theme Profile Mapping
+    sidebar_bg = "#1d3d70" if game_slug == "Main" else "#974706"
+    
+    st.markdown(
+        f"""
+        <style>
+            /* Dynamic sidebar color assignment */
+            [data-testid="stSidebar"] {{
+                background-color: {sidebar_bg} !important;
+            }}
+            /* Overwrite sidebar text to remain clean white across modes */
+            [data-testid="stSidebar"] .stText, [data-testid="stSidebar"] p, 
+            [data-testid="stSidebar"] h3, [data-testid="stSidebar"] label {{
+                color: #ffffff !important;
+            }}
+            /* Force dropdown selection text contrast values */
+            [data-testid="stSidebar"] div[data-baseweb="select"] div {{
+                color: #1e293b !important;
+            }}
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
 # --- AUTOMATIC SEASON TIMELINE RECKONER ---
 # Week 1 Wednesday anchor timestamp (September 9, 2026 at 00:00:00)
 SEASON_START_WEDNESDAY = datetime.datetime(2026, 9, 9, 0, 0, 0)
@@ -60,62 +93,29 @@ with st.sidebar:
     else:
         # Extract the trailing integer for regular season weeks (e.g., "Week 2" -> 2)
         SELECTED_WEEK = int(clean_label.split(" ")[1])
-        
-st.set_page_config(layout="wide")
 
-# --- CUSTOM SIDEBAR CONFIGURATION ---
-with st.sidebar:
-    # 1. Main Game Mode Selector
-    game_mode = st.selectbox("Select Pool", ["Main", "2nd Chance"])
-    game_slug = "Main" if game_mode == "Main" else "2nd_Chance"
-    CURRENT_WEEK = 2  
+st.markdown("<hr style='margin:10px 0 15px 0; border:0; border-top:1px solid rgba(255,255,255,0.3);'/>", unsafe_allow_html=True)
 
-    # 2. Dynamic Theme Profile Mapping
-    sidebar_bg = "#1d3d70" if game_slug == "Main" else "#974706"
-    
-    st.markdown(
-        f"""
-        <style>
-            /* Dynamic sidebar color assignment */
-            [data-testid="stSidebar"] {{
-                background-color: {sidebar_bg} !important;
-            }}
-            /* Overwrite sidebar text to remain clean white across modes */
-            [data-testid="stSidebar"] .stText, [data-testid="stSidebar"] p, 
-            [data-testid="stSidebar"] h3, [data-testid="stSidebar"] label {{
-                color: #ffffff !important;
-            }}
-            /* Force dropdown selection text contrast values */
-            [data-testid="stSidebar"] div[data-baseweb="select"] div {{
-                color: #1e293b !important;
-            }}
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
+# Basic navigation paths open to every pool competitor
+st.page_link("app.py", label="Picks")
+st.page_link("pages/overview.py", label="Overview")
+st.page_link("pages/chat.py", label="Chat")
+st.page_link("pages/rules.py", label="Rules")
+
+# ROLE GATE: Check if the logged-in session belongs to a valid administrator
+is_logged_in_admin = False
+if st.session_state.get("user"):
+    try:
+        admin_check = supabase.table("users").select("is_admin").eq("id", st.session_state.user.id).single().execute().data
+        if admin_check and admin_check.get("is_admin", False):
+            is_logged_in_admin = True
+    except Exception:
+        pass # Fail safely to hidden links if error occurs
         
-    st.markdown("<hr style='margin:10px 0 15px 0; border:0; border-top:1px solid rgba(255,255,255,0.3);'/>", unsafe_allow_html=True)
-    
-    # Basic navigation paths open to every pool competitor
-    st.page_link("app.py", label="Picks")
-    st.page_link("pages/overview.py", label="Overview")
-    st.page_link("pages/chat.py", label="Chat")
-    st.page_link("pages/rules.py", label="Rules")
-    
-    # ROLE GATE: Check if the logged-in session belongs to a valid administrator
-    is_logged_in_admin = False
-    if st.session_state.get("user"):
-        try:
-            admin_check = supabase.table("users").select("is_admin").eq("id", st.session_state.user.id).single().execute().data
-            if admin_check and admin_check.get("is_admin", False):
-                is_logged_in_admin = True
-        except Exception:
-            pass # Fail safely to hidden links if error occurs
-            
-    # Links dynamically append only if the identity verification pass clears
-    if is_logged_in_admin:
-        st.page_link("pages/admin.py", label="Admin")
-        st.page_link("pages/seed_data.py", label="Seed Data")
+# Links dynamically append only if the identity verification pass clears
+if is_logged_in_admin:
+    st.page_link("pages/admin.py", label="Admin")
+    st.page_link("pages/seed_data.py", label="Seed Data")
     
 # --- UNIFIED MASTER FRAME BRAND HEADER (Theme-Adaptive Native Fix) ---
 header_col1, header_col2 = st.columns([1, 5])
