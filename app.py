@@ -276,7 +276,7 @@ else:
                 with col_h_logo:
                     try:
                         with open(f"static/{home}.svg", "r") as f: svg_code = f.read()
-                        # 🚀 FIX: Added matching class scope block here to isolate home vector parameters
+                        # FIX: Added matching class scope block here to isolate home vector parameters
                         st.markdown(
                             f"""
                             <div class="matchup-logo-box" style="width:32px; height:24px; padding-top:6px; margin:0 auto; display:flex; align-items:center;">
