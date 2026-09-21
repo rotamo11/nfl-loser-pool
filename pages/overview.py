@@ -45,7 +45,7 @@ with st.sidebar:
     # 3. Streamlit Standard Page Routing Links Matrix
     st.page_link("app.py", label="Picks")
     st.page_link("pages/overview.py", label="Results")
-    st.page_link("pages/chat.py", label="Smack")
+    st.page_link("pages/chat.py", label="Chat")
     st.page_link("pages/rules.py", label="Rules")
     st.page_link("pages/admin.py", label="Admin")
     st.page_link("pages/seed_data.py", label="Seed Data")
@@ -162,10 +162,10 @@ else:
 st.markdown("<br>### Complete Tournament Roster Grid", unsafe_allow_html=True)
 
 bracket_buckets = {
-    "🟢 Loser's Bracket": [r for r in regs_res if r["bracket_status"] == "Loser Bracket"],
-    "🟡 Winner's Bracket": [r for r in regs_res if r["bracket_status"] == "Winner Bracket"],
-    "🔵 Tiebreaker": [r for r in regs_res if r["bracket_status"] == "Tiebreaker"],
-    "🔴 Eliminated": [r for r in regs_res if r["bracket_status"] == "Eliminated"]
+    "Loser's Bracket": [r for r in regs_res if r["bracket_status"] == "Loser Bracket"],
+    "Winner's Bracket": [r for r in regs_res if r["bracket_status"] == "Winner Bracket"],
+    "Tiebreaker": [r for r in regs_res if r["bracket_status"] == "Tiebreaker"],
+    "Eliminated": [r for r in regs_res if r["bracket_status"] == "Eliminated"]
 }
 
 html_iframe_payload = """
