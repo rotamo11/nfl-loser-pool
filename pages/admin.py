@@ -11,6 +11,8 @@ supabase: Client = create_client(URL, KEY)
 # Free API key from the-odds-api.com
 API_KEY = st.secrets.get("THE_ODDS_API_KEY", "YOUR_FREE_API_KEY")
 
+st.set_page_config(layout="wide")
+
 # --- CUSTOM SIDEBAR CONFIGURATION ---
 with st.sidebar:
     # 1. Main Game Mode Selector
@@ -103,7 +105,6 @@ with header_col2:
 
 st.markdown("---")
 
-st.set_page_config(layout="wide")
 st.subheader("Commissioner Tools")
 
 # Parameter Configuration Matrix Controls
