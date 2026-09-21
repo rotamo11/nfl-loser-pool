@@ -46,7 +46,7 @@ with st.sidebar:
     
     # 3. Streamlit Standard Page Routing Links Matrix
     st.page_link("app.py", label="Picks")
-    st.page_link("pages/overview.py", label="Results")
+    st.page_link("pages/overview.py", label="Overview")
     st.page_link("pages/chat.py", label="Chat")
     st.page_link("pages/rules.py", label="Rules")
     st.page_link("pages/admin.py", label="Admin")
@@ -180,7 +180,7 @@ def seed_pool_database():
             status = "Loser Bracket" if wrongs == 0 else "Winner Bracket" if wrongs == 1 else "Eliminated"
             supabase.table("tournament_registrations").update({"bracket_status": status}).eq("user_id", fake_uid).eq("game_type", track).execute()
 
-    st.success("Seeding routine complete! Open your Results dashboard to view the generated testing parameters.")
+    st.success("Seeding routine complete! Open your Overview dashboard to view the generated testing parameters.")
 
 if __name__ == "__main__":
     if st.button("Trigger Seed Script Execution"):
