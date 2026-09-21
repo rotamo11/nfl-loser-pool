@@ -37,7 +37,7 @@ with st.sidebar:
     # 3. Streamlit Standard Page Routing Links Matrix
     st.page_link("app.py", label="Picks")
     st.page_link("pages/overview.py", label="Results")
-    st.page_link("pages/chat.py", label="Smack")
+    st.page_link("pages/chat.py", label="Chat")
     st.page_link("pages/rules.py", label="Rules")
     st.page_link("pages/admin.py", label="Admin")
     st.page_link("pages/seed_data.py", label="Seed Data")
@@ -93,11 +93,11 @@ with header_col2:
 
 st.markdown("---")
 
-st.title("Official Pool Rules & Details")
+st.header("Official Pool Rules & Details")
 st.markdown("---")
 
 # --- SECTION 1: CORE GAMEPLAY ---
-st.header("Weekly Pick Requirements")
+st.subheader("Weekly Pick Requirements")
 st.markdown(
     """
     * **Weeks 1–14:** Select exactly **one team** per week that you think will **lose** their game.
@@ -108,7 +108,7 @@ st.markdown(
 )
 
 # --- SECTION 2: DEADLINES & FALLBACKS ---
-st.header("Deadlines & Auto-Fallbacks")
+st.subheader("Deadlines & Auto-Fallbacks")
 st.markdown(
     """
     * **Submission Deadline:** Picks must be finalized by **NOON Eastern Time on Sunday**, or by kickoff time if your chosen team plays an earlier game (e.g., Thursday/Saturday).
@@ -120,7 +120,7 @@ st.markdown(
 )
 
 # --- SECTION 3: BRACKETS & SELECTION RESTRICTIONS ---
-st.header("Brackets, Striking, & Repeat Picks")
+st.subheader("Brackets, Striking, & Repeat Picks")
 st.markdown(
     """
     * **Double Elimination Brackets:**
@@ -134,7 +134,7 @@ st.markdown(
 )
 
 # --- SECTION 4: PRIZES & TIEBREAKERS ---
-st.header("Purse Distribution & Tiebreaker Hierarchy")
+st.subheader("Purse Distribution & Tiebreaker Hierarchy")
 
 # Render Prize Table Matrix
 st.markdown("### Purse Split ($1,850 Total across 74 Players)")
