@@ -144,7 +144,7 @@ with header_col2:
         f"""
         <div style="display: flex; align-items: flex-end; height: 85px; padding-bottom: 5px;">
             <h1 style="margin:0; font-weight:900; font-size:32px; letter-spacing:-1px;">
-                2026 NFL Loser Pool &bull; {game_mode} &bull; Week {selected_week_label}
+                2026 NFL Loser Pool &bull; {game_mode} &bull; {selected_week_label}
             </h1>
         </div>
         """
