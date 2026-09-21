@@ -32,7 +32,7 @@ def seed_pool_database():
         else:
             supabase.table("nfl_schedule").insert(game).execute()
             
-    st.success("✅ Mock schedule lines mapped.")
+    st.success("Mock schedule lines mapped.")
 
     # --- 2. GENERATE DUMMY PLAYERS & REGISTER TO BRACKETS ---
     dummy_names = ["Stephen King", "Amanda Conley", "Bill Kazmierski", "John Doe", "Jane Smith", "Bob Miller", "Alice Vance", "Charlie Brown", "David Davis", "Eva Elks"]
@@ -85,8 +85,8 @@ def seed_pool_database():
             status = "Loser Bracket" if wrongs == 0 else "Winner Bracket" if wrongs == 1 else "Eliminated"
             supabase.table("tournament_registrations").update({"bracket_status": status}).eq("user_id", fake_uid).eq("game_type", track).execute()
 
-    st.success("🎉 Seeding routine complete! Open your Overview dashboard to view the generated testing parameters.")
+    st.success("Seeding routine complete! Open your Results dashboard to view the generated testing parameters.")
 
 if __name__ == "__main__":
-    if st.button("🧬 Trigger Seed Script Execution"):
+    if st.button("Trigger Seed Script Execution"):
         seed_pool_database()
