@@ -262,10 +262,13 @@ for bracket_name, registrants in bracket_buckets.items():
                 html_iframe_payload += f'<td style="background:{bg_color}; font-weight:bold; color:{text_color}; position:relative;">BYE{indicator_icon}</td>'
             else:
                 try:
+                    # 🚀 THE ABSOLUTE FIX: Search strictly using the clean_team variable (e.g., 'SF')
+                    # This ensures 'SF_SO' accurately falls back to read your local 'SF.svg' asset!
                     with open(f"static/{clean_team.upper()}.svg", "r") as svg_file:
                         svg_code = svg_file.read()
                     logo_html = f'<div style="width:28px; height:18px; display:inline-block; margin:0 auto;"><style>svg {{ width:100% !important; height:100% !important; }}</style>{svg_code}</div>'
                 except Exception:
+                    # Safe secondary fallback text if the core file itself is completely missing
                     logo_html = f'<b>{clean_team}</b>'
 
                 html_iframe_payload += f"""
