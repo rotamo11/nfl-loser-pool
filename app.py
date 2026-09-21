@@ -44,7 +44,7 @@ with st.sidebar:
     
     # 3. Streamlit Standard Page Routing Links Matrix
     st.page_link("app.py", label="Picks")
-    st.page_link("pages/overview.py", label="Results")
+    st.page_link("pages/overview.py", label="Overview")
     st.page_link("pages/chat.py", label="Chat")
     st.page_link("pages/rules.py", label="Rules")
     st.page_link("pages/admin.py", label="Admin")
@@ -174,7 +174,7 @@ else:
     if not reg_profile:
         st.warning("You are not registered in this specific pool. Toggle your sidebar filter options.")
     elif reg_profile[0]["bracket_status"] == "Eliminated":
-        st.error("You have been Eliminated from this tournament. Pick submission access is locked, but you can navigate to the Results page in the sidebar.")
+        st.error("You have been Eliminated from this tournament. Pick submission access is locked, but you can navigate to the Overview page in the sidebar.")
     else:
         player_status = reg_profile[0]["bracket_status"]
         st.title(f"Status: **{player_status}**")
