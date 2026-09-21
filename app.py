@@ -196,7 +196,7 @@ else:
                         st.markdown(
                             f"""
                             <div style="border:1px solid #cbd5e1; padding:6px 4px; border-radius:4px; text-align:center; background:#000000; font-size:12px; font-family:sans-serif; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
-                                <span style="color:#cbd5e1; font-size:12px; font-weight:bold; display:block; margin-bottom:2px;">Weekk {p['week']}</span>
+                                <span style="color:#cbd5e1; font-size:12px; font-weight:bold; display:block; margin-bottom:2px;">Week {p['week']}</span>
                                 <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;">
                                     <img src="app/static/{clean_t.upper()}.svg" width="28" height="18" style="object-fit:contain;"/>
                                     <b style="color:#cbd5e1; font-size:12px;">{clean_t.upper()}{has_so}</b>
