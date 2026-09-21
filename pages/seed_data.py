@@ -2,6 +2,7 @@ import random
 import uuid
 import streamlit as st
 from supabase import create_client, Client
+import os
 
 # Initialize database connections
 URL = st.secrets["SUPABASE_URL"]
