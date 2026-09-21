@@ -93,6 +93,7 @@ with header_col2:
 
 st.markdown("---")
 
+st.set_page_config(layout="wide")
 st.header("Official Pool Rules & Details")
 st.markdown("---")
 
