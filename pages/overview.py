@@ -42,87 +42,87 @@ with st.sidebar:
         unsafe_allow_html=True
     )
 
-# --- AUTOMATIC SEASON TIMELINE RECKONER ---
-# Week 1 Wednesday anchor timestamp (September 9, 2026 at 00:00:00)
-SEASON_START_WEDNESDAY = datetime.datetime(2026, 9, 9, 0, 0, 0)
-now = datetime.datetime.now()
-
-# Calculate the elapsed weeks since kickoff
-if now < SEASON_START_WEDNESDAY:
-    CALCULATED_CURRENT_WEEK = 1
-else:
-    elapsed_days = (now - SEASON_START_WEDNESDAY).days
-    CALCULATED_CURRENT_WEEK = min(22, (elapsed_days // 7) + 1)
-
-# Helper function to convert numeric weeks to custom regular season or playoff string labels
-def get_week_label(week_num):
-    if week_num == 19:
-        return "Wildcard"
-    elif week_num == 20:
-        return "Divisional"
-    elif week_num == 21:
-        return "Conference"
-    elif week_num == 22:
-        return "Super Bowl"
+    # --- AUTOMATIC SEASON TIMELINE RECKONER ---
+    # Week 1 Wednesday anchor timestamp (September 9, 2026 at 00:00:00)
+    SEASON_START_WEDNESDAY = datetime.datetime(2026, 9, 9, 0, 0, 0)
+    now = datetime.datetime.now()
+    
+    # Calculate the elapsed weeks since kickoff
+    if now < SEASON_START_WEDNESDAY:
+        CALCULATED_CURRENT_WEEK = 1
     else:
-        return f"Week {week_num}"
-
-# --- SIDEBAR INTERFACE ENHANCEMENT ---
-with st.sidebar:
-    week_options = []
-    for w in range(1, 23):
-        base_label = get_week_label(w)
-        # Append current tag to the active week calculation
-        if w == CALCULATED_CURRENT_WEEK:
-            week_options.append(f"{base_label} (current)")
+        elapsed_days = (now - SEASON_START_WEDNESDAY).days
+        CALCULATED_CURRENT_WEEK = min(22, (elapsed_days // 7) + 1)
+    
+    # Helper function to convert numeric weeks to custom regular season or playoff string labels
+    def get_week_label(week_num):
+        if week_num == 19:
+            return "Wildcard"
+        elif week_num == 20:
+            return "Divisional"
+        elif week_num == 21:
+            return "Conference"
+        elif week_num == 22:
+            return "Super Bowl"
         else:
-            week_options.append(base_label)
-            
-    # Default automatically to the calculated current week row index matching the browser time
-    selected_week_label = st.selectbox(
-        "Select Target Week", 
-        options=week_options, 
-        index=CALCULATED_CURRENT_WEEK - 1
-    )
+            return f"Week {week_num}"
     
-    # --- Reverse Map the Selection Label Back into a Clear Database Week Integer ---
-    # Strip the (current) tag out if present
-    clean_label = selected_week_label.replace(" (current)", "")
-    
-    if "Wildcard" in clean_label:
-        SELECTED_WEEK = 19
-    elif "Divisional" in clean_label:
-        SELECTED_WEEK = 20
-    elif "Conference" in clean_label:
-        SELECTED_WEEK = 21
-    elif "Super Bowl" in clean_label:
-        SELECTED_WEEK = 22
-    else:
-        # Extract the trailing integer for regular season weeks (e.g., "Week 2" -> 2)
-        SELECTED_WEEK = int(clean_label.split(" ")[1])
-
-st.markdown("<hr style='margin:10px 0 15px 0; border:0; border-top:1px solid rgba(255,255,255,0.3);'/>", unsafe_allow_html=True)
-
-# Basic navigation paths open to every pool competitor
-st.page_link("app.py", label="Picks")
-st.page_link("pages/overview.py", label="Overview")
-st.page_link("pages/chat.py", label="Chat")
-st.page_link("pages/rules.py", label="Rules")
-
-# ROLE GATE: Check if the logged-in session belongs to a valid administrator
-is_logged_in_admin = False
-if st.session_state.get("user"):
-    try:
-        admin_check = supabase.table("users").select("is_admin").eq("id", st.session_state.user.id).single().execute().data
-        if admin_check and admin_check.get("is_admin", False):
-            is_logged_in_admin = True
-    except Exception:
-        pass # Fail safely to hidden links if error occurs
+    # --- SIDEBAR INTERFACE ENHANCEMENT ---
+    with st.sidebar:
+        week_options = []
+        for w in range(1, 23):
+            base_label = get_week_label(w)
+            # Append current tag to the active week calculation
+            if w == CALCULATED_CURRENT_WEEK:
+                week_options.append(f"{base_label} (current)")
+            else:
+                week_options.append(base_label)
+                
+        # Default automatically to the calculated current week row index matching the browser time
+        selected_week_label = st.selectbox(
+            "Select Target Week", 
+            options=week_options, 
+            index=CALCULATED_CURRENT_WEEK - 1
+        )
         
-# Links dynamically append only if the identity verification pass clears
-if is_logged_in_admin:
-    st.page_link("pages/admin.py", label="Admin")
-    st.page_link("pages/seed_data.py", label="Seed Data")
+        # --- Reverse Map the Selection Label Back into a Clear Database Week Integer ---
+        # Strip the (current) tag out if present
+        clean_label = selected_week_label.replace(" (current)", "")
+        
+        if "Wildcard" in clean_label:
+            SELECTED_WEEK = 19
+        elif "Divisional" in clean_label:
+            SELECTED_WEEK = 20
+        elif "Conference" in clean_label:
+            SELECTED_WEEK = 21
+        elif "Super Bowl" in clean_label:
+            SELECTED_WEEK = 22
+        else:
+            # Extract the trailing integer for regular season weeks (e.g., "Week 2" -> 2)
+            SELECTED_WEEK = int(clean_label.split(" ")[1])
+
+    st.markdown("<hr style='margin:10px 0 15px 0; border:0; border-top:1px solid rgba(255,255,255,0.3);'/>", unsafe_allow_html=True)
+    
+    # Basic navigation paths open to every pool competitor
+    st.page_link("app.py", label="Picks")
+    st.page_link("pages/overview.py", label="Overview")
+    st.page_link("pages/chat.py", label="Chat")
+    st.page_link("pages/rules.py", label="Rules")
+
+    # ROLE GATE: Check if the logged-in session belongs to a valid administrator
+    is_logged_in_admin = False
+    if st.session_state.get("user"):
+        try:
+            admin_check = supabase.table("users").select("is_admin").eq("id", st.session_state.user.id).single().execute().data
+            if admin_check and admin_check.get("is_admin", False):
+                is_logged_in_admin = True
+        except Exception:
+            pass # Fail safely to hidden links if error occurs
+            
+    # Links dynamically append only if the identity verification pass clears
+    if is_logged_in_admin:
+        st.page_link("pages/admin.py", label="Admin")
+        st.page_link("pages/seed_data.py", label="Seed Data")
     
 # --- UNIFIED MASTER FRAME BRAND HEADER (Theme-Adaptive Native Fix) ---
 header_col1, header_col2 = st.columns([1, 5])
