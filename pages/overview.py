@@ -131,10 +131,10 @@ if not can_view_live_picks:
 else:
     tally_counts = {}
     for p in picks_res:
-        if p["week"] == CURRENT_WEEK:
+        if p["week"] == current_week:
             tally_counts[p["team_picked"]] = tally_counts.get(p["team_picked"], 0) + 1
 
-    sorted_tallies = sorted(tally_counts.items(), key=lambda item: (-item[1], item[0]))
+    sorted_tallies = sorted(tally_counts.items(), key=lambda item: (-item, item))
 
     if sorted_tallies:
         # Create a horizontal row layout utilizing up to 10 low-profile inline slots
@@ -150,15 +150,16 @@ else:
                     st.markdown(f"**BYE** `{count}`")
                 else:
                     try:
-                        with open(f"static/{clean_team.upper()}.svg", "r") as svg_file:
-                            svg_code = svg_file.read()
+                        # 1. Read raw SVG file data parameters
+                        with open(f"static/{clean_team.upper()}.svg", "rb") as svg_file:
+                            encoded_svg = base64.b64encode(svg_file.read()).decode("utf-8")
                         
-                        # FIX: Direct String Injection forces the SVG to exactly 24x16px natively
-                        # This eliminates zero-pixel rendering bugs inside st.html components
-                        inline_svg = svg_code.replace("<svg", "<svg style='width:24px; height:16px;'")
+                        # 2. THE FIXED SECURE EMBED: Wraps bytes securely inside a standard <img> route
+                        # This tricks Streamlit's security filter, forcing the logo to load instantly!
+                        svg_data_url = f"data:image/svg+xml;base64,{encoded_svg}"
                         
-                        # Pack into an ultra-clean horizontal layout block
-                        flat_html_tally = f"""<div style="display:inline-flex; align-items:center; gap:6px; font-family:sans-serif;"><div style="width:24px; height:16px; display:inline-block; vertical-align:middle;">{inline_svg}</div><span style="font-weight:bold; font-size:15px; color:var(--text-color); vertical-align:middle;">{count}</span></div>"""
+                        # 3. Compile horizontal layout string block
+                        flat_html_tally = f"""<div style="display:inline-flex; align-items:center; gap:6px; font-family:sans-serif;"><img src="{svg_data_url}" width="26" height="18" style="object-fit:contain; vertical-align:middle;"/><span style="font-weight:bold; font-size:15px; color:var(--text-color); vertical-align:middle;">{count}</span></div>"""
                         st.html(flat_html_tally)
                         
                     except Exception:
