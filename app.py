@@ -178,8 +178,6 @@ else:
     else:
         player_status = reg_profile[0]["bracket_status"]
         st.subheader(f"Status: **{player_status}**")
-        # st.set_page_config(layout="wide")
-        # st.title("Commissioner Tools")
 
         # --- RECOVER USER COMPREHENSIVE SELECTION RECORDS ---
         all_picks_res = supabase.table("user_picks").select("*").eq("user_id", user_id).eq("game_type", game_slug).execute().data
