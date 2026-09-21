@@ -46,7 +46,7 @@ with st.sidebar:
             
     # Default automatically to the calculated current week row index matching the browser time
     selected_week_label = st.selectbox(
-        "📆 Select Target Pool Week", 
+        "Select Target Week", 
         options=week_options, 
         index=CALCULATED_CURRENT_WEEK - 1
     )
