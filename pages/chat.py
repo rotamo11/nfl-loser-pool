@@ -100,7 +100,7 @@ with header_col2:
 st.markdown("---")
 
 st.set_page_config(layout="wide")
-st.title("Loser Pool Locker Room Chat")
+st.subheader("Loser Pool Locker Room Smack")
 
 if 'user' not in st.session_state or not st.session_state.user:
     st.warning("🔒 You must be logged into the main page to access the live chat room.")
