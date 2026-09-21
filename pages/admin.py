@@ -19,7 +19,7 @@ with st.sidebar:
     # 1. Main Game Mode Selector
     game_mode = st.selectbox("Select Pool", ["Main", "2nd Chance"])
     game_slug = "Main" if game_mode == "Main" else "2nd_Chance"
-    CURRENT_WEEK = 2  
+    # CURRENT_WEEK = 2  
 
     # 2. Dynamic Theme Profile Mapping
     sidebar_bg = "#1d3d70" if game_slug == "Main" else "#974706"
@@ -230,11 +230,11 @@ with tab_scores:
                                         favored_tier = abs(fav_outcome.get("point", 0))
                             
                             supabase.table("nfl_schedule").upsert({
-                                "week": admin_week, "away_team": away_team[:3].upper(), "home_team": home_team[:3].upper(),
+                                "week": SELECTED_WEEK, "away_team": away_team[:3].upper(), "home_team": home_team[:3].upper(),
                                 "kickoff_time": kickoff, "espn_favored_team": favored_team[:3].upper(), "espn_favored_tier": favored_tier
                             }).execute()
                             synced_count += 1
-                        st.success(f"Successfully loaded and calculated {synced_count} match lines for Week {admin_week}!")
+                        st.success(f"Successfully loaded and calculated {synced_count} match lines for Week {SELECTED_WEEK}!")
                         st.rerun()
                 except Exception as e:
                     st.error(f"API Connection Failed: {str(e)}")
@@ -243,25 +243,25 @@ with tab_scores:
         if st.button("Execute Deadline Routines", use_container_width=True):
             with st.spinner("Re-indexing missing player submittals against league rules..."):
                 active_players = supabase.table("tournament_registrations").select("*").eq("game_type", game_slug).neq("bracket_status", "Eliminated").execute().data
-                unplayed_matches = supabase.table("nfl_schedule").select("*").eq("week", admin_week).order("espn_favored_tier", desc=True).execute().data
+                unplayed_matches = supabase.table("nfl_schedule").select("*").eq("week", SELECTED_WEEK).order("espn_favored_tier", desc=True).execute().data
                 
                 fallback_count, bye_burn_count = 0, 0
                 for player in active_players:
-                    existing = supabase.table("user_picks").select("*").eq("user_id", player["user_id"]).eq("game_type", game_slug).eq("week", admin_week).execute().data
+                    existing = supabase.table("user_picks").select("*").eq("user_id", player["user_id"]).eq("game_type", game_slug).eq("week", SELECTED_WEEK).execute().data
                     if not existing:
                         if player["byes_used"] < 1:
-                            supabase.table("user_picks").insert({"user_id": player["user_id"], "game_type": game_slug, "week": admin_week, "team_picked": "BYE", "pick_state": "Finalized"}).execute()
+                            supabase.table("user_picks").insert({"user_id": player["user_id"], "game_type": game_slug, "week": SELECTED_WEEK, "team_picked": "BYE", "pick_state": "Finalized"}).execute()
                             supabase.table("tournament_registrations").update({"byes_used": 1}).eq("user_id", player["user_id"]).eq("game_type", game_slug).execute()
                             bye_burn_count += 1
                         elif unplayed_matches:
                             top_favored = unplayed_matches[0]["espn_favored_team"]
-                            supabase.table("user_picks").insert({"user_id": player["user_id"], "game_type": game_slug, "week": admin_week, "team_picked": top_favored, "pick_state": "Finalized"}).execute()
+                            supabase.table("user_picks").insert({"user_id": player["user_id"], "game_type": game_slug, "week": SELECTED_WEEK, "team_picked": top_favored, "pick_state": "Finalized"}).execute()
                             fallback_count += 1
                 st.success(f"Processing complete! {bye_burn_count} Byes burned. {fallback_count} Autopicks assigned.")
                 st.rerun()
 
     st.markdown("---")
-    schedule_res = supabase.table("nfl_schedule").select("*").eq("week", admin_week).execute().data
+    schedule_res = supabase.table("nfl_schedule").select("*").eq("week", SELECTED_WEEK).execute().data
 
     if not schedule_res:
         st.info("No games synced for this week yet. Click the API Sync button above to populate the schedule.")
