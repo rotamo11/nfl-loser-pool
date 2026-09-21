@@ -169,7 +169,9 @@ else:
         st.rerun()
         
     user_id = st.session_state.user.id
+    user_name = st.session_state.user.id
     reg_profile = supabase.table("tournament_registrations").select("*").eq("user_id", user_id).eq("game_type", game_slug).execute().data
+    reg_user = supabase.table("users").select("*").eq("username", user_name).execute().data
     
     if not reg_profile:
         st.warning("You are not registered in this specific pool. Toggle your sidebar filter options.")
@@ -177,7 +179,8 @@ else:
         st.error("You have been Eliminated from this tournament. Pick submission access is locked, but you can navigate to the Overview page in the sidebar.")
     else:
         player_status = reg_profile[0]["bracket_status"]
-        st.title(f"Status: **{player_status}**")
+        player_name = reg_user[0]["username"]
+        st.subheader(f"Status: **{player_status}** ({player_name})")
         # st.set_page_config(layout="wide")
         # st.title("Commissioner Tools")
 
