@@ -15,27 +15,43 @@ st.set_page_config(layout="wide")
 
 # --- CUSTOM SIDEBAR CONFIGURATION ---
 with st.sidebar:
-    local_sidebar_logo = "static/loser-logo.png"
-    if os.path.exists(local_sidebar_logo):
-        st.image(local_sidebar_logo, use_container_width=True)
-    else:
-        st.image("https://espncdn.com", use_container_width=True)
-        
-    st.markdown("<hr style='margin:10px 0 15px 0; border:0; border-top:1px solid #cbd5e1;'/>", unsafe_allow_html=True)
-    
-    game_mode = st.selectbox("Select Pool Tournament", ["Main", "2nd Chance"])
-    game_slug = "Main" if game_mode == "Main Pool" else "2nd_Chance"
-    admin_week = st.number_input("Configure Processing Targets (Week Num)", min_value=1, max_value=22, value=2)
+    # 1. Main Game Mode Selector
+    game_mode = st.selectbox("Select Pool", ["Main", "2nd Chance"])
+    game_slug = "Main" if game_mode == "Main" else "2nd_Chance"
+    CURRENT_WEEK = 2  
 
+    # 2. Dynamic Theme Profile Mapping
+    sidebar_bg = "#1d3d70" if game_slug == "Main" else "#974706"
+    
+    st.markdown(
+        f"""
+        <style>
+            /* Dynamic sidebar color assignment */
+            [data-testid="stSidebar"] {{
+                background-color: {sidebar_bg} !important;
+            }}
+            /* Overwrite sidebar text to remain clean white across modes */
+            [data-testid="stSidebar"] .stText, [data-testid="stSidebar"] p, 
+            [data-testid="stSidebar"] h3, [data-testid="stSidebar"] label {{
+                color: #ffffff !important;
+            }}
+            /* Force dropdown selection text contrast values */
+            [data-testid="stSidebar"] div[data-baseweb="select"] div {{
+                color: #1e293b !important;
+            }}
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+        
+    st.markdown("<hr style='margin:10px 0 15px 0; border:0; border-top:1px solid rgba(255,255,255,0.3);'/>", unsafe_allow_html=True)
+    
     # Basic navigation paths open to every pool competitor
     st.page_link("app.py", label="Picks")
     st.page_link("pages/overview.py", label="Overview")
     st.page_link("pages/chat.py", label="Chat")
     st.page_link("pages/rules.py", label="Rules")
     
-    # st.page_link("pages/admin.py", label="Admin")
-    # st.page_link("pages/seed_data.py", label="Seed Data")
-
     # ROLE GATE: Check if the logged-in session belongs to a valid administrator
     is_logged_in_admin = False
     if st.session_state.get("user"):
@@ -50,23 +66,9 @@ with st.sidebar:
     if is_logged_in_admin:
         st.page_link("pages/admin.py", label="Admin")
         st.page_link("pages/seed_data.py", label="Seed Data")
-
-# --- DYNAMIC SIDEBAR BACKGROUND COLOR ENGINE ---
-sidebar_bg = "#1d3d70" if game_slug == "Main" else "#974706"
-st.markdown(
-    f"""
-    <style>
-        [data-testid="stSidebar"] {{ background-color: {sidebar_bg} !important; }}
-        [data-testid="stSidebar"] .stText, [data-testid="stSidebar"] p, 
-        [data-testid="stSidebar"] h3, [data-testid="stSidebar"] label {{ color: #ffffff !important; }}
-        [data-testid="stSidebar"] div[data-baseweb="select"] div {{ color: #1e293b !important; }}
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
-# --- UNIFIED MASTER FRAME BRAND HEADER (Theme-Adaptive & Aligned) ---
-header_col1, header_col2 = st.columns([1, 4])
+    
+# --- UNIFIED MASTER FRAME BRAND HEADER (Theme-Adaptive Native Fix) ---
+header_col1, header_col2 = st.columns([1, 5])
 
 with header_col1:
     local_logo = "static/loser-logo.png"
@@ -76,15 +78,18 @@ with header_col1:
         st.image("https://espncdn.com", use_container_width=True)
 
 with header_col2:
+    # 1. Main Title
     st.html(
         f"""
-        <div style="display: flex; align-items: flex-end; height: 100px; padding-bottom: 5px;">
+        <div style="display: flex; align-items: flex-end; height: 85px; padding-bottom: 5px;">
             <h1 style="margin:0; font-weight:900; font-size:32px; letter-spacing:-1px;">
-                2026 NFL Loser Pool &bull; {game_mode} &bull; Week {admin_week}
+                2026 NFL Loser Pool &bull; {game_mode} &bull; Week {CURRENT_WEEK}
             </h1>
         </div>
         """
     )
+    
+    # 2. Rule Parameters Grid Rows
     metric_col1, metric_col2, metric_col3 = st.columns(3)
     with metric_col1:
         st.caption("**Weeks 1-14**")
@@ -94,8 +99,22 @@ with header_col2:
         st.markdown("Pick 2 teams to lose")
     with metric_col3:
         st.caption("**Playoffs**")
-        st.markdown("Pick loser of ALL games (repeats allowed)")
+        st.markdown("Pick ALL losers (repeats allowed)")
+        
+    # 3. Deadline Summary Row
     st.info(f"**Weekly Deadline:** Noon ET Sunday, or by kickoff of earlier game")
+    
+    # 4. Financials & History Footer Strip
+    st.html(
+        """
+        <div style="margin-top:10px; padding-top:8px; border-top:1px solid rgba(128,128,128,0.2); font-family:monospace; font-size:14px; color:#3b82f6; font-weight:bold;">
+            74 Players | $1850 Purse ($1110 1st / $555 2nd / $185 3rd) <br>
+            <span style="opacity:0.7; font-weight:normal; font-size:14px; color:var(--text-color);">
+                Last Year's Losers: S. King ($765) • A. Conley ($382.50) • B. Kazmierski ($127.50)
+            </span>
+        </div>
+        """
+    )
 
 st.markdown("---")
 
