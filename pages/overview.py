@@ -131,7 +131,7 @@ if not can_view_live_picks:
 else:
     tally_counts = {}
     for p in picks_res:
-        if p["week"] == current_week:
+        if p["week"] == CURRENT_WEEK:
             tally_counts[p["team_picked"]] = tally_counts.get(p["team_picked"], 0) + 1
 
     sorted_tallies = sorted(tally_counts.items(), key=lambda item: (-item, item))
