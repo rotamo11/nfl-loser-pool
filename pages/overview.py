@@ -124,7 +124,7 @@ can_view_live_picks = (user_current_pick and user_current_pick["pick_state"] == 
 user_map = {u["id"]: u["username"] for u in users_res}
 
 # --- MINIMALIST LOW-PROFILE SELECTION DISTRIBUTION GRID ---
-st.markdown("### 📊 Weekly Selection Distribution")
+st.markdown("### Weekly Selection Distribution")
 
 if not can_view_live_picks:
     st.info("Selection tallies remain hidden until your own weekly entry is Finalized.")
@@ -174,7 +174,7 @@ else:
 st.markdown("---")
 
 # --- MASTER TOURNAMENT ROSTER GRID ---
-st.markdown("### Complete Tournament Roster Grid")
+# st.markdown("### Complete Tournament Roster Grid")
 
 bracket_buckets = {
     "Loser's Bracket": [r for r in regs_res if r["bracket_status"] == "Loser Bracket"],
