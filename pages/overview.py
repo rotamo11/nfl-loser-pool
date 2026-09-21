@@ -262,23 +262,26 @@ for bracket_name, registrants in bracket_buckets.items():
                 html_iframe_payload += f'<td style="background:{bg_color}; font-weight:bold; color:{text_color}; position:relative;">BYE{indicator_icon}</td>'
             else:
                 try:
-                    # THE ABSOLUTE FIX: Search strictly using the clean_team variable (e.g., 'SF')
-                    # This ensures 'SF_SO' accurately falls back to read your local 'SF.svg' asset!
-                    with open(f"static/{clean_team.upper()}.svg", "r") as svg_file:
-                        svg_code = svg_file.read()
-                    logo_html = f'<div style="width:28px; height:18px; display:inline-block; margin:0 auto;"><style>svg {{ width:100% !important; height:100% !important; }}</style>{svg_code}</div>'
+                    # 1. READ THE LOCAL ASSET AS BINARY SECURELY
+                    # This searches strictly using the clean_team variable (e.g., 'SF')
+                    import base64
+                    with open(f"static/{clean_team.upper()}.svg", "rb") as svg_file:
+                        encoded_table_svg = base64.b64encode(svg_file.read()).decode("utf-8")
+                    
+                    # 2. Convert into a clean base64 image data url string
+                    table_svg_url = f"data:image/svg+xml;base64,{encoded_table_svg}"
+                    
+                    # 3. Mount cleanly inside a standard web <img> tag layout frame
+                    logo_html = f'<img src="{table_svg_url}" width="28" height="18" style="object-fit:contain; display:block; margin:0 auto;"/>'
                 except Exception:
-                    # Safe secondary fallback text if the core file itself is completely missing
-                    # logo_html = f'<b>{clean_team}</b>'
-                    # DEBUG FALLBACK: Displays the exact path string Python failed to load
-                    logo_html = f'<span style="font-size:9px; color:orange; font-weight:bold;">Missing: static/{clean_team.upper()}.svg</span>'
-
+                    # Safe fallback text if the file is completely missing
+                    logo_html = f'<b>{clean_team}</b>'
 
                 html_iframe_payload += f"""
                 <td style="background:{bg_color}; position:relative; color:{text_color}; padding:2px;">
                     <div style="display:flex; flex-direction:column; align-items:center; justify-content:center;">
                         {logo_html}
-                        <span style="font-size:8px; font-weight:bold; line-height:1; margin-top:1px;">{clean_team}{has_asterisk}</span>
+                        <span style="font-size:8px; font-weight:bold; line-height:1; margin-top:2px;">{clean_team}{has_asterisk}</span>
                     </div>
                     {indicator_icon}
                 </td>
