@@ -104,7 +104,7 @@ with header_col2:
 st.markdown("---")
 
 st.set_page_config(layout="wide")
-st.title("Commissioner Tools")
+st.subheader("Commissioner Tools")
 
 # Parameter Configuration Matrix Controls
 admin_week = st.number_input("Configure Processing Targets (Week Num)", min_value=1, max_value=22, value=2)
