@@ -2,6 +2,7 @@ import streamlit as st
 from supabase import create_client, Client
 import os
 import datetime
+import time
 
 st.set_page_config(layout="wide")
 
@@ -464,6 +465,7 @@ else:
                             }).execute()
                         st.session_state.show_confirmation_modal = False
                         st.success("Pick has been Confirmed and and can be edited until it becomes Finalized once the deadline passes.")
+                        time.sleep(3)
                         st.rerun()
                         
                 with m_c2:
