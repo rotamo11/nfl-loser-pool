@@ -455,7 +455,7 @@ else:
                 
                 m_c1, m_c2, m_c3 = st.columns(3)
                 with m_c1:
-                    if st.button("Confirm Pick (can still edit, Overview is not visible)", use_container_width=True):
+                    if st.button("Confirm Pick (can still edit, Overview not visible)", use_container_width=True):
                         # 🛡️ THE FIX: Wipe out any previous un-finalized draft picks for this specific week first
                         supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", game_slug).eq("week", SELECTED_WEEK).execute()
                         
@@ -469,8 +469,8 @@ else:
                         st.rerun()
                         
                 with m_c2:
-                    if st.button("Finalize Pick (locks pick, Overview is visible)", use_container_width=True):
-                        # 🛡️ THE FIX: Clear old drafts out before locking down the permanent selection rows
+                    if st.button("Finalize Pick (locks pick, Overview visible)", use_container_width=True):
+                        # THE FIX: Clear old drafts out before locking down the permanent selection rows
                         supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", game_slug).eq("week", SELECTED_WEEK).execute()
                         
                         for team in st.session_state.selected_teams:
@@ -480,6 +480,7 @@ else:
                         st.session_state.show_confirmation_modal = False
                         st.balloons()
                         st.success("Pick locked down! Overview accessibility unlocked.")
+                        time.sleep(3)
                         st.rerun()
                 with m_c3:
                     if st.button("Go Back / Cancel", use_container_width=True):
