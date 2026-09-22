@@ -341,7 +341,7 @@ else:
 
             finalized_picks_this_week = [p["team_picked"] for p in current_picks if p["pick_state"] == "Finalized"]
             if finalized_picks_this_week:
-                st.info(f"**Finalized Pick:** You currently have **{', '.join(confirmed_picks_this_week)}** selected for this week. You are not able to edit but are able to see other player picks.")
+                st.info(f"**Finalized Pick:** You have locked in **{', '.join(finalized_picks_this_week)}** for this week. You can view competitor picks, but edits are no longer allowed.")
 
             # Build the strict historical exclusion array for the Regular Season
             used_teams = []
