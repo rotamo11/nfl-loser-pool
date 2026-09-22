@@ -449,7 +449,7 @@ else:
 
             # --- 7. THREE-OPTION VERIFICATION DIALOGUE POPUP ---
             if st.session_state.get("show_confirmation_modal", False):
-                st.markdown("### Confirmed or Finalized?")
+                st.markdown("### Confirm or Finalize?")
                 st.warning(f"You are selecting the following to lose: **{', '.join(st.session_state.selected_teams)}**")
                 
                 m_c1, m_c2, m_c3 = st.columns(3)
