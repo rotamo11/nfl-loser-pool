@@ -382,7 +382,7 @@ else:
             submit_disabled = len(st.session_state.selected_teams) != required_picks
             
             with c_sub:
-                if st.button("Submit", disabled=submit_disabled, use_container_width=True):
+                if st.button("Next", disabled=submit_disabled, use_container_width=True):
                     st.session_state.show_confirmation_modal = True
             with c_res:
                 if st.button("Reset", use_container_width=True):
