@@ -88,16 +88,22 @@ with st.sidebar:
         clean_label = selected_week_label.replace(" (current)", "")
         
         if "Wildcard" in clean_label:
-            SELECTED_WEEK = 19
+            NEW_WEEK = 19
         elif "Divisional" in clean_label:
-            SELECTED_WEEK = 20
+            NEW_WEEK = 20
         elif "Conference" in clean_label:
-            SELECTED_WEEK = 21
+            NEW_WEEK = 21
         elif "Super Bowl" in clean_label:
-            SELECTED_WEEK = 22
+            NEW_WEEK = 22
         else:
             # Extract the trailing integer for regular season weeks (e.g., "Week 2" -> 2)
-            SELECTED_WEEK = int(clean_label.split(" ")[1])
+            NEW_WEEK = int(clean_label.split(" ")[1])
+        # 🚀 FIX: Detect if the user changed the dropdown week. If so, wipe active session selection cache!
+        if "active_week_tracker" not in st.session_state or st.session_state.active_week_tracker != NEW_WEEK:
+            st.session_state.active_week_tracker = NEW_WEEK
+            st.session_state.selected_teams = [] # Clears workspace parameters for fresh week view mapping
+        
+        SELECTED_WEEK = st.session_state.active_week_tracker
 
     st.markdown("<hr style='margin:10px 0 15px 0; border:0; border-top:1px solid rgba(255,255,255,0.3);'/>", unsafe_allow_html=True)
     
@@ -307,7 +313,7 @@ else:
         # Singular vs. Plural string mapping rule definitions
         team_word = "team" if SELECTED_WEEK <= 14 else "teams"
         required_picks = 1 if SELECTED_WEEK <= 14 else 2 if SELECTED_WEEK <= 18 else 6 if SELECTED_WEEK == 19 else 4 if SELECTED_WEEK == 20 else 2 if SELECTED_WEEK == 21 else 1 if SELECTED_WEEK == 22 else 99
-        st.write(f"### Matchups — Pick **{required_picks}** {team_word} to Lose")
+        st.write(f"### {get_week_label(SELECTED_WEEK)} Matchups — Pick **{required_picks}** {team_word} to Lose")
 
         # --- 🚀 FIX: RESTORED THE MISSING BOUNDS PARAMETERS QUERY ---
         # Recovers any active picks on file for this competitor, track, and selected dropdown week
@@ -316,7 +322,7 @@ else:
         is_finalized = any(p["pick_state"] == "Finalized" for p in current_picks)
         is_confirmed = any(p["pick_state"] == "Confirmed" for p in current_picks)
 
-        st.write(f"### 🏈 Submission Status — {get_week_label(SELECTED_WEEK)}")
+        # st.write(f"### 🏈 Submission Status — {get_week_label(SELECTED_WEEK)}")
 
         matchups = supabase.table("nfl_schedule").select("*").eq("week", CALCULATED_CURRENT_WEEK).execute().data
 
@@ -326,15 +332,13 @@ else:
         if not matchups:
             st.info("No matchups loaded for this week yet.")
         # --- BRANCH C: FORM OPEN FOR INPUT / AMENDMENT ---
-        else:
-            # 1. Recover the exact team name tokens chosen in this week's active saved draft (if any)
+        else: 
+            # INFO BANNER: Informs players a temporary draft is currently open for edits
             confirmed_picks_this_week = [p["team_picked"] for p in current_picks if p["pick_state"] == "Confirmed"]
-            
-            # If the user has a temporary draft saved but hasn't finalized it, pre-populate their session choices
-            if confirmed_picks_this_week and not st.session_state.selected_teams:
-                st.session_state.selected_teams = confirmed_picks_this_week.copy()
-    
-            # 2. Build the strict historical exclusion array for the Regular Season
+            if confirmed_picks_this_week:
+                st.info(f"**Active Draft:** You currently have **{', '.join(confirmed_picks_this_week)}** selected for this week. Clicking choices below will alter your Confirmed draft entry.")
+
+            # Build the strict historical exclusion array for the Regular Season
             used_teams = []
             all_picks_res = supabase.table("user_picks").select("*").eq("user_id", user_id).eq("game_type", game_slug).execute().data
             
