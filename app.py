@@ -252,7 +252,9 @@ else:
         player_status = reg_profile[0]["bracket_status"]
         
         # 2. Dynamic Roster Counter: Query all active profiles registered to this game track
-        all_regs = supabase.table("tournament_registrations").select("bracket_status").eq("game_type", game_slug).execute().data
+        # all_regs = supabase.table("tournament_registrations").select("bracket_status").eq("game_type", game_slug).execute().data
+        user_profile = supabase.table("users").select("username").eq("id", user_id).single().execute().data
+        username_token = user_profile.get("username", "Anonymous Player") if user_profile else "Anonymous Player"
         
         # Count only players who do NOT have an 'Eliminated' status string profile flag
         remaining_count = sum(1 for r in all_regs if r["bracket_status"] != "Eliminated")
