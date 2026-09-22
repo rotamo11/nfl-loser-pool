@@ -334,10 +334,14 @@ else:
             st.info("No matchups loaded for this week yet.")
         # --- BRANCH C: FORM OPEN FOR INPUT / AMENDMENT ---
         else: 
-            # INFO BANNER: Informs players a temporary draft is currently open for edits
+            # INFO BANNER: Informs players a Confirmed (editable) or Finalized (not editable) pick for the selected week
             confirmed_picks_this_week = [p["team_picked"] for p in current_picks if p["pick_state"] == "Confirmed"]
             if confirmed_picks_this_week:
                 st.info(f"**Confirmed Pick:** You currently have **{', '.join(confirmed_picks_this_week)}** selected for this week. Clicking choices below will alter your Confirmed draft entry.")
+
+            finalized_picks_this_week = [p["team_picked"] for p in current_picks if p["pick_state"] == "Finalized"]
+            if finalized_picks_this_week:
+                st.info(f"**Finalized Pick:** You currently have **{', '.join(confirmed_picks_this_week)}** selected for this week. You are not able to edit but are able to see other player picks.")
 
             # Build the strict historical exclusion array for the Regular Season
             used_teams = []
@@ -455,7 +459,7 @@ else:
                 
                 m_c1, m_c2, m_c3 = st.columns(3)
                 with m_c1:
-                    if st.button("Confirm Pick (can still edit, Overview not visible)", use_container_width=True):
+                    if st.button("Confirm Pick (editable, Overview not visible)", use_container_width=True):
                         # 🛡️ THE FIX: Wipe out any previous un-finalized draft picks for this specific week first
                         supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", game_slug).eq("week", SELECTED_WEEK).execute()
                         
@@ -469,7 +473,7 @@ else:
                         st.rerun()
                         
                 with m_c2:
-                    if st.button("Finalize Pick (locks pick, Overview visible)", use_container_width=True):
+                    if st.button("Finalize Pick (not editable, Overview visible)", use_container_width=True):
                         # THE FIX: Clear old drafts out before locking down the permanent selection rows
                         supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", game_slug).eq("week", SELECTED_WEEK).execute()
                         
