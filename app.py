@@ -411,6 +411,6 @@ else:
                         st.success("Pick locked down! Overview accessibility unlocked.")
                         st.rerun()
                 with m_c3:
-                    if st.button("Option 1: Go Back / Cancel", use_container_width=True):
+                    if st.button("Cancel", use_container_width=True):
                         st.session_state.show_confirmation_modal = False
                         st.rerun()
