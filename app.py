@@ -250,11 +250,11 @@ else:
     else:
         # 1. Recover the current player's clean bracket text status string
         player_status = reg_profile[0]["bracket_status"]
-        
-        # 2. Dynamic Roster Counter: Query all active profiles registered to this game track
-        # all_regs = supabase.table("tournament_registrations").select("bracket_status").eq("game_type", game_slug).execute().data
         user_profile = supabase.table("users").select("username").eq("id", user_id).single().execute().data
         username_token = user_profile.get("username", "Anonymous Player") if user_profile else "Anonymous Player"
+        
+        # 2. Dynamic Roster Counter: Query all active profiles registered to this game track
+        all_regs = supabase.table("tournament_registrations").select("bracket_status").eq("game_type", game_slug).execute().data
         
         # Count only players who do NOT have an 'Eliminated' status string profile flag
         remaining_count = sum(1 for r in all_regs if r["bracket_status"] != "Eliminated")
@@ -264,7 +264,7 @@ else:
         st.markdown(
             f"""
             <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 15px; font-family: sans-serif; font-size: 14px; font-weight: 500; color: var(--text-color); opacity: 0.85;">
-                <div><h3>Status for <b>{user_id}</b>: {player_status}</h3></div>
+                <div><h3>Status for <b>{username_token}</b>: {player_status}</h3></div>
                 <div style="text-align: right;"><h3>Remaining Players: <b>{remaining_count}</b></h3></div>
             </div>
             """,
