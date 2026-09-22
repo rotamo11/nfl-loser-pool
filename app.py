@@ -250,6 +250,16 @@ else:
     user_id = st.session_state.user.id
     reg_profile = supabase.table("tournament_registrations").select("*").eq("user_id", user_id).eq("game_type", game_slug).execute().data
     
+    # --- GLOBAL CONSTRAINTS CALCULATOR FIX ---
+    # 1. Determine structural singular/plural text formatting definitions
+    team_word = "team" if SELECTED_WEEK <= 14 else "teams"
+    required_picks = 1 if SELECTED_WEEK <= 14 else 2 if SELECTED_WEEK <= 18 else 99
+    
+    # 2. Compute the current user's live interaction count bounds
+    if "selected_teams" not in st.session_state:
+        st.session_state.selected_teams = []
+    limit_reached = len(st.session_state.selected_teams) >= required_picks
+    
     if not reg_profile:
         st.warning("You are not registered in this specific pool track. Toggle your sidebar filter options.")
     elif reg_profile[0]["bracket_status"] == "Eliminated":
@@ -311,9 +321,6 @@ else:
                 if p["team_picked"].endswith("_SO"): continue
                 used_teams.append(p["team_picked"])
 
-        # Singular vs. Plural string mapping rule definitions
-        team_word = "team" if SELECTED_WEEK <= 14 else "teams"
-        required_picks = 1 if SELECTED_WEEK <= 14 else 2 if SELECTED_WEEK <= 18 else 6 if SELECTED_WEEK == 19 else 4 if SELECTED_WEEK == 20 else 2 if SELECTED_WEEK == 21 else 1 if SELECTED_WEEK == 22 else 99
         st.write(f"### {get_week_label(SELECTED_WEEK)} Matchups — Pick **{required_picks}** {team_word} to Lose")
 
         # --- 🚀 FIX: RESTORED THE MISSING BOUNDS PARAMETERS QUERY ---
@@ -382,9 +389,6 @@ else:
                     # Active selection flags for the current screen interaction matrix
                     is_sel_away = away in st.session_state.selected_teams
                     is_sel_home = home in st.session_state.selected_teams
-                    
-                    # 🔒 HARD CAP PROTECTION: The limit is reached if your active array count matches your required cap
-                    limit_reached = len(st.session_state.selected_teams) >= required_picks
                     
                     col_a_logo, col_a_btn, col_vs, col_h_btn, col_h_logo = st.columns([0.6, 2.5, 0.4, 2.5, 0.6])
     
