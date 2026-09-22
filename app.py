@@ -305,9 +305,18 @@ else:
                 used_teams.append(p["team_picked"])
 
         # Singular vs. Plural string mapping rule definitions
-        team_word = "team" if CALCULATED_CURRENT_WEEK <= 14 else "teams"
-        required_picks = 1 if CALCULATED_CURRENT_WEEK <= 14 else 2 if CALCULATED_CURRENT_WEEK <= 18 else 6 if CALCULATED_CURRENT_WEEK == 19 else 4 if CALCULATED_CURRENT_WEEK == 20 else 2 if CALCULATED_CURRENT_WEEK == 21 else 1 if CALCULATED_CURRENT_WEEK == 22 else 99
+        team_word = "team" if SELECTED_WEEK <= 14 else "teams"
+        required_picks = 1 if SELECTED_WEEK <= 14 else 2 if SELECTED_WEEK <= 18 else 6 if SELECTED_WEEK == 19 else 4 if SELECTED_WEEK == 20 else 2 if SELECTED_WEEK == 21 else 1 if SELECTED_WEEK == 22 else 99
         st.write(f"### Matchups — Pick **{required_picks}** {team_word} to Lose")
+
+        # --- 🚀 FIX: RESTORED THE MISSING BOUNDS PARAMETERS QUERY ---
+        # Recovers any active picks on file for this competitor, track, and selected dropdown week
+        current_picks = [p for p in all_picks_res if p["week"] == SELECTED_WEEK]
+        
+        is_finalized = any(p["pick_state"] == "Finalized" for p in current_picks)
+        is_confirmed = any(p["pick_state"] == "Confirmed" for p in current_picks)
+
+        st.write(f"### 🏈 Submission Status — {get_week_label(SELECTED_WEEK)}")
 
         matchups = supabase.table("nfl_schedule").select("*").eq("week", CALCULATED_CURRENT_WEEK).execute().data
 
@@ -436,27 +445,35 @@ else:
 
             # --- 7. THREE-OPTION VERIFICATION DIALOGUE POPUP ---
             if st.session_state.get("show_confirmation_modal", False):
-                st.markdown("### Confirmed or Finalized?")
-                st.warning(f"You are selecting the following to lose: **{', '.join(st.session_state.selected_teams)}** ")
+                st.markdown("### ⚠️ Final Verification Check Required")
+                st.warning(f"You are selecting: **{', '.join(st.session_state.selected_teams)}** to lose their game(s).")
                 
                 m_c1, m_c2, m_c3 = st.columns(3)
                 with m_c1:
-                    if st.button("Confirm Pick (can still edit, Overview not visible)", use_container_width=True):
+                    if st.button("Option 2: Confirm Pick (Allows later edits)", use_container_width=True):
+                        # 🛡️ THE FIX: Wipe out any previous un-finalized draft picks for this specific week first
+                        supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", game_slug).eq("week", SELECTED_WEEK).execute()
+                        
                         for team in st.session_state.selected_teams:
-                            supabase.table("user_picks").upsert({"user_id": user_id, "game_type": game_slug, "week": CALCULATED_CURRENT_WEEK, "team_picked": team, "pick_state": "Confirmed"}, on_conflict="user_id,game_type,week,team_picked").execute()
+                            supabase.table("user_picks").insert({
+                                "user_id": user_id, "game_type": game_slug, "week": SELECTED_WEEK, "team_picked": team, "pick_state": "Confirmed"
+                            }).execute()
                         st.session_state.show_confirmation_modal = False
-                        st.success("Pick has been Confirmed and will become Finalized once the deadline passes")
+                        st.success("Draft saved successfully! You can reset or update this choice anytime before the deadline.")
                         st.rerun()
+                        
                 with m_c2:
-                    if st.button("Finalize Pick (locks entry, Overview is visible)", use_container_width=True):
+                    if st.button("Option 3: Finalize Pick (Locks entry entirely)", use_container_width=True):
+                        # 🛡️ THE FIX: Clear old drafts out before locking down the permanent selection rows
+                        supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", game_slug).eq("week", SELECTED_WEEK).execute()
+                        
                         for team in st.session_state.selected_teams:
-                            supabase.table("user_picks").upsert({"user_id": user_id, "game_type": game_slug, "week": CALCULATED_CURRENT_WEEK, "team_picked": team, "pick_state": "Finalized"}, on_conflict="user_id,game_type,week,team_picked").execute()
+                            supabase.table("user_picks").insert({
+                                "user_id": user_id, "game_type": game_slug, "week": SELECTED_WEEK, "team_picked": team, "pick_state": "Finalized"
+                            }).execute()
                         st.session_state.show_confirmation_modal = False
                         st.balloons()
                         st.success("Pick locked down! Overview accessibility unlocked.")
                         st.rerun()
-                with m_c3:
-                    if st.button("Cancel", use_container_width=True):
-                        st.session_state.show_confirmation_modal = False
-                        st.rerun()
+
                         
