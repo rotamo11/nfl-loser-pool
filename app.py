@@ -298,102 +298,120 @@ else:
         else:
             st.info("No prior weeks on record yet for this season.")
 
-    # --- BRANCH C: FORM OPEN FOR INPUT / AMENDMENT ---
-    else:
-        # 1. Recover the exact team name tokens chosen in this week's active saved draft (if any)
-        confirmed_picks_this_week = [p["team_picked"] for p in current_picks if p["pick_state"] == "Confirmed"]
-        
-        # If the user has a temporary draft saved but hasn't finalized it, pre-populate their session choices
-        if confirmed_picks_this_week and not st.session_state.selected_teams:
-            st.session_state.selected_teams = confirmed_picks_this_week.copy()
-
-        # 2. Build the strict historical exclusion array for the Regular Season
         used_teams = []
-        all_picks_res = supabase.table("user_picks").select("*").eq("user_id", user_id).eq("game_type", game_slug).execute().data
-        
         for p in all_picks_res:
-            # CRUCIAL RULE: A team is only permanently "Used" if it was locked in a PRIOR week, or if it was already FINALIZED
-            if p["week"] != SELECTED_WEEK and p["week"] < 19:
-                if not p["team_picked"].endswith("_SO"):
-                    used_teams.append(p["team_picked"])
-            elif p["week"] == SELECTED_WEEK and p["pick_state"] == "Finalized":
-                if not p["team_picked"].endswith("_SO"):
-                    used_teams.append(p["team_picked"])
+            if p["week"] < 19:
+                if p["team_picked"].endswith("_SO"): continue
+                used_teams.append(p["team_picked"])
 
-        # Determine structural singular/plural terms and calculate seasonal pick caps
-        team_word = "team" if SELECTED_WEEK <= 14 else "teams"
-        required_picks = 1 if SELECTED_WEEK <= 14 else 2 if SELECTED_WEEK <= 18 else 99
-        st.write(f"Select **{required_picks}** {team_word} to lose your matchups below:")
+        # Singular vs. Plural string mapping rule definitions
+        team_word = "team" if CALCULATED_CURRENT_WEEK <= 14 else "teams"
+        required_picks = 1 if CALCULATED_CURRENT_WEEK <= 14 else 2 if CALCULATED_CURRENT_WEEK <= 18 else 6 if CALCULATED_CURRENT_WEEK == 19 else 4 if CALCULATED_CURRENT_WEEK == 20 else 2 if CALCULATED_CURRENT_WEEK == 21 else 1 if CALCULATED_CURRENT_WEEK == 22 else 99
+        st.write(f"### Matchups — Pick **{required_picks}** {team_word} to Lose")
 
-        matchups = supabase.table("nfl_schedule").select("*").eq("week", SELECTED_WEEK).execute().data
+        matchups = supabase.table("nfl_schedule").select("*").eq("week", CALCULATED_CURRENT_WEEK).execute().data
 
         if "selected_teams" not in st.session_state:
             st.session_state.selected_teams = []
 
         if not matchups:
-            st.info(f"Matchup lines for Week {SELECTED_WEEK} haven't been synced by the Commissioner yet.")
+            st.info("No matchups loaded for this week yet.")
+        # --- BRANCH C: FORM OPEN FOR INPUT / AMENDMENT ---
         else:
-            # --- RENDER MATCHUP SELECTION LINES ---
-            for match in matchups:
-                m_id = match["id"]
-                away = match["away_team"].upper()
-                home = match["home_team"].upper()
-
-                # Checks to see if the team is genuinely burned in a prior completed week
-                away_is_used = away in used_teams and SELECTED_WEEK <= 18
-                home_is_used = home in used_teams and SELECTED_WEEK <= 18
-                
-                # Active selection flags for the current screen interaction matrix
-                is_sel_away = away in st.session_state.selected_teams
-                is_sel_home = home in st.session_state.selected_teams
-                
-                # HARD CAP PROTECTION: The limit is reached if your active array count matches your required cap
-                limit_reached = len(st.session_state.selected_teams) >= required_picks
-                
-                col_a_logo, col_a_btn, col_vs, col_h_btn, col_h_logo = st.columns([0.6, 2.5, 0.4, 2.5, 0.6])
-
-                # --- AWAY TEAM RENDERER ---
-                with col_a_logo:
-                    try:
-                        with open(f"static/{away}.svg", "r") as f: svg_code = f.read()
-                        clean_svg = svg_code.replace("<svg", "<svg style='width:100%; height:100%; display:block;'")
-                        st.markdown(f'<div style="width:32px; height:24px; padding-top:6px; margin:0 auto; display:flex; align-items:center;">{clean_svg}</div>', unsafe_allow_html=True)
-                    except Exception: st.write("")
+            # 1. Recover the exact team name tokens chosen in this week's active saved draft (if any)
+            confirmed_picks_this_week = [p["team_picked"] for p in current_picks if p["pick_state"] == "Confirmed"]
+            
+            # If the user has a temporary draft saved but hasn't finalized it, pre-populate their session choices
+            if confirmed_picks_this_week and not st.session_state.selected_teams:
+                st.session_state.selected_teams = confirmed_picks_this_week.copy()
+    
+            # 2. Build the strict historical exclusion array for the Regular Season
+            used_teams = []
+            all_picks_res = supabase.table("user_picks").select("*").eq("user_id", user_id).eq("game_type", game_slug).execute().data
+            
+            for p in all_picks_res:
+                # CRUCIAL RULE: A team is only permanently "Used" if it was locked in a PRIOR week, or if it was already FINALIZED
+                if p["week"] != SELECTED_WEEK and p["week"] < 19:
+                    if not p["team_picked"].endswith("_SO"):
+                        used_teams.append(p["team_picked"])
+                elif p["week"] == SELECTED_WEEK and p["pick_state"] == "Finalized":
+                    if not p["team_picked"].endswith("_SO"):
+                        used_teams.append(p["team_picked"])
+    
+            # Determine structural singular/plural terms and calculate seasonal pick caps
+            team_word = "team" if SELECTED_WEEK <= 14 else "teams"
+            required_picks = 1 if SELECTED_WEEK <= 14 else 2 if SELECTED_WEEK <= 18 else 99
+            st.write(f"Select **{required_picks}** {team_word} to lose your matchups below:")
+    
+            matchups = supabase.table("nfl_schedule").select("*").eq("week", SELECTED_WEEK).execute().data
+    
+            if "selected_teams" not in st.session_state:
+                st.session_state.selected_teams = []
+    
+            if not matchups:
+                st.info(f"🏈 Matchup lines for Week {SELECTED_WEEK} haven't been synced by the Commissioner yet.")
+            else:
+                # --- RENDER MATCHUP SELECTION LINES ---
+                for match in matchups:
+                    m_id = match["id"]
+                    away = match["away_team"].upper()
+                    home = match["home_team"].upper()
+    
+                    # Checks to see if the team is genuinely burned in a prior completed week
+                    away_is_used = away in used_teams and SELECTED_WEEK <= 18
+                    home_is_used = home in used_teams and SELECTED_WEEK <= 18
                     
-                with col_a_btn:
-                    # An item is disabled ONLY if it's burned historically, OR if the cap is full and it isn't currently checked
-                    dis_away = away_is_used or (limit_reached and not is_sel_away)
-                    btn_label_away = f"{away} (Used)" if away_is_used else f"{away}"
+                    # Active selection flags for the current screen interaction matrix
+                    is_sel_away = away in st.session_state.selected_teams
+                    is_sel_home = home in st.session_state.selected_teams
                     
-                    if st.button(btn_label_away, key=f"btn_a_{m_id}", disabled=dis_away, type="primary" if is_sel_away else "secondary", use_container_width=True):
-                        if is_sel_away:
-                            st.session_state.selected_teams.remove(away)
-                        else:
-                            st.session_state.selected_teams.append(away)
-                        st.rerun()
-
-                # --- MIDPOINT VS DIVIDER ---
-                with col_vs:
-                    st.markdown("<center style='color:#64748b; font-size:12px; font-weight:bold; padding-top:8px;'>@</center>", unsafe_allow_html=True)
-
-                # --- HOME TEAM RENDERER ---
-                with col_h_btn:
-                    dis_home = home_is_used or (limit_reached and not is_sel_home)
-                    btn_label_home = f"{home} (Used)" if home_is_used else f"{home}"
+                    # 🔒 HARD CAP PROTECTION: The limit is reached if your active array count matches your required cap
+                    limit_reached = len(st.session_state.selected_teams) >= required_picks
                     
-                    if st.button(btn_label_home, key=f"btn_h_{m_id}", disabled=dis_home, type="primary" if is_sel_home else "secondary", use_container_width=True):
-                        if is_sel_home:
-                            st.session_state.selected_teams.remove(home)
-                        else:
-                            st.session_state.selected_teams.append(home)
-                        st.rerun()
-
-                with col_h_logo:
-                    try:
-                        with open(f"static/{home}.svg", "r") as f: svg_code = f.read()
-                        clean_svg = svg_code.replace("<svg", "<svg style='width:100%; height:100%; display:block;'")
-                        st.markdown(f'<div style="width:32px; height:24px; padding-top:6px; margin:0 auto; display:flex; align-items:center;">{clean_svg}</div>', unsafe_allow_html=True)
-                    except Exception: st.write("")
+                    col_a_logo, col_a_btn, col_vs, col_h_btn, col_h_logo = st.columns([0.6, 2.5, 0.4, 2.5, 0.6])
+    
+                    # --- AWAY TEAM RENDERER ---
+                    with col_a_logo:
+                        try:
+                            with open(f"static/{away}.svg", "r") as f: svg_code = f.read()
+                            clean_svg = svg_code.replace("<svg", "<svg style='width:100%; height:100%; display:block;'")
+                            st.markdown(f'<div style="width:32px; height:24px; padding-top:6px; margin:0 auto; display:flex; align-items:center;">{clean_svg}</div>', unsafe_allow_html=True)
+                        except Exception: st.write("")
+                        
+                    with col_a_btn:
+                        # An item is disabled ONLY if it's burned historically, OR if the cap is full and it isn't currently checked
+                        dis_away = away_is_used or (limit_reached and not is_sel_away)
+                        btn_label_away = f"{away} (Used)" if away_is_used else f"{away}"
+                        
+                        if st.button(btn_label_away, key=f"btn_a_{m_id}", disabled=dis_away, type="primary" if is_sel_away else "secondary", use_container_width=True):
+                            if is_sel_away:
+                                st.session_state.selected_teams.remove(away)
+                            else:
+                                st.session_state.selected_teams.append(away)
+                            st.rerun()
+    
+                    # --- MIDPOINT VS DIVIDER ---
+                    with col_vs:
+                        st.markdown("<center style='color:#64748b; font-size:12px; font-weight:bold; padding-top:8px;'>@</center>", unsafe_allow_html=True)
+    
+                    # --- HOME TEAM RENDERER ---
+                    with col_h_btn:
+                        dis_home = home_is_used or (limit_reached and not is_sel_home)
+                        btn_label_home = f"{home} (Used)" if home_is_used else f"{home}"
+                        
+                        if st.button(btn_label_home, key=f"btn_h_{m_id}", disabled=dis_home, type="primary" if is_sel_home else "secondary", use_container_width=True):
+                            if is_sel_home:
+                                st.session_state.selected_teams.remove(home)
+                            else:
+                                st.session_state.selected_teams.append(home)
+                            st.rerun()
+    
+                    with col_h_logo:
+                        try:
+                            with open(f"static/{home}.svg", "r") as f: svg_code = f.read()
+                            clean_svg = svg_code.replace("<svg", "<svg style='width:100%; height:100%; display:block;'")
+                            st.markdown(f'<div style="width:32px; height:24px; padding-top:6px; margin:0 auto; display:flex; align-items:center;">{clean_svg}</div>', unsafe_allow_html=True)
+                        except Exception: st.write("")
 
             st.markdown("---")
             is_bye_selected = "BYE" in st.session_state.selected_teams
@@ -441,3 +459,4 @@ else:
                     if st.button("Cancel", use_container_width=True):
                         st.session_state.show_confirmation_modal = False
                         st.rerun()
+                        
