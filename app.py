@@ -336,7 +336,7 @@ else:
             # INFO BANNER: Informs players a temporary draft is currently open for edits
             confirmed_picks_this_week = [p["team_picked"] for p in current_picks if p["pick_state"] == "Confirmed"]
             if confirmed_picks_this_week:
-                st.info(f"**Active Draft:** You currently have **{', '.join(confirmed_picks_this_week)}** selected for this week. Clicking choices below will alter your Confirmed draft entry.")
+                st.info(f"**Confirmed Pick:** You currently have **{', '.join(confirmed_picks_this_week)}** selected for this week. Clicking choices below will alter your Confirmed draft entry.")
 
             # Build the strict historical exclusion array for the Regular Season
             used_teams = []
@@ -449,12 +449,12 @@ else:
 
             # --- 7. THREE-OPTION VERIFICATION DIALOGUE POPUP ---
             if st.session_state.get("show_confirmation_modal", False):
-                st.markdown("### ⚠️ Final Verification Check Required")
-                st.warning(f"You are selecting: **{', '.join(st.session_state.selected_teams)}** to lose their game(s).")
+                st.markdown("### Confirmed or Finalized?")
+                st.warning(f"You are selecting the following to lose: **{', '.join(st.session_state.selected_teams)}**")
                 
                 m_c1, m_c2, m_c3 = st.columns(3)
                 with m_c1:
-                    if st.button("Option 2: Confirm Pick (Allows later edits)", use_container_width=True):
+                    if st.button("Confirm Pick (can still edit, Overview is not visible)", use_container_width=True):
                         # 🛡️ THE FIX: Wipe out any previous un-finalized draft picks for this specific week first
                         supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", game_slug).eq("week", SELECTED_WEEK).execute()
                         
@@ -463,11 +463,11 @@ else:
                                 "user_id": user_id, "game_type": game_slug, "week": SELECTED_WEEK, "team_picked": team, "pick_state": "Confirmed"
                             }).execute()
                         st.session_state.show_confirmation_modal = False
-                        st.success("Draft saved successfully! You can reset or update this choice anytime before the deadline.")
+                        st.success("Pick has been Confirmed and and can be edited until it becomes Finalized once the deadline passes.")
                         st.rerun()
                         
                 with m_c2:
-                    if st.button("Option 3: Finalize Pick (Locks entry entirely)", use_container_width=True):
+                    if st.button("Finalize Pick (locks pick, Overview is visible)", use_container_width=True):
                         # 🛡️ THE FIX: Clear old drafts out before locking down the permanent selection rows
                         supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", game_slug).eq("week", SELECTED_WEEK).execute()
                         
@@ -478,6 +478,10 @@ else:
                         st.session_state.show_confirmation_modal = False
                         st.balloons()
                         st.success("Pick locked down! Overview accessibility unlocked.")
+                        st.rerun()
+                with m_c3:
+                    if st.button("Go Back / Cancel", use_container_width=True):
+                        st.session_state.show_confirmation_modal = False
                         st.rerun()
 
                         
