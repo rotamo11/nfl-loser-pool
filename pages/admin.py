@@ -5,6 +5,7 @@ import csv
 import io
 import uuid
 import datetime
+import time
 from supabase import create_client, Client
 
 # --- ST.SET_PAGE_CONFIG MUST BE THE ABSOLUTE FIRST DIRECTIVE ---
