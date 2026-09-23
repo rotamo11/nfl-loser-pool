@@ -99,7 +99,7 @@ with st.sidebar:
         else:
             # Extract the trailing integer for regular season weeks (e.g., "Week 2" -> 2)
             NEW_WEEK = int(clean_label.split(" ")[1])
-        # 🚀 FIX: Detect if the user changed the dropdown week. If so, wipe active session selection cache!
+        # FIX: Detect if the user changed the dropdown week. If so, wipe active session selection cache!
         if "active_week_tracker" not in st.session_state or st.session_state.active_week_tracker != NEW_WEEK:
             st.session_state.active_week_tracker = NEW_WEEK
             st.session_state.selected_teams = [] # Clears workspace parameters for fresh week view mapping
@@ -111,7 +111,7 @@ with st.sidebar:
     # Basic navigation paths open to every pool competitor
     st.page_link("app.py", label="Picks")
     st.page_link("pages/overview.py", label="Overview")
-    st.page_link("pages/chat.py", label="Chat")
+    st.page_link("pages/chat.py", label="Banter")
     st.page_link("pages/rules.py", label="Rules")
 
     # ROLE GATE: Check if the logged-in session belongs to a valid administrator
@@ -250,7 +250,7 @@ else:
     user_id = st.session_state.user.id
     reg_profile = supabase.table("tournament_registrations").select("*").eq("user_id", user_id).eq("game_type", game_slug).execute().data
     
-    # 🚀 THE ENROLLMENT GATEWAY LOCK: Check if registration exists and if enrollment flag is active
+    # THE ENROLLMENT GATEWAY LOCK: Check if registration exists and if enrollment flag is active
     if not reg_profile:
         st.error(f"**Access Locked.** You are not registered for the {game_mode} game.")
         st.info("Please contact the League Commissioner to initialize your account profile: nfl.loser.pool@gmail.com")
@@ -267,7 +267,7 @@ else:
         active_profile = reg_profile[0] if isinstance(reg_profile, list) else reg_profile
         player_status = active_profile["bracket_status"]
         
-        # 🧾 PAYMENT NOTICE: If enrolled but unpaid, render a gentle reminder banner without locking the form
+        # PAYMENT NOTICE: If enrolled but unpaid, render a gentle reminder banner without locking the form
         if not active_profile.get("is_paid", False):
             st.warning("**Payment Reminder:** Our ledger shows your entry fee for this pool track is currently outstanding. Please settle up with the Commissioner as soon as possible by sending $25 to @Robert-Moore-65 on Venmo or rotamo@yahoo.com on PayPal.")
 
@@ -323,16 +323,14 @@ else:
                 if p["team_picked"].endswith("_SO"): continue
                 used_teams.append(p["team_picked"])
 
-        st.write(f"### {get_week_label(SELECTED_WEEK)} Matchups — Pick **{required_picks}** {team_word} to Lose")
-
-        # --- 🚀 FIX: RESTORED THE MISSING BOUNDS PARAMETERS QUERY ---
+        # --- FIX: RESTORED THE MISSING BOUNDS PARAMETERS QUERY ---
         # Recovers any active picks on file for this competitor, track, and selected dropdown week
         current_picks = [p for p in all_picks_res if p["week"] == SELECTED_WEEK]
         
         is_finalized = any(p["pick_state"] == "Finalized" for p in current_picks)
         is_confirmed = any(p["pick_state"] == "Confirmed" for p in current_picks)
 
-        # st.write(f"### 🏈 Submission Status — {get_week_label(SELECTED_WEEK)}")
+        # st.write(f"### Submission Status — {get_week_label(SELECTED_WEEK)}")
 
         matchups = supabase.table("nfl_schedule").select("*").eq("week", CALCULATED_CURRENT_WEEK).execute().data
 
@@ -367,8 +365,8 @@ else:
     
             # Determine structural singular/plural terms and calculate seasonal pick caps
             team_word = "team" if SELECTED_WEEK <= 14 else "teams"
-            required_picks = 1 if SELECTED_WEEK <= 14 else 2 if SELECTED_WEEK <= 18 else 99
-            st.write(f"Select **{required_picks}** {team_word} to lose your matchups below:")
+            required_picks = 1 if SELECTED_WEEK <= 14 else 2 if SELECTED_WEEK <= 18 else 6 if SELECTED_WEEK == 19 else 4 if SELECTED_WEEK == 20 else 2 if SELECTED_WEEK == 21 else 1 if SELECTED_WEEK == 22 else 99
+            st.write(f"### {get_week_label(SELECTED_WEEK)} Matchups — Pick **{required_picks}** {team_word} to Lose")
     
             matchups = supabase.table("nfl_schedule").select("*").eq("week", SELECTED_WEEK).execute().data
     
