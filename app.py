@@ -250,39 +250,41 @@ else:
     user_id = st.session_state.user.id
     reg_profile = supabase.table("tournament_registrations").select("*").eq("user_id", user_id).eq("game_type", game_slug).execute().data
     
-    # --- GLOBAL CONSTRAINTS CALCULATOR FIX ---
-    # 1. Determine structural singular/plural text formatting definitions
-    team_word = "team" if SELECTED_WEEK <= 14 else "teams"
-    required_picks = 1 if SELECTED_WEEK <= 14 else 2 if SELECTED_WEEK <= 18 else 99
-    
-    # 2. Compute the current user's live interaction count bounds
-    if "selected_teams" not in st.session_state:
-        st.session_state.selected_teams = []
-    limit_reached = len(st.session_state.selected_teams) >= required_picks
-    
+    # 🚀 THE ENROLLMENT GATEWAY LOCK: Check if registration exists and if enrollment flag is active
     if not reg_profile:
-        st.warning("You are not registered in this specific pool track. Toggle your sidebar filter options.")
-    elif reg_profile[0]["bracket_status"] == "Eliminated":
-        st.error("You have been Eliminated from this game. Form access is locked, but you can navigate to the Overview page in the sidebar.")
+        st.error(f"**Access Locked.** You are not registered for the {game_mode} game.")
+        st.info("Please contact the League Commissioner to initialize your account profile: nfl.loser.pool@gmail.com")
+    
+    elif isinstance(reg_profile, list) and len(reg_profile) > 0 and not reg_profile[0].get("is_enrolled", False):
+        st.error(f"**Not Enrolled.** Your profile is not currently enrolled in the **{game_mode}** game for the this season.")
+        st.info("*Note: If you have already paid or submitted entry data to the Commissioner, access will open automatically once your enrollment status is enabled.*")
+        
+    elif isinstance(reg_profile, list) and len(reg_profile) > 0 and reg_profile[0].get("bracket_status") == "Eliminated":
+        st.error(f"**Eliminated.** You have been eliminated from the {game_mode} game. Selection access is locked, but you can still view the Overview page.")
+        
     else:
-        # 1. Recover the current player's clean bracket text status string
-        player_status = reg_profile[0]["bracket_status"]
+        # Extract row references safely out of the array format
+        active_profile = reg_profile[0] if isinstance(reg_profile, list) else reg_profile
+        player_status = active_profile["bracket_status"]
+        
+        # 🧾 PAYMENT NOTICE: If enrolled but unpaid, render a gentle reminder banner without locking the form
+        if not active_profile.get("is_paid", False):
+            st.warning("**Payment Reminder:** Our ledger shows your entry fee for this pool track is currently outstanding. Please settle up with the Commissioner as soon as possible by sending $25 to @Robert-Moore-65 on Venmo or rotamo@yahoo.com on PayPal.")
+
+        # Recover custom Username Code Token from metadata sheets
         user_profile = supabase.table("users").select("username").eq("id", user_id).single().execute().data
         username_token = user_profile.get("username", "Anonymous Player") if user_profile else "Anonymous Player"
         
-        # 2. Dynamic Roster Counter: Query all active profiles registered to this game track
-        all_regs = supabase.table("tournament_registrations").select("bracket_status").eq("game_type", game_slug).execute().data
-        
-        # Count only players who do NOT have an 'Eliminated' status string profile flag
+        # Dynamic Roster Counter
+        all_regs = supabase.table("tournament_registrations").select("bracket_status").eq("game_type", game_slug).eq("is_enrolled", True).execute().data
         remaining_count = sum(1 for r in all_regs if r["bracket_status"] != "Eliminated")
         
-        # 3. Render the responsive Flexbox status baseline bar
-        # var(--text-color) forces matching contrast automatically across light & dark theme shifts
+        # Render the responsive Flexbox status baseline bar using the Username Code Token
         st.markdown(
             f"""
             <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 15px; font-family: sans-serif; font-size: 14px; font-weight: 500; color: var(--text-color); opacity: 0.85;">
-                <div><h3>Status for <b>{username_token}</b>: {player_status}</h3></div>
-                <div style="text-align: right;"><h3>Remaining Players: <b>{remaining_count}</b></h3></div>
+                <div>👤 Status for <b>{username_token}</b>: <span style="color: #10b981;">{player_status}</span></div>
+                <div style="text-align: right;">👥 Remaining Active Players: <b>{remaining_count}</b></div>
             </div>
             """,
             unsafe_allow_html=True
