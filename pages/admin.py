@@ -55,10 +55,10 @@ with st.sidebar:
     selected_week_label = st.selectbox("📆 Select Target Pool Week", options=week_options, index=CALCULATED_CURRENT_WEEK - 1)
     clean_label = selected_week_label.replace(" (current)", "")
     
-    if "Wildcard" in clean_label: admin_week = 19
-    elif "Divisional" in clean_label: admin_week = 20
-    elif "Conference" in clean_label: admin_week = 21
-    elif "Super Bowl" in clean_label: admin_week = 22
+    if "Wildcard" in clean_label: SELECTED_WEEK = 19
+    elif "Divisional" in clean_label: SELECTED_WEEK = 20
+    elif "Conference" in clean_label: SELECTED_WEEK = 21
+    elif "Super Bowl" in clean_label: SELECTED_WEEK = 22
     SELECTED_WEEK = int(clean_label.split(" ")[1])
     
     st.page_link("app.py", label="Picks")
@@ -139,11 +139,11 @@ tab_scores, tab_users, tab_csv = st.tabs(["Game Processing", "Manage Users", "Bu
 # TAB 1: GAME PROCESSING
 # ==========================================
 with tab_scores:
-    st.warning("Select the LOSER or TIE and specify SHUTOUT if applicable for each game below followed by Lock & Compute to update the Overview.")
-    schedule_res = supabase.table("nfl_schedule").select("*").eq("week", admin_week).execute().data
+    st.info("Select the LOSER or TIE and specify SHUTOUT if applicable for each game below followed by Lock & Compute to update the Overview.")
+    schedule_res = supabase.table("nfl_schedule").select("*").eq("week", SELECTED_WEEK).execute().data
 
     if not schedule_res:
-        st.info(f"No games loaded for {get_week_label(admin_week)} yet. Head to the Bulk CSV Import tab to upload your schedule.")
+        st.info(f"No games loaded for {get_week_label(SELECTED_WEEK)} yet. Head to the Bulk CSV Import tab to upload your schedule.")
     else:
         for match in schedule_res:
             match_id = match["id"]
@@ -163,7 +163,7 @@ with tab_scores:
                         else:
                             with st.spinner("Processing player picks..."):
                                 supabase.table("nfl_schedule").update({"loser": loser_selection, "is_shutout": is_so}).eq("id", match_id).execute()
-                                active_picks = supabase.table("user_picks").select("*").eq("game_type", game_slug).eq("week", admin_week).in_("team_picked", [away, f"{away}_SO", home, f"{home}_SO"]).execute().data
+                                active_picks = supabase.table("user_picks").select("*").eq("game_type", game_slug).eq("week", SELECTED_WEEK).in_("team_picked", [away, f"{away}_SO", home, f"{home}_SO"]).execute().data
                                 
                                 for pick in active_picks:
                                     chosen_team = pick["team_picked"].replace("_SO", "")
