@@ -344,7 +344,7 @@ else:
             # INFO BANNER: Informs players a Confirmed (editable) or Finalized (not editable) pick for the selected week
             confirmed_picks_this_week = [p["team_picked"] for p in current_picks if p["pick_state"] == "Confirmed"]
             if confirmed_picks_this_week:
-                st.info(f"**Confirmed Pick:** You currently have **{', '.join(confirmed_picks_this_week)}** selected for this week. Clicking choices below will alter your Confirmed draft entry.")
+                st.info(f"**Confirmed Pick:** You currently have **{', '.join(confirmed_picks_this_week)}** selected for this week. Clicking choices below will alter your Confirmed pick entry.")
 
             finalized_picks_this_week = [p["team_picked"] for p in current_picks if p["pick_state"] == "Finalized"]
             if finalized_picks_this_week:
@@ -374,7 +374,7 @@ else:
                 st.session_state.selected_teams = []
     
             if not matchups:
-                st.info(f"🏈 Matchup lines for Week {SELECTED_WEEK} haven't been synced by the Commissioner yet.")
+                st.info(f"Matchup lines for Week {SELECTED_WEEK} haven't been synced by the Commissioner yet.")
             else:
                 # --- RENDER MATCHUP SELECTION LINES ---
                 for match in matchups:
@@ -390,6 +390,7 @@ else:
                     is_sel_away = away in st.session_state.selected_teams
                     is_sel_home = home in st.session_state.selected_teams
                     
+                    limit_reached = len(st.session_state.selected_teams) >= required_picks
                     col_a_logo, col_a_btn, col_vs, col_h_btn, col_h_logo = st.columns([0.6, 2.5, 0.4, 2.5, 0.6])
     
                     # --- AWAY TEAM RENDERER ---
