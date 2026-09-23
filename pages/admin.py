@@ -43,8 +43,8 @@ with st.sidebar:
         
     st.markdown("<hr style='margin:10px 0 15px 0; border:0; border-top:1px solid #cbd5e1;'/>", unsafe_allow_html=True)
     
-    game_mode = st.selectbox("Select Pool Tournament", ["Main", "2nd Chance"])
-    game_slug = "Main" if game_mode == "Main Pool" else "2nd_Chance"
+    game_mode = st.selectbox("Select Pool", ["Main", "2nd Chance"])
+    game_slug = "Main" if game_mode == "Main" else "2nd_Chance"
     
     week_options = []
     for w in range(1, 23):
@@ -52,7 +52,7 @@ with st.sidebar:
         if w == CALCULATED_CURRENT_WEEK: week_options.append(f"{base_label} (current)")
         else: week_options.append(base_label)
             
-    selected_week_label = st.selectbox("📆 Select Target Pool Week", options=week_options, index=CALCULATED_CURRENT_WEEK - 1)
+    selected_week_label = st.selectbox("Select Week", options=week_options, index=CALCULATED_CURRENT_WEEK - 1)
     clean_label = selected_week_label.replace(" (current)", "")
     
     if "Wildcard" in clean_label: SELECTED_WEEK = 19
