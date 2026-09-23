@@ -139,7 +139,7 @@ tab_scores, tab_users, tab_csv = st.tabs(["Game Processing", "Manage Users", "Bu
 # TAB 1: GAME PROCESSING
 # ==========================================
 with tab_scores:
-    st.info("Select the LOSER or TIE and specify SHUTOUT if applicable for each game below followed by Lock & Compute to update the Overview.")
+    st.info("Select the LOSER (or TIE) and specify SHUTOUT if applicable for each game below followed by Lock & Compute to update the Overview.")
     schedule_res = supabase.table("nfl_schedule").select("*").eq("week", SELECTED_WEEK).execute().data
 
     if not schedule_res:
