@@ -65,7 +65,7 @@ def get_week_label(week_num):
     st.page_link("app.py", label="Picks")
     st.page_link("pages/overview.py", label="Overview")
     st.page_link("pages/chat.py", label="Banter")
-    st.page_link("pages/rules.py", label="Rules"")
+    st.page_link("pages/rules.py", label="Rules")
     st.page_link("pages/admin.py", label="Admin")
 
 # --- DYNAMIC SIDEBAR BACKGROUND COLOR ENGINE ---
