@@ -270,9 +270,19 @@ with tab_csv:
                 reader = csv.DictReader(io.StringIO(input_data))
                 synced_games = 0
                 for row in reader:
+                    if not row.get("week") or not row.get("away_team") or not row.get("home_team"):
+                        continue
+                        
+                    # FIX A: Clean the text string and check if the field is blank or reads TBD
+                    raw_time = row.get("kickoff_time", "").strip()
+                    clean_time = None if raw_time == "" or raw_time.upper() == "TBD" else raw_time
+                        
+                    # Clean out formatting and enforce uppercase parameters
                     supabase.table("nfl_schedule").upsert({
-                        "week": int(row["week"]), "away_team": row["away_team"].strip().upper()[:3],
-                        "home_team": row["home_team"].strip().upper()[:3], "kickoff_time": row["kickoff_time"].strip()
+                        "week": int(row["week"]), 
+                        "away_team": row["away_team"].strip().upper()[:3],
+                        "home_team": row["home_team"].strip().upper()[:3], 
+                        "kickoff_time": clean_time  # Safe injection of a standard date string or clean SQL NULL
                     }, on_conflict="week,away_team,home_team").execute()
                     synced_games += 1
                 st.success(f"Successfully loaded {synced_games} NFL games into the database!")
