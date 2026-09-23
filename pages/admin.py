@@ -34,7 +34,7 @@ def get_week_label(week_num):
     else: return f"Week {week_num}"
 
 # --- CUSTOM SIDEBAR CONFIGURATION ---
-# with st.sidebar:
+with st.sidebar:
     # local_sidebar_logo = "static/loser-logo.png"
     # if os.path.exists(local_sidebar_logo):
         # st.image(local_sidebar_logo, use_container_width=True)
