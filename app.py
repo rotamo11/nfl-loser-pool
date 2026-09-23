@@ -283,8 +283,8 @@ else:
         st.markdown(
             f"""
             <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 15px; font-family: sans-serif; font-size: 14px; font-weight: 500; color: var(--text-color); opacity: 0.85;">
-                <div>👤 Status for <b>{username_token}</b>: <span style="color: #10b981;">{player_status}</span></div>
-                <div style="text-align: right;">👥 Remaining Active Players: <b>{remaining_count}</b></div>
+                <div><h3>Status for <b>{username_token}</b>: <span style="color: #10b981;">{player_status}</span></h3></div>
+                <div style="text-align: right;"><h3>Remaining Active Players: <b>{remaining_count}</b></h3></div>
             </div>
             """,
             unsafe_allow_html=True
