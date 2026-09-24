@@ -250,7 +250,7 @@ with tab_csv:
 
     st.markdown("---")
 
-    # --- BULK USER IMPORT ENGINE ---
+    # --- BULK USER IMPORT ENGINE (Fixed Secure Auth Mapping) ---
     st.markdown("### 👥 Bulk Import League Players")
     users_file = st.file_uploader("Choose league_users.csv File", type="csv", key="users_upload")
     if users_file is not None:
@@ -259,16 +259,48 @@ with tab_csv:
                 input_data = users_file.getvalue().decode("utf-8")
                 reader = csv.DictReader(io.StringIO(input_data))
                 onboarded_players = 0
+                
                 for row in reader:
-                    existing = supabase.table("users").select("id").eq("username", row["username"].strip()).execute().data
-                    generated_uid = existing["id"] if existing else str(uuid.uuid4())
+                    # Guard line: Skip completely blank rows or missing core items
+                    if not row.get("username") or not row.get("email"):
+                        continue
+                        
+                    clean_email = row["email"].strip()
+                    clean_username = row["username"].strip()
+                    # Fallback to a default temporary password if left blank in the spreadsheet
+                    temp_pw = row["temporary_password"].strip() if "temporary_password" in row and row["temporary_password"] else "Welcome2026!"
                     
+                    # 1. 🚀 GENERATE CORE SECURE ACCOUNT INSIDE SUPABASE AUTH ENGINE
+                    # This registers their password safely so they can log in instantly
+                    try:
+                        auth_user = supabase.auth.admin.create_user({
+                            "email": clean_email,
+                            "password": temp_pw,
+                            "email_confirm": True  # Automatically verifies their email so they bypass activation screens
+                        })
+                        generated_uid = auth_user.user.id
+                    except Exception as auth_err:
+                        # If they already exist in the auth table, look up their ID to update details instead of crashing
+                        if "already has been registered" in str(auth_err) or "already exists" in str(auth_err):
+                            existing_user_data = supabase.table("users").select("id").eq("username", clean_username).execute().data
+                            generated_uid = existing_user_data[0]["id"] if existing_user_data else str(uuid.uuid4())
+                        else:
+                            raise auth_err
+
+                    # 2. Sync their data columns to your custom profile table using the matching generated ID
                     supabase.table("users").upsert({
-                        "id": generated_uid, "username": row["username"].strip(), "first_name": row["first_name"].strip(),
-                        "last_name": row["last_name"].strip(), "email": row["email"].strip(), "cell_phone": row["cell_phone"].strip(),
-                        "is_admin": row["is_admin"].strip().upper() == "TRUE", "notes": row["notes"].strip() if "notes" in row and row["notes"] else "", "first_login_complete": False
+                        "id": generated_uid, 
+                        "username": clean_username, 
+                        "first_name": row["first_name"].strip(),
+                        "last_name": row["last_name"].strip(), 
+                        "email": clean_email, 
+                        "cell_phone": row["cell_phone"].strip(),
+                        "is_admin": row["is_admin"].strip().upper() == "TRUE", 
+                        "notes": row["notes"].strip() if "notes" in row and row["notes"] else "", 
+                        "first_login_complete": False  # Triggers the forced password reset screen upon their first login!
                     }, on_conflict="username").execute()
                     
+                    # 3. Establish their entries inside both tournament tracks automatically
                     m_en = row["main_enrolled"].strip().upper() == "TRUE" if "main_enrolled" in row else False
                     m_pd = row["main_paid"].strip().upper() == "TRUE" if "main_paid" in row else False
                     s_en = row["second_enrolled"].strip().upper() == "TRUE" if "second_enrolled" in row else False
@@ -278,8 +310,9 @@ with tab_csv:
                     supabase.table("tournament_registrations").upsert({"user_id": generated_uid, "game_type": "2nd_Chance", "bracket_status": "Loser Bracket", "byes_used": 0, "is_enrolled": s_en, "is_paid": s_pd}, on_conflict="user_id,game_type").execute()
                     onboarded_players += 1
                     
-                st.success(f"Successfully batch-processed {onboarded_players} participant accounts!")
+                st.success(f"Successfully batch-registered {onboarded_players} participant accounts into the authentication engine!")
                 st.rerun()
             except Exception as e: 
                 st.error(f"User Profile Roster Failure: {str(e)}")
+
 
