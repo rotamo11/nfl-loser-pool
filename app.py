@@ -152,7 +152,7 @@ with st.sidebar:
                         e_mail = st.text_input("Email", value=u_prof.get("email") or "", key="sb_e")
                         e_cell = st.text_input("Cell Phone (123-456-7890)", value=u_prof.get("cell_phone") or "", key="sb_c")
                         
-                        if st.form_submit_button("Save Profile Updates", use_container_width=True):
+                        if st.form_submit_button("Save Profile Updates", width='stretch'):
                             if not e_user.strip() or not e_mail.strip():
                                 st.error("Fields cannot be left blank.")
                             else:
@@ -172,7 +172,7 @@ with st.sidebar:
                                     st.toast("Profile Saved!")
                                     st.rerun()
                 # Logout button appears only when logged in
-                if st.button("Log Out", key="sidebar_logout_btn"): #, use_container_width=True):
+                if st.button("Log Out", key="sidebar_logout_btn"): #, width='stretch'):
                     st.session_state.user = None
                     st.session_state.selected_teams = []
                     st.session_state.force_password_change = False
@@ -186,9 +186,9 @@ header_col1, header_col2 = st.columns([1, 5])
 with header_col1:
     local_logo = "static/loser-logo.png"
     if os.path.exists(local_logo):
-        st.image(local_logo, use_container_width=True)
+        st.image(local_logo, width='stretch')
     else:
-        st.image("https://espncdn.com", use_container_width=True)
+        st.image("https://espncdn.com", width='stretch')
 
 with header_col2:
     # 1. Main Title
@@ -242,7 +242,7 @@ if st.session_state.force_password_change:
     new_pw = st.text_input("New Permanent Password", type="password")
     confirm_pw = st.text_input("Confirm Permanent Password", type="password")
     
-    if st.button("Save & Update Password", use_container_width=True):
+    if st.button("Save & Update Password", width='stretch'):
         if len(new_pw.strip()) < 6:
             st.error("Password must be at least 6 characters long.")
         elif new_pw != confirm_pw:
@@ -264,15 +264,15 @@ elif not st.session_state.user:
         
     c_log, c_jn, c_rst = st.columns(3)
     with c_log:
-        if st.button("Account Login", use_container_width=True, type="primary" if st.session_state.auth_mode == "Login" else "secondary"):
+        if st.button("Account Login", width='stretch', type="primary" if st.session_state.auth_mode == "Login" else "secondary"):
             st.session_state.auth_mode = "Login"
             st.rerun()
     with c_jn:
-        if st.button("Join a Pool", use_container_width=True, type="primary" if st.session_state.auth_mode == "Join" else "secondary"):
+        if st.button("Join a Pool", width='stretch', type="primary" if st.session_state.auth_mode == "Join" else "secondary"):
             st.session_state.auth_mode = "Join"
             st.rerun()
     with c_rst:
-        if st.button("Reset Password", use_container_width=True, type="primary" if st.session_state.auth_mode == "Reset" else "secondary"):
+        if st.button("Reset Password", width='stretch', type="primary" if st.session_state.auth_mode == "Reset" else "secondary"):
             st.session_state.auth_mode = "Reset"
             st.rerun()
 
@@ -296,7 +296,7 @@ elif not st.session_state.user:
                 if users_list:
                     user_options = {u["username"]: u["id"] for u in users_list}
                     selected_user_name = st.selectbox("Masquerade as Player:", list(user_options.keys()))
-                    if st.button("Masquerade Login", use_container_width=True):
+                    if st.button("Masquerade Login", width='stretch'):
                         class MockUser:
                             def __init__(self, uid): self.id = uid
                         st.session_state.user = MockUser(user_options[selected_user_name])
@@ -308,7 +308,7 @@ elif not st.session_state.user:
         else:
             email = st.text_input("Email Address")
             password = st.text_input("Password", type="password")
-            if st.button("Log In", use_container_width=True):
+            if st.button("Log In", width='stretch'):
                 try:
                     res = supabase.auth.sign_in_with_password({"email": email, "password": password})
                     st.session_state.user = res.user
@@ -372,7 +372,7 @@ elif not st.session_state.user:
         st.subheader("Request Self-Service Password Reset Link")
         reset_email_input = st.text_input("Enter your registered Email Address:")
         
-        if st.button("Send Reset Email", use_container_width=True):
+        if st.button("Send Reset Email", width='stretch'):
             if not reset_email_input.strip():
                 st.error("Please insert a valid target email routing address.")
             else:
@@ -558,7 +558,7 @@ else:
                         else:
                             btn_label_away = f"{away}"
                             
-                        if st.button(btn_label_away, key=f"btn_a_{m_id}", disabled=dis_away, type="primary" if is_sel_away else "secondary", use_container_width=True):
+                        if st.button(btn_label_away, key=f"btn_a_{m_id}", disabled=dis_away, type="primary" if is_sel_away else "secondary", width='stretch'):
                             if is_sel_away: st.session_state.selected_teams.remove(away)
                             else: st.session_state.selected_teams.append(away)
                             st.rerun()
@@ -578,7 +578,7 @@ else:
                         else:
                             btn_label_home = f"{home}"
                             
-                        if st.button(btn_label_home, key=f"btn_h_{m_id}", disabled=dis_home, type="primary" if is_sel_home else "secondary", use_container_width=True):
+                        if st.button(btn_label_home, key=f"btn_h_{m_id}", disabled=dis_home, type="primary" if is_sel_home else "secondary", width='stretch'):
                             if is_sel_home: st.session_state.selected_teams.remove(home)
                             else: st.session_state.selected_teams.append(home)
                             st.rerun()
@@ -625,10 +625,10 @@ else:
             submit_disabled = len(st.session_state.selected_teams) != required_picks
             
             with c_sub:
-                if st.button("Next", disabled=submit_disabled, use_container_width=True):
+                if st.button("Next", disabled=submit_disabled, width='stretch'):
                     st.session_state.show_confirmation_modal = True
             with c_res:
-                if st.button("Reset", use_container_width=True):
+                if st.button("Reset", width='stretch'):
                     st.session_state.selected_teams = []
                     st.rerun()
 
@@ -639,7 +639,7 @@ else:
                 
                 m_c1, m_c2, m_c3 = st.columns(3)
                 with m_c1:
-                    if st.button("Confirm Pick (editable, Overview not visible)", use_container_width=True):
+                    if st.button("Confirm Pick (editable, Overview not visible)", width='stretch'):
                         # THE FIX: Wipe out any previous un-finalized draft picks for this specific week first
                         supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", game_slug).eq("week", SELECTED_WEEK).execute()
                         
@@ -653,7 +653,7 @@ else:
                         st.rerun()
                         
                 with m_c2:
-                    if st.button("Finalize Pick (not editable, Overview visible)", use_container_width=True):
+                    if st.button("Finalize Pick (not editable, Overview visible)", width='stretch'):
                         # THE FIX: Clear old drafts out before locking down the permanent selection rows
                         supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", game_slug).eq("week", SELECTED_WEEK).execute()
                         
@@ -667,7 +667,7 @@ else:
                         time.sleep(3)
                         st.rerun()
                 with m_c3:
-                    if st.button("Go Back / Cancel", use_container_width=True):
+                    if st.button("Go Back / Cancel", width='stretch'):
                         st.session_state.show_confirmation_modal = False
                         st.rerun()
 
