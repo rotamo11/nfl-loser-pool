@@ -284,10 +284,10 @@ elif not st.session_state.user:
     if st.session_state.auth_mode == "Login":
         st.subheader("Player Login")
         url_params = st.query_params
-        dev_pass_unlocked = url_params.get("dev", "").lower() == "true"
+        #dev_pass_unlocked = url_params.get("dev", "").lower() == "true"
         
         testing_mode = False
-        if dev_pass_unlocked:
+        #if dev_pass_unlocked:
             testing_mode = st.checkbox("Enable Developer Masquerade Mode")
         
         if testing_mode and dev_pass_unlocked:
