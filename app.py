@@ -292,13 +292,7 @@ elif not st.session_state.user:
                 st.rerun()
             except Exception:
                 st.error("Authentication rejected. Verify your email and password.")
-else:
-    if st.sidebar.button("Log Out"):
-        st.session_state.user = None
-        st.session_state.selected_teams = []
-        st.session_state.force_password_change = False
-        st.rerun()
-        
+else:        
     user_id = st.session_state.user.id
     reg_profile = supabase.table("tournament_registrations").select("*").eq("user_id", user_id).eq("game_type", game_slug).execute().data
     
