@@ -19,19 +19,174 @@ CALCULATED_CURRENT_WEEK = 1 if now < SEASON_START_WEDNESDAY else min(22, ((now -
 def get_week_label(w_idx):
     return {19: "Wildcard", 20: "Divisional", 21: "Conference", 22: "Super Bowl"}.get(w_idx, f"Week {w_idx}")
 
+# --- CUSTOM SIDEBAR CONFIGURATION ---
 with st.sidebar:
-    st.image("static/loser-logo.png", width='stretch')
-    game_mode = st.selectbox("Select Pool Tournament", ["Main Pool", "2nd Chance Game"])
-    game_slug = "Main" if game_mode == "Main Pool" else "2nd_Chance"
+    # 1. Main Game Mode Selector
+    game_mode = st.selectbox("Select Pool", ["Main", "2nd Chance"])
+    game_slug = "Main" if game_mode == "Main" else "2nd_Chance"
+
+    # 2. Dynamic Theme Profile Mapping
+    sidebar_bg = "#1d3d70" if game_slug == "Main" else "#974706"
     
-    w_opts = [f"{get_week_label(w)} (current)" if w == CALCULATED_CURRENT_WEEK else get_week_label(w) for w in range(1, 23)]
-    s_lbl = st.selectbox("📆 Target Pool Week", options=w_opts, index=CALCULATED_CURRENT_WEEK - 1).replace(" (current)", "")
-    admin_week = 19 if "Wild" in s_lbl else 20 if "Div" in s_lbl else 21 if "Conf" in s_lbl else 22 if "Super" in s_lbl else int(s_lbl.split(" ")[1])
+    st.markdown(
+        f"""
+        <style>
+            /* Dynamic sidebar color assignment */
+            [data-testid="stSidebar"] {{
+                background-color: {sidebar_bg} !important;
+            }}
+            /* Overwrite sidebar text to remain clean white across modes */
+            [data-testid="stSidebar"] .stText, [data-testid="stSidebar"] p, 
+            [data-testid="stSidebar"] h3, [data-testid="stSidebar"] label {{
+                color: #ffffff !important;
+            }}
+            /* Force dropdown selection text contrast values */
+            [data-testid="stSidebar"] div[data-baseweb="select"] div {{
+                color: #1e293b !important;
+            }}
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
 
-# Dynamic color injection
-st.markdown(f"<style>[data-testid='stSidebar'] {{ background-color: {'#1d3d70' if game_slug=='Main' else '#974706'} !important; }}</style>", unsafe_allow_html=True)
+    # --- AUTOMATIC SEASON TIMELINE RECKONER ---
+    # Week 1 Wednesday anchor timestamp (September 9, 2026 at 00:00:00)
+    SEASON_START_WEDNESDAY = datetime.datetime(2026, 9, 9, 0, 0, 0)
+    now = datetime.datetime.now()
+    
+    # Calculate the elapsed weeks since kickoff
+    if now < SEASON_START_WEDNESDAY:
+        CALCULATED_CURRENT_WEEK = 1
+    else:
+        elapsed_days = (now - SEASON_START_WEDNESDAY).days
+        CALCULATED_CURRENT_WEEK = min(22, (elapsed_days // 7) + 1)
+    
+    # Helper function to convert numeric weeks to custom regular season or playoff string labels
+    def get_week_label(week_num):
+        if week_num == 19:
+            return "Wildcard"
+        elif week_num == 20:
+            return "Divisional"
+        elif week_num == 21:
+            return "Conference"
+        elif week_num == 22:
+            return "Super Bowl"
+        else:
+            return f"Week {week_num}"
+    
+    # --- SIDEBAR INTERFACE ENHANCEMENT ---
+    with st.sidebar:
+        week_options = []
+        for w in range(1, 23):
+            base_label = get_week_label(w)
+            # Append current tag to the active week calculation
+            if w == CALCULATED_CURRENT_WEEK:
+                week_options.append(f"{base_label} (current)")
+            else:
+                week_options.append(base_label)
+                
+        # Default automatically to the calculated current week row index matching the browser time
+        selected_week_label = st.selectbox(
+            "Select Target Week", 
+            options=week_options, 
+            index=CALCULATED_CURRENT_WEEK - 1
+        )
+        
+        # --- Reverse Map the Selection Label Back into a Clear Database Week Integer ---
+        # Strip the (current) tag out if present
+        clean_label = selected_week_label.replace(" (current)", "")
+        
+        if "Wildcard" in clean_label:
+            NEW_WEEK = 19
+        elif "Divisional" in clean_label:
+            NEW_WEEK = 20
+        elif "Conference" in clean_label:
+            NEW_WEEK = 21
+        elif "Super Bowl" in clean_label:
+            NEW_WEEK = 22
+        else:
+            # Extract the trailing integer for regular season weeks (e.g., "Week 2" -> 2)
+            NEW_WEEK = int(clean_label.split(" ")[1])
+        # FIX: Detect if the user changed the dropdown week. If so, wipe active session selection cache!
+        if "active_week_tracker" not in st.session_state or st.session_state.active_week_tracker != NEW_WEEK:
+            st.session_state.active_week_tracker = NEW_WEEK
+            st.session_state.selected_teams = [] # Clears workspace parameters for fresh week view mapping
+        
+        SELECTED_WEEK = st.session_state.active_week_tracker
 
-st.html(f"<h2>2026 Commissioner Board &bull; {game_mode} &bull; {get_week_label(admin_week)}</h2><hr/>")
+    st.markdown("<hr style='margin:10px 0 15px 0; border:0; border-top:1px solid rgba(255,255,255,0.3);'/>", unsafe_allow_html=True)
+    
+    # Basic navigation paths open to every pool player
+    st.page_link("app.py", label="Picks")
+    st.page_link("pages/overview.py", label="Overview")
+    st.page_link("pages/chat.py", label="Chat")
+    st.page_link("pages/rules.py", label="Rules")
+
+    # ROLE GATE: Check if the logged-in session belongs to a valid administrator
+    is_logged_in_admin = True
+    if st.session_state.get("user"):
+        try:
+            admin_check = supabase.table("users").select("is_admin").eq("id", st.session_state.user.id).single().execute().data
+            if admin_check and admin_check.get("is_admin", False):
+                is_logged_in_admin = True
+        except Exception:
+            pass # Fail safely to hidden links if error occurs
+            
+    # Links dynamically append only if the identity verification pass clears
+    if is_logged_in_admin:
+        st.page_link("pages/admin.py", label="Admin")
+        st.page_link("pages/seed_data.py", label="Seed Data")
+    
+    st.markdown("<hr style='margin:10px 0 15px 0; border:0; border-top:1px solid rgba(255,255,255,0.3);'/>", unsafe_allow_html=True)
+    
+    # Basic navigation paths open to every pool player
+    st.page_link("http://www.espn.com/nfl/schedulegrid", label="ESPN NFL Schedule Grid")
+    st.page_link("https://www.espn.com/nfl/odds", label="ESPN Odds")
+    st.page_link("https://www.espn.com/nfl/fpi", label="ESPN Power Index")
+    
+    # Self-Service Profile Management Drawer nested inside the left rail navigation
+    if st.session_state.get("user"):
+        try:
+            # Safely fetch active session profile details
+            user_id = st.session_state.user.id
+            u_prof = supabase.table("users").select("*").eq("id", user_id).single().execute().data
+            if u_prof:
+                st.markdown("<hr style='margin:15px 0 10px 0; border:0; border-top:1px solid rgba(255,255,255,0.15);'/>", unsafe_allow_html=True)
+                with st.expander("⚙️ Account Settings"):
+                    with st.form("sidebar_profile_form"):
+                        e_user = st.text_input("Username", value=u_prof.get("username") or "", key="sb_u")
+                        e_first = st.text_input("First Name", value=u_prof.get("first_name") or "", key="sb_f")
+                        e_last = st.text_input("Last Name", value=u_prof.get("last_name") or "", key="sb_l")
+                        e_mail = st.text_input("Email", value=u_prof.get("email") or "", key="sb_e")
+                        e_cell = st.text_input("Cell Phone (123-456-7890)", value=u_prof.get("cell_phone") or "", key="sb_c")
+                        
+                        if st.form_submit_button("Save Profile Updates", width='stretch'):
+                            if not e_user.strip() or not e_mail.strip():
+                                st.error("Fields cannot be left blank.")
+                            else:
+                                # Pre-empt duplicate token crashes
+                                collision = False
+                                if e_user.strip() != u_prof.get("username"):
+                                    chk = supabase.table("users").select("id").eq("username", e_user.strip()).execute().data
+                                    if chk: collision = True
+                                    
+                                if collision:
+                                    st.error("Username {e_user.strip()} already claimed. Please try again.")
+                                else:
+                                    supabase.table("users").update({
+                                        "username": e_user.strip(), "first_name": e_first.strip(),
+                                        "last_name": e_last.strip(), "email": e_mail.strip(), "cell_phone": e_cell.strip()
+                                    }).eq("id", user_id).execute()
+                                    st.toast("Profile Saved!")
+                                    st.rerun()
+                # Logout button appears only when logged in
+                if st.button("Log Out", key="sidebar_logout_btn"): #, width='stretch'):
+                    st.session_state.user = None
+                    st.session_state.selected_teams = []
+                    st.session_state.force_password_change = False
+                    st.rerun()
+        except Exception:
+            pass
 
 tab_scores, tab_users, tab_csv = st.tabs(["🏁 Game & Score Processing", "👥 League Roster Management", "📂 Applications Queue & CSV Utilities"])
 
