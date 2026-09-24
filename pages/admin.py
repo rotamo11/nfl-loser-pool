@@ -20,7 +20,7 @@ def get_week_label(w_idx):
     return {19: "Wildcard", 20: "Divisional", 21: "Conference", 22: "Super Bowl"}.get(w_idx, f"Week {w_idx}")
 
 with st.sidebar:
-    st.image("static/loser-logo.png", use_container_width=True)
+    st.image("static/loser-logo.png", width='stretch')
     game_mode = st.selectbox("Select Pool Tournament", ["Main Pool", "2nd Chance Game"])
     game_slug = "Main" if game_mode == "Main Pool" else "2nd_Chance"
     
@@ -45,7 +45,7 @@ with tab_scores:
     
     st.markdown("### 🍩 Configure Post-Season / 2nd Chance Parameters")
     new_sc_week = st.number_input("Set 2nd Chance Launch Target (NFL Week Number):", min_value=1, max_value=17, value=sc_start)
-    if st.button("Update 2nd Chance Kickoff Line", use_container_width=True):
+    if st.button("Update 2nd Chance Kickoff Line", width='stretch'):
         supabase.table("nfl_schedule").update({"second_chance_start": new_sc_week}).neq("week", 99).execute()
         st.success(f"2nd Chance Game start week line moved to Week {new_sc_week}!")
         st.rerun()
@@ -97,7 +97,7 @@ with tab_scores:
                 with c_s: 
                     is_so = st.checkbox("Shutout", key=f"s_{m_id}")
                 with c_a:
-                    if st.button("Lock Results", key=f"l_{m_id}", use_container_width=True):
+                    if st.button("Lock Results", key=f"l_{m_id}", width='stretch'):
                         if not w_sel: 
                             st.error("Select winner")
                         else:
@@ -129,7 +129,7 @@ with tab_users:
             badge = "🚫 [Not Enrolled]" if not rg or not rg.get("is_enrolled") else "💲 [Paid]" if rg.get("is_paid") else "❌ [UNPAID]"
             admin_label = " ⭐ [ADMIN]" if u.get("is_admin", False) else ""
             
-            if st.button(f"{u['username']} ({u.get('first_name','') or ''}) {admin_label} {badge}", key=f"u_{u['id']}", use_container_width=True):
+            if st.button(f"{u['username']} ({u.get('first_name','') or ''}) {admin_label} {badge}", key=f"u_{u['id']}", width='stretch'):
                 st.session_state.selected_mgmt_user = u
                 st.rerun()
                 
@@ -167,7 +167,7 @@ with tab_users:
                 s_en = st.checkbox("Enrolled in 2nd Chance Pool", value=sr_lock.get("is_enrolled", False))
                 s_pd = st.checkbox("2nd Chance Pool Paid", value=sr_lock.get("is_paid", False))
                 
-                if st.form_submit_button("Commit Alterations Sheet", use_container_width=True):
+                if st.form_submit_button("Commit Alterations Sheet", width='stretch'):
                     supabase.table("users").update({
                         "username": e_user.strip(), "first_name": e_first.strip(), "last_name": e_last.strip(), 
                         "email": e_mail.strip(), "cell_phone": e_cell.strip(), "is_admin": edit_is_admin, "notes": edit_notes.strip()
@@ -224,7 +224,7 @@ with tab_csv:
                         unsafe_allow_html=True
                     )
                 with c_acc:
-                    if st.button("Approve ✔️", key=f"acc_{req['id']}", use_container_width=True):
+                    if st.button("Approve ✔️", key=f"acc_{req['id']}", width='stretch'):
                         try:
                             # Generate a fresh unique internal database ID for the player profile
                             gen_id = str(uuid.uuid4())
@@ -269,7 +269,7 @@ with tab_csv:
                             st.error(f"Failed to onboard applicant: {str(e)}")
                             
                 with c_rej:
-                    if st.button("Purge ❌", key=f"rej_{req['id']}", use_container_width=True):
+                    if st.button("Purge ❌", key=f"rej_{req['id']}", width='stretch'):
                         supabase.table("join_requests").update({"status": "Rejected"}).eq("id", req["id"]).execute()
                         st.rerun()
 
@@ -280,7 +280,7 @@ with tab_csv:
     st.markdown("### 🏈 Bulk Import NFL Master Schedule")
     schedule_file = st.file_uploader("Choose nfl_schedule.csv File", type="csv", key="sched_upload")
     if schedule_file is not None:
-        if st.button("🚀 Execute Schedule Database Overwrite", use_container_width=True):
+        if st.button("🚀 Execute Schedule Database Overwrite", width='stretch'):
             try:
                 input_data = schedule_file.getvalue().decode("utf-8")
                 reader = csv.DictReader(io.StringIO(input_data))
@@ -307,7 +307,7 @@ with tab_csv:
     st.markdown("### 👥 Bulk Import League Players")
     users_file = st.file_uploader("Choose league_users.csv File", type="csv", key="users_upload")
     if users_file is not None:
-        if st.button("🚀 Execute Bulk Roster Onboarding", use_container_width=True):
+        if st.button("🚀 Execute Bulk Roster Onboarding", width='stretch'):
             try:
                 input_data = users_file.getvalue().decode("utf-8")
                 reader = csv.DictReader(io.StringIO(input_data))
