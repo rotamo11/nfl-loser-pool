@@ -154,7 +154,6 @@ with tab_users:
                             
                             # Checks for valid success codes (200 OK or 201 Created)
                             if auth_response.status_code in:
-                                # Force user's login profile flag back to incomplete so they hit your password reset wall on login
                                 supabase.table("users").update({"first_login_complete": False}).eq("id", selected_user["id"]).execute()
                             else:
                                 st.error(f"⚠️ Auth Server rejected password update: {auth_response.text}")
