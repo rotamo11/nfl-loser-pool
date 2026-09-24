@@ -271,9 +271,10 @@ else:
         if not active_profile.get("is_paid", False):
             st.warning("**Payment Reminder:** Our ledger shows your entry fee for this pool track is currently outstanding. Please settle up with the Commissioner as soon as possible by sending $25 to @Robert-Moore-65 on Venmo or rotamo@yahoo.com on PayPal.")
 
-        # Recover custom Username Code Token from metadata sheets
-        user_profile = supabase.table("users").select("username").eq("id", user_id).single().execute().data
-        username_token = user_profile.get("username", "Anonymous Player") if user_profile else "Anonymous Player"
+        # Recover user info from Supabase
+        user_profile_res = supabase.table("users").select("*").eq("id", user_id).single().execute().data
+        user_profile = user_profile_res if user_profile_res else {}
+        username_token = user_profile.get("username", "Anonymous Player")
         
         # Dynamic Roster Counter
         all_regs = supabase.table("tournament_registrations").select("bracket_status").eq("game_type", game_slug).eq("is_enrolled", True).execute().data
@@ -301,13 +302,13 @@ else:
             current_cell = user_profile.get("cell_phone") or ""
 
             with st.form("profile_edit_form", clear_on_submit=False):
+                edit_username_token = st.text_input("Username ( Shows in Standings )", value=username_token)
                 col_name1, col_name2 = st.columns(2)
                 with col_name1:
                     edit_first_name = st.text_input("First Name", value=current_first)
                 with col_name2:
                     edit_last_name = st.text_input("Last Name", value=current_last)
                     
-                edit_username_token = st.text_input("Username ( Shows in Standings )", value=username_token)
                 edit_email_address = st.text_input("Email Address", value=current_email)
                 edit_cell_number = st.text_input("Cell Phone (123-456-7890)", value=current_cell)
                 
