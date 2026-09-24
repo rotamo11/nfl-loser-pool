@@ -138,10 +138,28 @@ with tab_users:
                         "email": e_mail.strip(), "cell_phone": e_cell.strip(), "is_admin": edit_is_admin, "notes": edit_notes.strip()
                     }).eq("id", selected_user["id"]).execute()
                     
+                    # 🚀 THE ABSOLUTE FIX: Bypasses library wrapper limits to update auth passwords directly via REST
                     if forced_temp_pw.strip():
-                        # Force administrative credential update pass over auth server table profiles
-                        supabase.auth.admin.update_user_by_id(selected_user["id"], {"password": forced_temp_pw.strip()})
-                        supabase.table("users").update({"first_login_complete": False}).eq("id", selected_user["id"]).execute()
+                        try:
+                            # Direct secure REST patch request to the native Supabase GoTrue Auth service engine
+                            auth_endpoint = f"{URL}/auth/v1/admin/users/{selected_user['id']}"
+                            auth_headers = {
+                                "Authorization": f"Bearer {KEY}",
+                                "apikey": KEY,
+                                "Content-Type": "application/json"
+                            }
+                            auth_payload = {"password": forced_temp_pw.strip()}
+                            
+                            import requests
+                            auth_response = requests.put(auth_endpoint, json=auth_payload, headers=auth_headers)
+                            
+                            if auth_response.status_code in:
+                                # Force user's login profile flag back to incomplete so they hit your password reset wall on login
+                                supabase.table("users").update({"first_login_complete": False}).eq("id", selected_user["id"]).execute()
+                            else:
+                                st.error(f"⚠️ Auth Server rejected password update: {auth_response.text}")
+                        except Exception as auth_ex:
+                            st.error(f"⚠️ Identity Server Communication Failure: {str(auth_ex)}")
                         
                     supabase.table("tournament_registrations").upsert({"user_id": selected_user["id"], "game_type": "Main", "is_enrolled": m_en, "is_paid": m_pd}, on_conflict="user_id,game_type").execute()
                     supabase.table("tournament_registrations").upsert({"user_id": selected_user["id"], "game_type": "2nd_Chance", "is_enrolled": s_en, "is_paid": s_pd}, on_conflict="user_id,game_type").execute()
