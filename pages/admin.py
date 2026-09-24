@@ -188,6 +188,57 @@ with st.sidebar:
         except Exception:
             pass
 
+# --- UNIFIED MASTER FRAME BRAND HEADER (Theme-Adaptive Native Fix) ---
+header_col1, header_col2 = st.columns([1, 5])
+
+with header_col1:
+    local_logo = "static/loser-logo.png"
+    if os.path.exists(local_logo):
+        st.image(local_logo, width='stretch')
+    else:
+        st.image("https://espncdn.com", width='stretch')
+
+with header_col2:
+    # 1. Main Title
+    st.html(
+        f"""
+        <div style="display: flex; align-items: flex-end; height: 85px; padding-bottom: 5px;">
+            <h1 style="margin:0; font-weight:900; font-size:32px; letter-spacing:-1px;">
+                2026 NFL Loser Pool &bull; {game_mode} &bull; {selected_week_label}
+            </h1>
+        </div>
+        """
+    )
+    
+    # 2. Rule Parameters Grid Rows
+    metric_col1, metric_col2, metric_col3 = st.columns(3)
+    with metric_col1:
+        st.caption("**Weeks 1-14**")
+        st.markdown("Pick 1 team to lose")
+    with metric_col2:
+        st.caption("**Weeks 15-18**")
+        st.markdown("Pick 2 teams to lose")
+    with metric_col3:
+        st.caption("**Playoffs**")
+        st.markdown("Pick ALL losers (repeats allowed)")
+        
+    # 3. Deadline Summary Row
+    st.info(f"**Weekly Deadline:** Noon ET Sunday, or by kickoff of earlier game")
+    
+    # 4. Financials & History Footer Strip
+    st.html(
+        """
+        <div style="margin-top:10px; padding-top:8px; border-top:1px solid rgba(128,128,128,0.2); font-family:monospace; font-size:14px; color:#3b82f6; font-weight:bold;">
+            74 Players | $1850 Purse ($1110 1st / $555 2nd / $185 3rd) <br>
+            <span style="opacity:0.7; font-weight:normal; font-size:14px; color:var(--text-color);">
+                Last Year's Losers: S. King ($765) • A. Conley ($382.50) • B. Kazmierski ($127.50)
+            </span>
+        </div>
+        """
+    )
+
+st.markdown("---")
+
 tab_scores, tab_users, tab_csv = st.tabs(["🏁 Game & Score Processing", "👥 League Roster Management", "📂 Applications Queue & CSV Utilities"])
 
 # ==========================================
@@ -206,7 +257,7 @@ with tab_scores:
         st.rerun()
         
     st.markdown("---")
-    schedule_res = supabase.table("nfl_schedule").select("*").eq("week", admin_week).execute().data
+    schedule_res = supabase.table("nfl_schedule").select("*").eq("week", SELECTED_WEEK).execute().data
     if not schedule_res: 
         st.info("No games matched for this week segment parameters.")
     else:
@@ -257,7 +308,7 @@ with tab_scores:
                             st.error("Select winner")
                         else:
                             supabase.table("nfl_schedule").update({"winner": w_sel, "is_shutout": is_so}).eq("id", m_id).execute()
-                            picks = supabase.table("user_picks").select("*").eq("game_type", game_slug).eq("week", admin_week).in_("team_picked", [away, f"{away}_SO", home, f"{home}_SO"]).execute().data
+                            picks = supabase.table("user_picks").select("*").eq("game_type", game_slug).eq("week", SELECTED_WEEK).in_("team_picked", [away, f"{away}_SO", home, f"{home}_SO"]).execute().data
                             for p in picks:
                                 ct = p["team_picked"].replace("_SO", "")
                                 res = "Incorrect" if w_sel == "TIE" else "Correct" if ct != w_sel else "Incorrect"
