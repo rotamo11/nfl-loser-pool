@@ -366,30 +366,39 @@ elif not st.session_state.user:
                         except Exception as e: st.error(f"Submission Error: {str(e)}")
 
     # ==========================================
-    # CHANNEL 3: METADATA-CHECKED PASSWORD RESET
+    # CHANNEL 3: DOUBLE-VERIFIED PASSWORD RESET
     # ==========================================
     elif st.session_state.auth_mode == "Reset":
-        st.subheader("Request Self-Service Password Reset Link")
-        reset_email_input = st.text_input("Enter your registered Email Address:")
+        st.subheader("🔄 Request Secure Password Reset Link")
+        st.write("Because multiple league players can share an email address, enter both your Username and Email to identify your account.")
         
-        if st.button("Send Reset Email", width='stretch'):
-            if not reset_email_input.strip():
-                st.error("Please insert a valid target email routing address.")
+        reset_username_input = st.text_input("Your Unique Username Code Token:")
+        reset_email_input = st.text_input("Your Registered Email Address:")
+        
+        if st.button("Send Magic Reset Email link ✉️", width='stretch'):
+            clean_user = reset_username_input.strip()
+            clean_email = reset_email_input.strip()
+            
+            if not clean_user or not clean_email:
+                st.error("❌ Both Username and Email Address fields are mandatory.")
             else:
-                with st.spinner("Checking verification records..."):
-                    # Check if email exists in system profiles metadata records
-                    email_exists = supabase.table("users").select("id").eq("email", reset_email_input.strip()).execute().data
+                with st.spinner("Verifying identity records..."):
+                    # 🚀 DOUBLE LOCK PRE-CHECK: Match BOTH columns simultaneously to locate the exact player ID
+                    account_match = supabase.table("users").select("id, email").eq("username", clean_user).eq("email", clean_email).execute().data
                     
-                    if not email_exists:
-                        st.error("That email address is not registered to any competitor profile inside this league.")
+                    if not account_match:
+                        st.error("❌ Account Verification Failed. No player record matches that specific combination of Username and Email.")
                     else:
                         try:
+                            # Pull the targeted email stream parameter
+                            target_record = account_match[0]
+                            
                             # Fires standard authentication password reset link via Supabase mailing servers
                             supabase.auth.reset_password_for_email(
-                                email_exists[0]["email"] if "email" in email_exists[0] else reset_email_input.strip(),
+                                target_record["email"],
                                 {"redirect_to": "https://streamlit.app"}
                             )
-                            st.success("Password reset link sent! Check your email inbox and spam folders to re-establish your access and set a new password.")
+                            st.success("✉️ Magic Reset link fired! Check your email inbox and spam folders to re-establish your login access keys.")
                         except Exception as e:
                             st.error(f"Mailing server error: {str(e)}")
 else:        
