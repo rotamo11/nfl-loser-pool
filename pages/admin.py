@@ -62,11 +62,35 @@ with st.sidebar:
     elif "Super Bowl" in clean_label: SELECTED_WEEK = 22
     SELECTED_WEEK = int(clean_label.split(" ")[1])
     
+    st.markdown("<hr style='margin:10px 0 15px 0; border:0; border-top:1px solid rgba(255,255,255,0.3);'/>", unsafe_allow_html=True)
+    
+    # Basic navigation paths open to every pool player
     st.page_link("app.py", label="Picks")
     st.page_link("pages/overview.py", label="Overview")
-    st.page_link("pages/chat.py", label="Banter")
+    st.page_link("pages/chat.py", label="Chat")
     st.page_link("pages/rules.py", label="Rules")
-    st.page_link("pages/admin.py", label="Admin")
+
+    # ROLE GATE: Check if the logged-in session belongs to a valid administrator
+    is_logged_in_admin = False
+    if st.session_state.get("user"):
+        try:
+            admin_check = supabase.table("users").select("is_admin").eq("id", st.session_state.user.id).single().execute().data
+            if admin_check and admin_check.get("is_admin", False):
+                is_logged_in_admin = True
+        except Exception:
+            pass # Fail safely to hidden links if error occurs
+            
+    # Links dynamically append only if the identity verification pass clears
+    if is_logged_in_admin:
+        st.page_link("pages/admin.py", label="Admin")
+        st.page_link("pages/seed_data.py", label="Seed Data")
+    
+    st.markdown("<hr style='margin:10px 0 15px 0; border:0; border-top:1px solid rgba(255,255,255,0.3);'/>", unsafe_allow_html=True)
+    
+    # Basic navigation paths open to every pool player
+    st.page_link("http://www.espn.com/nfl/schedulegrid", label="ESPN NFL Schedule Grid")
+    st.page_link("https://www.espn.com/nfl/odds", label="ESPN Odds")
+    st.page_link("https://www.espn.com/nfl/fpi", label="ESPN Power Index")
 
 # --- DYNAMIC SIDEBAR BACKGROUND COLOR ENGINE ---
 sidebar_bg = "#1d3d70" if game_slug == "Main" else "#974706"
