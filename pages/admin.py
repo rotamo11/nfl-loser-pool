@@ -261,7 +261,7 @@ with tab_users:
     col_user_list, col_user_edit = st.columns(2)
     
     with col_user_list:
-        st.markdown(f"### Current Players ({game_mode} Status View)")
+        st.markdown(f"### Current Players ({game_mode} Game)")
         if not all_users: st.info("No registered users inside database.")
         else:
             for u in all_users:
@@ -279,12 +279,12 @@ with tab_users:
                     st.rerun()
 
     with col_user_edit:
-        st.markdown("### 🖋️ Profile Profile Editor Sheet")
+        st.markdown("### Profile Editor")
         selected_user = st.session_state.get("selected_mgmt_user", None)
         
-        if not selected_user: st.info("Select a player from the left panel to edit profile details.")
+        if not selected_user: 
+            st.info("Select a player from the left panel to edit profile details.")
         else:
-            # Recover individual registration rows for both tracks to toggle explicitly inside form rows
             main_reg = supabase.table("tournament_registrations").select("*").eq("user_id", selected_user["id"]).eq("game_type", "Main").execute().data
             sec_reg = supabase.table("tournament_registrations").select("*").eq("user_id", selected_user["id"]).eq("game_type", "2nd_Chance").execute().data
             
@@ -292,7 +292,10 @@ with tab_users:
             sr = sec_reg[0] if sec_reg else {"is_enrolled": False, "is_paid": False}
 
             with st.form("edit_player_form"):
-                st.markdown(f"Username: **{selected_user['username']}**")
+                st.markdown(f"Editing Database User Index ID: `{selected_user['id']}`")
+                
+                # COMMISSIONER OVERRIDE: Allowed full text-editing clearance over player username handle tokens
+                edit_username = st.text_input("Username", value=selected_user.get("username") or "")
                 edit_first = st.text_input("First Name", value=selected_user.get("first_name") or "")
                 edit_last = st.text_input("Last Name", value=selected_user.get("last_name") or "")
                 edit_email = st.text_input("Email Address", value=selected_user.get("email") or "")
@@ -301,25 +304,30 @@ with tab_users:
                 edit_notes = st.text_area("Notes", value=selected_user.get("notes") or "")
                 
                 st.markdown("---")
-                st.markdown("#### Main Access Settings")
-                m_enroll = st.checkbox("Enrolled in Main", value=mr.get("is_enrolled", False))
-                m_paid = st.checkbox("Main Fees Paid", value=mr.get("is_paid", False))
+                st.markdown("#### Main Game Access Settings")
+                m_enroll = st.checkbox("Enrolled in Main Game", value=mr.get("is_enrolled", False))
+                m_paid = st.checkbox("Main Game Fees Paid", value=mr.get("is_paid", False))
                 
-                st.markdown("#### 2nd Chance Access Settings")
-                s_enroll = st.checkbox("Enrolled in 2nd Chance", value=sr.get("is_enrolled", False))
-                s_paid = st.checkbox("2nd Chance Fees Paid", value=sr.get("is_paid", False))
+                st.markdown("#### 2nd Chance Game Access Settings")
+                s_enroll = st.checkbox("Enrolled in 2nd Chance Game", value=sr.get("is_enrolled", False))
+                s_paid = st.checkbox("2nd Chance Game Fees Paid", value=sr.get("is_paid", False))
                 
                 if st.form_submit_button("Commit Changes to Database", use_container_width=True):
+                    # Injects the edited username directly into the update payload array block
                     supabase.table("users").update({
-                        "first_name": edit_first.strip(), "last_name": edit_last.strip(), "email": edit_email.strip(),
-                        "cell_phone": edit_cell.strip(), "is_admin": edit_is_admin, "notes": edit_notes.strip()
+                        "username": edit_username.strip(),
+                        "first_name": edit_first.strip(), 
+                        "last_name": edit_last.strip(), 
+                        "email": edit_email.strip(),
+                        "cell_phone": edit_cell.strip(), 
+                        "is_admin": edit_is_admin, 
+                        "notes": edit_notes.strip()
                     }).eq("id", selected_user["id"]).execute()
                     
                     supabase.table("tournament_registrations").upsert({"user_id": selected_user["id"], "game_type": "Main", "is_enrolled": m_enroll, "is_paid": m_paid}, on_conflict="user_id,game_type").execute()
                     supabase.table("tournament_registrations").upsert({"user_id": selected_user["id"], "game_type": "2nd_Chance", "is_enrolled": s_enroll, "is_paid": s_paid}, on_conflict="user_id,game_type").execute()
                     
                     st.success("Database records synchronized successfully!")
-                    time.sleep(3)
                     st.session_state.selected_mgmt_user = None
                     st.rerun()
 
