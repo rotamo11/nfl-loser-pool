@@ -153,7 +153,7 @@ with tab_users:
                             auth_response = requests.put(auth_endpoint, json=auth_payload, headers=auth_headers)
                             
                             # Checks for valid success codes (200 OK or 201 Created)
-                            if auth_response.status_code in:
+                            if auth_response.status_code in [200, 201]:
                                 supabase.table("users").update({"first_login_complete": False}).eq("id", selected_user["id"]).execute()
                             else:
                                 st.error(f"⚠️ Auth Server rejected password update: {auth_response.text}")
