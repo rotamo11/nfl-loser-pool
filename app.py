@@ -175,8 +175,7 @@ with st.sidebar:
             pass
 
     # Standard transactional disconnect button pins to the absolute baseline
-    st.markdown("<br>", unsafe_allow_html=True)
-    if st.button("Log Out", key="sidebar_logout_btn", use_container_width=True):
+    if st.button("Log Out", key="sidebar_logout_btn"): #, use_container_width=True):
         st.session_state.user = None
         st.session_state.selected_teams = []
         st.session_state.force_password_change = False
