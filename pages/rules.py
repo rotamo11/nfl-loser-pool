@@ -4,6 +4,11 @@ import datetime
 
 st.set_page_config(layout="wide")
 
+# Initialize database connection context
+URL = st.secrets["SUPABASE_URL"]
+KEY = st.secrets["SUPABASE_KEY"]
+supabase: Client = create_client(URL, KEY)
+
 # --- CUSTOM SIDEBAR CONFIGURATION ---
 with st.sidebar:
     # 1. Main Game Mode Selector
