@@ -131,6 +131,51 @@ with st.sidebar:
     st.page_link("https://www.espn.com/nfl/odds", label="ESPN Odds")
     st.page_link("https://www.espn.com/nfl/fpi", label="ESPN Power Index")
     
+    # Self-Service Profile Management Drawer nested inside the left rail navigation
+    if st.session_state.get("user"):
+        try:
+            # Safely fetch active session profile details
+            user_id = st.session_state.user.id
+            u_prof = supabase.table("users").select("*").eq("id", user_id).single().execute().data
+            if u_prof:
+                st.markdown("<hr style='margin:15px 0 10px 0; border:0; border-top:1px solid rgba(255,255,255,0.15);'/>", unsafe_allow_html=True)
+                with st.expander("⚙️ Account Settings"):
+                    with st.form("sidebar_profile_form"):
+                        e_user = st.text_input("Username", value=u_prof.get("username") or "", key="sb_u")
+                        e_first = st.text_input("First Name", value=u_prof.get("first_name") or "", key="sb_f")
+                        e_last = st.text_input("Last Name", value=u_prof.get("last_name") or "", key="sb_l")
+                        e_mail = st.text_input("Email", value=u_prof.get("email") or "", key="sb_e")
+                        e_cell = st.text_input("Cell Phone (123-456-7890)", value=u_prof.get("cell_phone") or "", key="sb_c")
+                        
+                        if st.form_submit_button("Save Profile Updates", use_container_width=True):
+                            if not e_user.strip() or not e_mail.strip():
+                                st.error("Fields cannot be left blank.")
+                            else:
+                                # Pre-empt duplicate token crashes
+                                collision = False
+                                if e_user.strip() != u_prof.get("username"):
+                                    chk = supabase.table("users").select("id").eq("username", e_user.strip()).execute().data
+                                    if chk: collision = True
+                                    
+                                if collision:
+                                    st.error("Username {e_user.strip()} already claimed. Please try again.")
+                                else:
+                                    supabase.table("users").update({
+                                        "username": e_user.strip(), "first_name": e_first.strip(),
+                                        "last_name": e_last.strip(), "email": e_mail.strip(), "cell_phone": e_cell.strip()
+                                    }).eq("id", user_id).execute()
+                                    st.toast("Profile Saved!")
+                                    st.rerun()
+        except Exception:
+            pass
+
+    # Standard transactional disconnect button pins to the absolute baseline
+    if st.button("Log Out", key="sidebar_logout_btn"): #, use_container_width=True):
+        st.session_state.user = None
+        st.session_state.selected_teams = []
+        st.session_state.force_password_change = False
+        st.rerun()
+
 # --- UNIFIED MASTER FRAME BRAND HEADER (Theme-Adaptive Native Fix) ---
 header_col1, header_col2 = st.columns([1, 5])
 
