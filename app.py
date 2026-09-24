@@ -435,6 +435,25 @@ else:
                             clean_svg = svg_code.replace("<svg", "<svg style='width:100%; height:100%; display:block;'")
                             st.markdown(f'<div style="width:32px; height:24px; padding-top:6px; margin:0 auto; display:flex; align-items:center;">{clean_svg}</div>', unsafe_allow_html=True)
                         except Exception: st.write("")
+    
+                    # ======================================================================
+                    # Dynamic Flex-Game Kickoff String Renderer - Handles Blank Timestamps
+                    # ======================================================================
+                    display_deadline = "⚠️ TBD (Flex Game Scheduling Pending)"
+                    if match.get("kickoff_time"):
+                        try:
+                            # Strips out trailing zone letters and replaces ISO T separators
+                            display_deadline = match["kickoff_time"][:16].replace("T", " ")
+                        except Exception:
+                            pass
+                    
+                    # Renders low-profile deadline tracker below the team selection buttons
+                    st.markdown(
+                        f"""<div style="text-align:center; font-size:11px; color:#64748b; margin-top:-4px; margin-bottom:12px;">
+                            ⏰ Kickoff Deadline: <b>{display_deadline}</b>
+                        </div>""", 
+                        unsafe_allow_html=True
+                    )
 
             st.markdown("---")
             is_bye_selected = "BYE" in st.session_state.selected_teams
