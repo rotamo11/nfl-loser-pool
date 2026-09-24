@@ -111,7 +111,7 @@ with st.sidebar:
     # Basic navigation paths open to every pool competitor
     st.page_link("app.py", label="Picks")
     st.page_link("pages/overview.py", label="Overview")
-    st.page_link("pages/chat.py", label="Banter")
+    st.page_link("pages/chat.py", label="Chat")
     st.page_link("pages/rules.py", label="Rules")
 
     # ROLE GATE: Check if the logged-in session belongs to a valid administrator
