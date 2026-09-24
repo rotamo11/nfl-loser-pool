@@ -79,7 +79,7 @@ with tab_scores:
                             st.rerun()
 
 # ==========================================
-# TAB 2: ROSTER & PROFILE MANAGEMENT
+# 👥 TAB 2: ROSTER & PROFILE MANAGEMENT
 # ==========================================
 with tab_users:
     all_users = supabase.table("users").select("*").order("username").execute().data
@@ -88,47 +88,65 @@ with tab_users:
     
     col_l, col_r = st.columns(2)
     with col_l:
+        st.markdown(f"### 📋 Current Roster Sheets ({game_mode} Status View)")
         for u in all_users:
             rg = regs_map.get(u["id"])
             badge = "🚫 [Not Enrolled]" if not rg or not rg.get("is_enrolled") else "💲 [Paid]" if rg.get("is_paid") else "❌ [UNPAID]"
-            if st.button(f"{u['username']} ({u.get('first_name','')}) {badge}", key=f"u_{u['id']}", use_container_width=True):
+            admin_label = " ⭐ [ADMIN]" if u.get("is_admin", False) else ""
+            
+            if st.button(f"{u['username']} ({u.get('first_name','') or ''}) {admin_label} {badge}", key=f"u_{u['id']}", use_container_width=True):
                 st.session_state.selected_mgmt_user = u
                 st.rerun()
                 
     with col_r:
+        st.markdown("### 🖋️ Profile Profile Editor Sheet")
         selected_user = st.session_state.get("selected_mgmt_user")
-        if not selected_user: st.info("Select competitor to modify parameters.")
+        if not selected_user: 
+            st.info("Select a competitor from the left list to modify parameters.")
         else:
-            mr = supabase.table("tournament_registrations").select("*").eq("user_id", selected_user["id"]).eq("game_type", "Main").execute().data
-            sr = supabase.table("tournament_registrations").select("*").eq("user_id", selected_user["id"]).eq("game_type", "2nd_Chance") lock = mr[0] if mr else {"is_enrolled":False,"is_paid":False}
-            sr_lock = sr[0] if sr else {"is_enrolled":False,"is_paid":False}
+            # 🚀 FIX: Securely pulls separate registration tracking details for both pools
+            main_reg_data = supabase.table("tournament_registrations").select("*").eq("user_id", selected_user["id"]).eq("game_type", "Main").execute().data
+            sec_reg_data = supabase.table("tournament_registrations").select("*").eq("user_id", selected_user["id"]).eq("game_type", "2nd_Chance").execute().data
+            
+            mr = main_reg_data[0] if main_reg_data else {"is_enrolled": False, "is_paid": False}
+            sr_lock = sec_reg_data[0] if sec_reg_data else {"is_enrolled": False, "is_paid": False}
             
             with st.form("edit_user_form"):
-                e_user = st.text_input("Username Code Token", value=selected_user["username"])
+                st.markdown(f"Editing Database User Index ID: **{selected_user['username']}**")
+                e_user = st.text_input("Username Code Token", value=selected_user.get("username") or "")
                 e_first = st.text_input("First Name", value=selected_user.get("first_name") or "")
                 e_last = st.text_input("Last Name", value=selected_user.get("last_name") or "")
                 e_mail = st.text_input("Email Address", value=selected_user.get("email") or "")
                 e_cell = st.text_input("Cell Phone Number", value=selected_user.get("cell_phone") or "")
                 
-                # 👑 FORCE RE-AUTHENTICATION OVERRIDE: Assigns an operational string override token
-                forced_temp_pw = st.text_input("Assign Temporary Overwrite Password (Forces reset on entry):", value="", type="password")
+                forced_temp_pw = st.text_input("Assign Temporary Overwrite Password (Forces reset on next login):", value="", type="password")
+                edit_is_admin = st.checkbox("Grant Platform Administrative Status privileges", value=selected_user.get("is_admin", False))
+                edit_notes = st.text_area("User Profile Account Notes Ledger", value=selected_user.get("notes") or "")
                 
-                m_en = st.checkbox("Enrolled in Main Pool", value=lock.get("is_enrolled"))
-                m_pd = st.checkbox("Main Pool Paid", value=lock.get("is_paid"))
-                s_en = st.checkbox("Enrolled in 2nd Chance", value=sr_lock.get("is_enrolled"))
-                s_pd = st.checkbox("2nd Chance Paid", value=sr_lock.get("is_paid"))
+                st.markdown("---")
+                st.markdown("#### 🏆 Main Pool Track Access Settings")
+                m_en = st.checkbox("Enrolled in Main Pool", value=mr.get("is_enrolled", False))
+                m_pd = st.checkbox("Main Pool Paid", value=mr.get("is_paid", False))
                 
-                if st.form_submit_button("Commit Alterations Sheet"):
-                    supabase.table("users").update({"username": e_user.strip(), "first_name": e_first.strip(), "last_name": e_last.strip(), "email": e_mail.strip(), "cell_phone": e_cell.strip()}).eq("id", selected_user["id"]).execute()
+                st.markdown("#### 🍩 2nd Chance Pool Track Access Settings")
+                s_en = st.checkbox("Enrolled in 2nd Chance Pool", value=sr_lock.get("is_enrolled", False))
+                s_pd = st.checkbox("2nd Chance Pool Paid", value=sr_lock.get("is_paid", False))
+                
+                if st.form_submit_button("Commit Alterations Sheet", use_container_width=True):
+                    supabase.table("users").update({
+                        "username": e_user.strip(), "first_name": e_first.strip(), "last_name": e_last.strip(), 
+                        "email": e_mail.strip(), "cell_phone": e_cell.strip(), "is_admin": edit_is_admin, "notes": edit_notes.strip()
+                    }).eq("id", selected_user["id"]).execute()
                     
                     if forced_temp_pw.strip():
                         # Force administrative credential update pass over auth server table profiles
                         supabase.auth.admin.update_user_by_id(selected_user["id"], {"password": forced_temp_pw.strip()})
                         supabase.table("users").update({"first_login_complete": False}).eq("id", selected_user["id"]).execute()
                         
-                    supabase.table("tournament_registrations").upsBound({"user_id": selected_user["id"], "game_type": "Main", "is_enrolled": m_en, "is_paid": m_pd}, on_conflict="user_id,game_type").execute()
+                    supabase.table("tournament_registrations").upsert({"user_id": selected_user["id"], "game_type": "Main", "is_enrolled": m_en, "is_paid": m_pd}, on_conflict="user_id,game_type").execute()
                     supabase.table("tournament_registrations").upsert({"user_id": selected_user["id"], "game_type": "2nd_Chance", "is_enrolled": s_en, "is_paid": s_pd}, on_conflict="user_id,game_type").execute()
-                    st.success("Synchronized!")
+                    
+                    st.success("Synchronized successfully!")
                     st.session_state.selected_mgmt_user = None
                     st.rerun()
 
