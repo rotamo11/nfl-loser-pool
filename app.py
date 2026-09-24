@@ -290,6 +290,64 @@ else:
             unsafe_allow_html=True
         )
 
+        # --- ACCOUNT PROFILE SETTINGS PANEL ---
+        with st.expander("⚙️ Account Settings — Edit Profile & Contact Info"):
+            st.write("Keep your contact information and username updated throughout the season.")
+            
+            # Fetch the rest of the user's data fields to pre-populate form values correctly
+            current_first = user_profile.get("first_name") or ""
+            current_last = user_profile.get("last_name") or ""
+            current_email = user_profile.get("email") or ""
+            current_cell = user_profile.get("cell_phone") or ""
+
+            with st.form("profile_edit_form", clear_on_submit=False):
+                col_name1, col_name2 = st.columns(2)
+                with col_name1:
+                    edit_first_name = st.text_input("First Name", value=current_first)
+                with col_name2:
+                    edit_last_name = st.text_input("Last Name", value=current_last)
+                    
+                edit_username_token = st.text_input("Username ( Shows in Standings )", value=username_token)
+                edit_email_address = st.text_input("Email Address", value=current_email)
+                edit_cell_number = st.text_input("Cell Phone (123-456-7890)", value=current_cell)
+                
+                submit_profile_changes = st.form_submit_button("Save Profile Updates", use_container_width=True)
+                
+                if submit_profile_changes:
+                    clean_user_token = edit_username_token.strip()
+                    clean_email = edit_email_address.strip()
+                    
+                    if not clean_user_token:
+                        st.error("❌ Username cannot be left blank.")
+                    elif not clean_email:
+                        st.error("❌ Email Address cannot be left blank.")
+                    else:
+                        with st.spinner("Synchronizing changes..."):
+                            # IDENTITY COLLISION PRE-CHECK: Prevent stealing another active user's shortcut token
+                            name_collision = False
+                            if clean_user_token != username_token:
+                                collision_check = supabase.table("users").select("id").eq("username", clean_user_token).execute().data
+                                if collision_check: name_collision = True
+                                
+                            if name_collision:
+                                st.error(f"❌ The username `{clean_user_token}` is already claimed by another player. Choose a different username.")
+                            else:
+                                try:
+                                    # Execute single unified database write update against their session ID
+                                    supabase.table("users").update({
+                                        "username": clean_user_token,
+                                        "first_name": edit_first_name.strip(),
+                                        "last_name": edit_last_name.strip(),
+                                        "email": clean_email,
+                                        "cell_phone": edit_cell_number.strip()
+                                    }).eq("id", user_id).execute()
+                                    
+                                    st.success("Profile synchronized successfully!")
+                                    st.toast("Account details updated!")
+                                    st.rerun()
+                                except Exception as e:
+                                    st.error(f"❌ Database Transaction Stalled: {str(e)}")
+
         # --- RECOVER USER COMPREHENSIVE SELECTION RECORDS ---
         all_picks_res = supabase.table("user_picks").select("*").eq("user_id", user_id).eq("game_type", game_slug).execute().data
         
