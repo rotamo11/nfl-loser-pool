@@ -102,7 +102,7 @@ with st.sidebar:
 
     st.markdown("<hr style='margin:10px 0 15px 0; border:0; border-top:1px solid rgba(255,255,255,0.3);'/>", unsafe_allow_html=True)
     
-    # Basic navigation paths open to every pool competitor
+    # Basic navigation paths open to every pool player
     st.page_link("app.py", label="Picks")
     st.page_link("pages/overview.py", label="Overview")
     st.page_link("pages/chat.py", label="Chat")
@@ -122,6 +122,13 @@ with st.sidebar:
     if is_logged_in_admin:
         st.page_link("pages/admin.py", label="Admin")
         st.page_link("pages/seed_data.py", label="Seed Data")
+    
+    st.markdown("<hr style='margin:10px 0 15px 0; border:0; border-top:1px solid rgba(255,255,255,0.3);'/>", unsafe_allow_html=True)
+    
+    # Basic navigation paths open to every pool player
+    st.page_link("http://www.espn.com/nfl/schedulegrid", label="ESPN NFL Schedule Grid")
+    st.page_link("https://www.espn.com/nfl/odds", label="ESPN Odds")
+    st.page_link("https://www.espn.com/nfl/fpi", label="ESPN Power Index")
     
 # --- UNIFIED MASTER FRAME BRAND HEADER (Theme-Adaptive Native Fix) ---
 header_col1, header_col2 = st.columns([1, 5])
@@ -285,7 +292,7 @@ for bracket_name, registrants in bracket_buckets.items():
     <table>
         <thead>
             <tr>
-                <th style="text-align:left; padding-left:8px;">Competitor</th>
+                <th style="text-align:left; padding-left:8px;">Player</th>
                 <th style="width:40px;">Byes</th>
     """
     for w in range(1, 19):
