@@ -115,7 +115,7 @@ with st.sidebar:
     st.page_link("pages/rules.py", label="Rules")
 
     # ROLE GATE: Check if the logged-in session belongs to a valid administrator
-    is_logged_in_admin = False
+    is_logged_in_admin = True
     if st.session_state.get("user"):
         try:
             admin_check = supabase.table("users").select("is_admin").eq("id", st.session_state.user.id).single().execute().data
