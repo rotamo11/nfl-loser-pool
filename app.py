@@ -396,9 +396,14 @@ else:
                     # --- AWAY TEAM RENDERER ---
                     with col_a_logo:
                         try:
-                            with open(f"static/{away}.svg", "r") as f: svg_code = f.read()
-                            clean_svg = svg_code.replace("<svg", "<svg style='width:100%; height:100%; display:block;'")
-                            st.markdown(f'<div style="width:32px; height:24px; padding-top:6px; margin:0 auto; display:flex; align-items:center;">{clean_svg}</div>', unsafe_allow_html=True)
+                            # FIX: Read vector asset file code cleanly as secure binary bytes
+                            import base64
+                            with open(f"static/{away}.svg", "rb") as f:
+                                encoded_away_logo = base64.b64encode(f.read()).decode("utf-8")
+                            
+                            # Standardize into an un-breakable secure image URL data block string
+                            away_logo_url = f"data:image/svg+xml;base64,{encoded_away_logo}"
+                            st.markdown(f'<div style="width:32px; height:24px; padding-top:6px; margin:0 auto; display:flex; align-items:center;"><img src="{away_logo_url}" width="32" height="24" style="object-fit:contain; display:block;"/></div>', unsafe_allow_html=True)
                         except Exception: st.write("")
                         
                     with col_a_btn:
@@ -431,10 +436,15 @@ else:
     
                     with col_h_logo:
                         try:
-                            with open(f"static/{home}.svg", "r") as f: svg_code = f.read()
-                            clean_svg = svg_code.replace("<svg", "<svg style='width:100%; height:100%; display:block;'")
-                            st.markdown(f'<div style="width:32px; height:24px; padding-top:6px; margin:0 auto; display:flex; align-items:center;">{clean_svg}</div>', unsafe_allow_html=True)
+                            # FIX: Apply matching secure base64 byte conversions to the home column icon
+                            import base64
+                            with open(f"static/{home}.svg", "rb") as f:
+                                encoded_home_logo = base64.b64encode(f.read()).decode("utf-8")
+                                
+                            home_logo_url = f"data:image/svg+xml;base64,{encoded_home_logo}"
+                            st.markdown(f'<div style="width:32px; height:24px; padding-top:6px; margin:0 auto; display:flex; align-items:center;"><img src="{home_logo_url}" width="32" height="24" style="object-fit:contain; display:block;"/></div>', unsafe_allow_html=True)
                         except Exception: st.write("")
+
     
                     # ======================================================================
                     # Dynamic Flex-Game Kickoff String Renderer - Handles Blank Timestamps
@@ -448,12 +458,12 @@ else:
                             pass
                     
                     # Renders low-profile deadline tracker below the team selection buttons
-                    st.markdown(
-                        f"""<div style="text-align:center; font-size:11px; color:#64748b; margin-top:-4px; margin-bottom:12px;">
-                            ⏰ Kickoff Deadline: <b>{display_deadline}</b>
-                        </div>""", 
-                        unsafe_allow_html=True
-                    )
+                    # st.markdown(
+                        # f"""<div style="text-align:center; font-size:11px; color:#64748b; margin-top:-4px; margin-bottom:12px;">
+                            # Kickoff Deadline: <b>{display_deadline}</b>
+                        # </div>""", 
+                        # unsafe_allow_html=True
+                    # )
 
             st.markdown("---")
             is_bye_selected = "BYE" in st.session_state.selected_teams
