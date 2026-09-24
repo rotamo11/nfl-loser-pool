@@ -258,39 +258,140 @@ if st.session_state.force_password_change:
                 st.error(f"Failed to update password: {str(e)}")
 
 elif not st.session_state.user:
-    st.subheader("Login")
-    testing_mode = st.checkbox("Enable Developer Masquerade Mode (Testing Only)")
-    
-    if testing_mode:
-        try:
-            users_list = supabase.table("users").select("id", "username").execute().data
-            if users_list:
-                user_options = {u["username"]: u["id"] for u in users_list}
-                selected_user_name = st.selectbox("Masquerade as Player:", list(user_options.keys()))
-                
-                if st.button("Masquerade Login", use_container_width=True):
-                    class MockUser:
-                        def __init__(self, uid): self.id = uid
-                    st.session_state.user = MockUser(user_options[selected_user_name])
-                    st.session_state.force_password_change = False
-                    st.success(f"Masquerading successfully as {selected_user_name}!")
-                    st.rerun()
-        except Exception as e:
-            st.error(f"Could not load users for masquerade: {str(e)}")
-    else:
-        email = st.text_input("Email Address")
-        password = st.text_input("Password", type="password")
-        if st.button("Log In", use_container_width=True):
+    # THREE-WAY DISCOVERY ROUTING SYSTEM MATRIX
+    if "auth_mode" not in st.session_state:
+        st.session_state.auth_mode = "Login"
+        
+    c_log, c_jn, c_rst = st.columns(3)
+    with c_log:
+        if st.button("Account Login", use_container_width=True, type="primary" if st.session_state.auth_mode == "Login" else "secondary"):
+            st.session_state.auth_mode = "Login"
+            st.rerun()
+    with c_jn:
+        if st.button("Join a Pool", use_container_width=True, type="primary" if st.session_state.auth_mode == "Join" else "secondary"):
+            st.session_state.auth_mode = "Join"
+            st.rerun()
+    with c_rst:
+        if st.button("Reset Password", use_container_width=True, type="primary" if st.session_state.auth_mode == "Reset" else "secondary"):
+            st.session_state.auth_mode = "Reset"
+            st.rerun()
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # ==========================================
+    # CHANNEL 1: STANDARD ACCOUNT LOGIN PORTAL
+    # ==========================================
+    if st.session_state.auth_mode == "Login":
+        st.subheader("Player Login")
+        url_params = st.query_params
+        dev_pass_unlocked = url_params.get("dev", "").lower() == "true"
+        
+        testing_mode = False
+        if dev_pass_unlocked:
+            testing_mode = st.checkbox("Enable Developer Masquerade Mode")
+        
+        if testing_mode and dev_pass_unlocked:
             try:
-                res = supabase.auth.sign_in_with_password({"email": email, "password": password})
-                st.session_state.user = res.user
-                profile_check = supabase.table("users").select("first_login_complete").eq("id", res.user.id).single().execute().data
-                if not profile_check or not profile_check.get("first_login_complete", False):
-                    st.session_state.force_password_change = True
-                st.success("Authentication validated.")
-                st.rerun()
-            except Exception:
-                st.error("Authentication rejected. Verify your email and password.")
+                users_list = supabase.table("users").select("id", "username").execute().data
+                if users_list:
+                    user_options = {u["username"]: u["id"] for u in users_list}
+                    selected_user_name = st.selectbox("Masquerade as Player:", list(user_options.keys()))
+                    if st.button("Masquerade Login", use_container_width=True):
+                        class MockUser:
+                            def __init__(self, uid): self.id = uid
+                        st.session_state.user = MockUser(user_options[selected_user_name])
+                        st.session_state.force_password_change = False
+                        st.session_state.selected_teams = []
+                        st.success(f"Masquerading as {selected_user_name}!")
+                        st.rerun()
+            except Exception as e: st.error(f"Error: {str(e)}")
+        else:
+            email = st.text_input("Email Address")
+            password = st.text_input("Password", type="password")
+            if st.button("Log In", use_container_width=True):
+                try:
+                    res = supabase.auth.sign_in_with_password({"email": email, "password": password})
+                    st.session_state.user = res.user
+                    profile_check = supabase.table("users").select("first_login_complete").eq("id", res.user.id).single().execute().data
+                    # Force password change if reset by admin or first login incomplete
+                    if not profile_check or not profile_check.get("first_login_complete", False):
+                        st.session_state.force_password_change = True
+                    st.session_state.selected_teams = []
+                    st.success("Authentication validated.")
+                    st.rerun()
+                except Exception: st.error("Authentication rejected. Check your credentials.")
+
+    # ==========================================
+    # CHANNEL 2: ELIGIBILITY-GATED JOIN REQUESTS
+    # ==========================================
+    elif st.session_state.auth_mode == "Join":
+        st.subheader("Request to Join")
+        
+        # Pull 2nd chance timeline setting from schedule logs
+        sched_meta = supabase.table("nfl_schedule").select("second_chance_start").limit(1).execute().data
+        sc_start = sched_meta[0]["second_chance_start"] if sched_meta else 6
+        
+        # Enforce timeline rules eligibility checkpoints
+        main_open = CALCULATED_CURRENT_WEEK <= 2
+        sec_open = CALCULATED_CURRENT_WEEK <= (sc_start + 1)
+        
+        if not main_open and not sec_open:
+            st.error("Enrollment Closed. Both the Main Game and 2nd Chance Game enrollment windows have expired for this year.")
+        else:
+            target_pool_track = "Main Game" if CALCULATED_CURRENT_WEEK <= 2 else "2nd_Chance"
+            st.info(f"Requests submitted right now will automatically route into the **{target_pool_track if target_pool_track=='Main Game' else '2nd Chance Game'}** based on the currently active enrollment window.")
+            
+            with st.form("join_request_form", clear_on_submit=True):
+                j_user = st.text_input("Choose unique Username *")
+                j_first = st.text_input("First Name")
+                j_last = st.text_input("Last Name")
+                j_mail = st.text_input("Email Address *")
+                j_cell = st.text_input("Cell Phone Number")
+                
+                if st.form_submit_button("Submit Request to Commissioner"):
+                    if not j_user.strip() or not j_mail.strip():
+                        st.error("Username and Email are mandatory fields.")
+                    else:
+                        try:
+                            # Pre-check collisions across active players
+                            collision = supabase.table("users").select("id").eq("username", j_user.strip()).execute().data
+                            if collision:
+                                st.error("That username code handle is already taken.")
+                            else:
+                                supabase.table("join_requests").insert({
+                                    "username": j_user.strip(), "first_name": j_first.strip(), "last_name": j_last.strip(),
+                                    "email": j_mail.strip(), "cell_phone": j_cell.strip(), "target_game": target_pool_track
+                                }).execute()
+                                st.success("Application submitted! Your profile is sitting in the Commissioner queue for enrollment confirmation.")
+                        except Exception as e: st.error(f"Submission Error: {str(e)}")
+
+    # ==========================================
+    # CHANNEL 3: METADATA-CHECKED PASSWORD RESET
+    # ==========================================
+    elif st.session_state.auth_mode == "Reset":
+        st.subheader("Request Self-Service Password Reset Link")
+        reset_email_input = st.text_input("Enter your registered Email Address:")
+        
+        if st.button("Send Reset Email", use_container_width=True):
+            if not reset_email_input.strip():
+                st.error("Please insert a valid target email routing address.")
+            else:
+                with st.spinner("Checking verification records..."):
+                    # Check if email exists in system profiles metadata records
+                    email_exists = supabase.table("users").select("id").eq("email", reset_email_input.strip()).execute().data
+                    
+                    if not email_exists:
+                        st.error("That email address is not registered to any competitor profile inside this league.")
+                    else:
+                        try:
+                            # Fires standard authentication password reset link via Supabase mailing servers
+                            supabase.auth.reset_password_for_email(
+                                email_exists[0]["email"] if "email" in email_exists[0] else reset_email_input.strip(),
+                                {"redirect_to": "https://streamlit.app"}
+                            )
+                            st.success("Password reset link sent! Check your email inbox and spam folders to re-establish your access and set a new password.")
+                        except Exception as e:
+                            st.error(f"Mailing server error: {str(e)}")
 else:        
     user_id = st.session_state.user.id
     reg_profile = supabase.table("tournament_registrations").select("*").eq("user_id", user_id).eq("game_type", game_slug).execute().data
