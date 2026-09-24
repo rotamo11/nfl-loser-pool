@@ -52,19 +52,54 @@ with tab_scores:
         
     st.markdown("---")
     schedule_res = supabase.table("nfl_schedule").select("*").eq("week", admin_week).execute().data
-    if not schedule_res: st.info("No games matched for this week segment parameters.")
+    if not schedule_res: 
+        st.info("No games matched for this week segment parameters.")
     else:
         for match in schedule_res:
             m_id = match["id"]
             away, home = match["away_team"].upper(), match["home_team"].upper()
+            
             with st.container(border=True):
                 c_m, c_w, c_s, c_a = st.columns([2.5, 2, 1.5, 1.5])
-                with c_m: st.markdown(f"<b>{away}</b> @ <b>{home}</b>", unsafe_allow_html=True)
-                with c_w: w_sel = st.radio("Winner:", [away, home, "TIE"], index=None, key=f"w_{m_id}", horizontal=True, label_visibility="collapsed")
-                with c_s: is_so = st.checkbox("Shutout", key=f"s_{m_id}")
+                
+                # ====================================================================
+                # 🚀 1. LOGO EMBED ENGINE: Read local assets as secure binary bytes
+                # ====================================================================
+                try:
+                    import base64
+                    with open(f"static/{away}.svg", "rb") as f:
+                        encoded_away = base64.b64encode(f.read()).decode("utf-8")
+                    away_logo = f'<img src="data:image/svg+xml;base64,{encoded_away}" width="28" height="18" style="object-fit:contain; vertical-align:middle; margin-right:6px;"/>'
+                except Exception: 
+                    away_logo = ""
+                    
+                try:
+                    import base64
+                    with open(f"static/{home}.svg", "rb") as f:
+                        encoded_home = base64.b64encode(f.read()).decode("utf-8")
+                    home_logo = f'<img src="data:image/svg+xml;base64,{encoded_home}" width="28" height="18" style="object-fit:contain; vertical-align:middle; margin-right:6px;"/>'
+                except Exception: 
+                    home_logo = ""
+
+                # ====================================================================
+                # 🚀 2. RENDER THE LOGOS AND ABBREVIATIONS SIDE-BY-SIDE
+                # ====================================================================
+                with c_m: 
+                    st.markdown(
+                        f'<div style="display:flex; align-items:center; gap:4px; padding-top:10px; font-family:sans-serif; color:var(--text-color); font-size:14px;">'
+                        f'{away_logo}<b>{away}</b> <span style="color:gray; font-size:12px; margin:0 4px;">@</span> {home_logo}<b>{home}</b>'
+                        f'</div>', 
+                        unsafe_allow_html=True
+                    )
+                    
+                with c_w: 
+                    w_sel = st.radio("Winner:", [away, home, "TIE"], index=None, key=f"w_{m_id}", horizontal=True, label_visibility="collapsed")
+                with c_s: 
+                    is_so = st.checkbox("Shutout", key=f"s_{m_id}")
                 with c_a:
                     if st.button("Lock Results", key=f"l_{m_id}", use_container_width=True):
-                        if not w_sel: st.error("Select winner")
+                        if not w_sel: 
+                            st.error("Select winner")
                         else:
                             supabase.table("nfl_schedule").update({"winner": w_sel, "is_shutout": is_so}).eq("id", m_id).execute()
                             picks = supabase.table("user_picks").select("*").eq("game_type", game_slug).eq("week", admin_week).in_("team_picked", [away, f"{away}_SO", home, f"{home}_SO"]).execute().data
