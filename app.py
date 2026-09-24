@@ -288,7 +288,7 @@ elif not st.session_state.user:
         
         testing_mode = False
         #if dev_pass_unlocked:
-            testing_mode = st.checkbox("Enable Developer Masquerade Mode")
+        testing_mode = st.checkbox("Enable Developer Masquerade Mode")
         
         if testing_mode and dev_pass_unlocked:
             try:
