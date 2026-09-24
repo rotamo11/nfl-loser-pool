@@ -127,15 +127,14 @@ with st.sidebar:
                                     }).eq("id", user_id).execute()
                                     st.toast("Profile Saved!")
                                     st.rerun()
+                # Logout button appears only when logged in
+                if st.button("Log Out", key="sidebar_logout_btn"): #, use_container_width=True):
+                    st.session_state.user = None
+                    st.session_state.selected_teams = []
+                    st.session_state.force_password_change = False
+                    st.rerun()
         except Exception:
             pass
-
-    # Standard transactional disconnect button pins to the absolute baseline
-    if st.button("Log Out", key="sidebar_logout_btn"): #, use_container_width=True):
-        st.session_state.user = None
-        st.session_state.selected_teams = []
-        st.session_state.force_password_change = False
-        st.rerun()
 
 # --- DYNAMIC SIDEBAR BACKGROUND COLOR ENGINE ---
 sidebar_bg = "#1d3d70" if game_slug == "Main" else "#974706"
