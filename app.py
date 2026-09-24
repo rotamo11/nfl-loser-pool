@@ -171,7 +171,7 @@ with st.sidebar:
                                     }).eq("id", user_id).execute()
                                     st.toast("Profile Saved!")
                                     st.rerun()
-                # Standard transactional disconnect button pins to the absolute baseline
+                # Logout button appears only when logged in
                 if st.button("Log Out", key="sidebar_logout_btn"): #, use_container_width=True):
                     st.session_state.user = None
                     st.session_state.selected_teams = []
