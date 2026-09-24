@@ -145,7 +145,7 @@ with st.sidebar:
                         e_mail = st.text_input("Email", value=u_prof.get("email") or "", key="sb_e")
                         e_cell = st.text_input("Cell Phone (123-456-7890)", value=u_prof.get("cell_phone") or "", key="sb_c")
                         
-                        if st.form_submit_button("Save Profile Updates", use_container_width=True):
+                        if st.form_submit_button("Save Profile Updates", width='stretch'):
                             if not e_user.strip() or not e_mail.strip():
                                 st.error("Fields cannot be left blank.")
                             else:
@@ -165,7 +165,7 @@ with st.sidebar:
                                     st.toast("Profile Saved!")
                                     st.rerun()
                 # Logout button appears only when logged in
-                if st.button("Log Out", key="sidebar_logout_btn"): #, use_container_width=True):
+                if st.button("Log Out", key="sidebar_logout_btn"): #, width='stretch'):
                     st.session_state.user = None
                     st.session_state.selected_teams = []
                     st.session_state.force_password_change = False
@@ -179,9 +179,9 @@ header_col1, header_col2 = st.columns([1, 5])
 with header_col1:
     local_logo = "static/loser-logo.png"
     if os.path.exists(local_logo):
-        st.image(local_logo, use_container_width=True)
+        st.image(local_logo, width='stretch')
     else:
-        st.image("https://espncdn.com", use_container_width=True)
+        st.image("https://espncdn.com", width='stretch')
 
 with header_col2:
     # 1. Main Title
