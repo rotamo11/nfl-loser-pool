@@ -290,7 +290,7 @@ elif not st.session_state.user:
         #if dev_pass_unlocked:
         testing_mode = st.checkbox("Enable Developer Masquerade Mode")
         
-        if testing_mode and dev_pass_unlocked:
+        if testing_mode: # and dev_pass_unlocked:
             try:
                 users_list = supabase.table("users").select("id", "username").execute().data
                 if users_list:
