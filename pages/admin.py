@@ -573,5 +573,76 @@ with tab_csv:
                 st.rerun()
             except Exception as e: 
                 st.error(f"User Profile Roster Failure: {str(e)}")
+        st.markdown("<hr style='margin:25px 0;'/>", unsafe_allow_html=True)
+
+    # --- BULK HISTORICAL PICKS IMPORT ENGINE ---
+    st.markdown("### 📜 Bulk Import Historical Player Picks (Weeks 1-4+)")
+    picks_file = st.file_uploader("Choose historical_picks.csv File", type="csv", key="picks_upload")
+    
+    if picks_file is not None:
+        st.warning("⚠️ Processing this file will overwrite existing selection rows for the specified weeks.")
+        
+        if st.button("🚀 Execute Historical Picks Ingestion", width='stretch'):
+            try:
+                input_data = picks_file.getvalue().decode("utf-8")
+                reader = csv.DictReader(io.StringIO(input_data))
+                
+                imported_picks_count = 0
+                missing_users_cache = set()
+                
+                for row in reader:
+                    # Guard line: Skip completely blank or corrupted rows
+                    if not row.get("username") or not row.get("week") or not row.get("pick"):
+                        continue
+                        
+                    clean_user = row["username"].strip()
+                    clean_email = row["email"].strip().lower()
+                    clean_pick = row["pick"].strip().upper()
+                    raw_week = row["week"].strip()
+                    
+                    # 1. Map conversational text playoff labels back into table week integers
+                    if "Wild" in raw_week: wk_idx = 19
+                    elif "Div" in raw_week: wk_idx = 20
+                    elif "Conf" in raw_week: wk_idx = 21
+                    elif "Super" in raw_week: wk_idx = 22
+                    else: wk_idx = int(raw_week)
+                    
+                    # 2. 🔍 USER LOOKUP PASS: Match username + email to find the exact database ID
+                    user_lookup = supabase.table("users").select("id").eq("username", clean_user).eq("email", clean_email).execute().data
+                    
+                    if not user_lookup:
+                        missing_users_cache.add(f"{clean_user} ({clean_email})")
+                        continue
+                        
+                    target_uid = user_lookup[0]["id"] if isinstance(user_lookup, list) else user_lookup["id"]
+                    
+                    # 3. 💾 UPSERT ENTRY: Write clean records directly to your global pool tracking tables
+                    # Generates a distinct conflict key constraint loop for user+game_track+week values
+                    supabase.table("user_picks").upsert({
+                        "user_id": target_uid,
+                        "game_type": game_slug,  # Adapts automatically to Main vs 2nd Chance toggle
+                        "week": wk_idx,
+                        "team_picked": clean_pick,
+                        "pick_state": "Finalized"  # Hardlocks entries so they show cleanly on user history strips
+                    }, on_conflict="user_id,game_type,week").execute()
+                    
+                    # 4. Update tournament registration bye counts automatically if a BYE row was processed
+                    if clean_pick == "BYE":
+                        supabase.table("tournament_registrations").update({
+                            "byes_used": 1
+                        }).eq("user_id", target_uid).eq("game_type", game_slug).execute()
+                        
+                    imported_picks_count += 1
+                    
+                if missing_users_cache:
+                    st.error(f"⚠️ Skipped rows for unrecognized accounts: {', '.join(missing_users_cache)}")
+                    st.info("💡 Ensure usernames and emails exactly match your active roster list before re-uploading.")
+                    
+                st.success(f"Successfully loaded and locked {imported_picks_count} historical selections into the {game_mode} ledger!")
+                st.rerun()
+                
+            except Exception as e:
+                st.error(f"Picks Mass-Ingestion Failure: {str(e)}")
+
 
 
