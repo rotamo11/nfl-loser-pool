@@ -560,12 +560,14 @@ else:
                             pass
                             
                         has_so_star = "*" if t_pick.endswith("_SO") else ""
+                        
+                        # 🚀 THE ABSOLUTE FIX: Simplified text tags to prevent raw HTML code leaks
                         st.markdown(
                             f"""
                             <div style="{card_bg} padding:6px 2px; border-radius:4px; text-align:center; min-height:65px; display:flex; flex-direction:column; align-items:center; justify-content:center; box-shadow: 0 1px 1px rgba(0,0,0,0.02);">
                                 <span style="font-size:9px; color:gray; font-weight:bold; display:block; margin-bottom:2px;">Wk {w}</span>
                                 {logo_html}
-                                <b style="color:#1e293b; font-size:10px; font-weight:800; display:block; line-height:1;">{clean_team_key}{has_so_star}</b>
+                                <span style="color:#1e293b; font-size:10px; font-weight:800; font-family:sans-serif;">{clean_team_key}{has_so_star}</span>
                             </div>
                             """, 
                             unsafe_allow_html=True
