@@ -258,8 +258,8 @@ with tab_scores:
         
     st.markdown("---")
     schedule_res = supabase.table("nfl_schedule").select("*").eq("week", SELECTED_WEEK).execute().data
-    if not schedule_res: 
-        st.info("No games matched for this week segment parameters.")
+    if not schedule_res:
+        st.info(f"No games matched for this week segment parameters.")
     else:
         for match in schedule_res:
             m_id = match["id"]
@@ -268,28 +268,19 @@ with tab_scores:
             with st.container(border=True):
                 c_m, c_w, c_s, c_a = st.columns([2.5, 2, 1.5, 1.5])
                 
-                # ====================================================================
-                # 🚀 1. LOGO EMBED ENGINE: Read local assets as secure binary bytes
-                # ====================================================================
+                # --- LOGO EMBED ENGINE ---
                 try:
                     import base64
-                    with open(f"static/{away}.svg", "rb") as f:
-                        encoded_away = base64.b64encode(f.read()).decode("utf-8")
+                    with open(f"static/{away}.svg", "rb") as f: encoded_away = base64.b64encode(f.read()).decode("utf-8")
                     away_logo = f'<img src="data:image/svg+xml;base64,{encoded_away}" width="28" height="18" style="object-fit:contain; vertical-align:middle; margin-right:6px;"/>'
-                except Exception: 
-                    away_logo = ""
+                except Exception: away_logo = ""
                     
                 try:
                     import base64
-                    with open(f"static/{home}.svg", "rb") as f:
-                        encoded_home = base64.b64encode(f.read()).decode("utf-8")
+                    with open(f"static/{home}.svg", "rb") as f: encoded_home = base64.b64encode(f.read()).decode("utf-8")
                     home_logo = f'<img src="data:image/svg+xml;base64,{encoded_home}" width="28" height="18" style="object-fit:contain; vertical-align:middle; margin-right:6px;"/>'
-                except Exception: 
-                    home_logo = ""
+                except Exception: home_logo = ""
 
-                # ====================================================================
-                # 🚀 2. RENDER THE LOGOS AND ABBREVIATIONS SIDE-BY-SIDE
-                # ====================================================================
                 with c_m: 
                     st.markdown(
                         f'<div style="display:flex; align-items:center; gap:4px; padding-top:10px; font-family:sans-serif; color:var(--text-color); font-size:14px;">'
@@ -299,25 +290,47 @@ with tab_scores:
                     )
                     
                 with c_w: 
-                    w_sel = st.radio("Winner:", [away, home, "TIE"], index=None, key=f"w_{m_id}", horizontal=True, label_visibility="collapsed")
+                    # 🏈 SWITCHED LOGIC: Prompting you to explicitly select the LOSING team or a TIE
+                    loser_selection = st.radio("Loser:", options=[away, home, "TIE"], index=None, key=f"los_{m_id}", horizontal=True, label_visibility="collapsed")
                 with c_s: 
                     is_so = st.checkbox("Shutout", key=f"s_{m_id}")
                 with c_a:
                     if st.button("Lock Results", key=f"l_{m_id}", width='stretch'):
-                        if not w_sel: 
-                            st.error("Select winner")
+                        if not loser_selection: 
+                            st.error("Select loser")
                         else:
-                            supabase.table("nfl_schedule").update({"winner": w_sel, "is_shutout": is_so}).eq("id", m_id).execute()
-                            picks = supabase.table("user_picks").select("*").eq("game_type", game_slug).eq("week", SELECTED_WEEK).in_("team_picked", [away, f"{away}_SO", home, f"{home}_SO"]).execute().data
-                            for p in picks:
-                                ct = p["team_picked"].replace("_SO", "")
-                                res = "Incorrect" if w_sel == "TIE" else "Correct" if ct != w_sel else "Incorrect"
-                                supabase.table("user_picks").update({"pick_state": res, "team_picked": f"{ct}_SO" if res=="Correct" and is_so else p["team_picked"]}).eq("id", p["id"]).execute()
-                                upks = supabase.table("user_picks").select("*").eq("game_type", game_slug).eq("user_id", p["user_id"]).execute().data
-                                wrg = sum(1 for k in upks if k["pick_state"] == "Incorrect")
-                                supabase.table("tournament_registrations").update({"bracket_status": "Loser Bracket" if wrg==0 else "Winner Bracket" if wrg==1 else "Eliminated"}).eq("user_id", p["user_id"]).eq("game_type", game_slug).execute()
-                            st.success("Calculated!")
-                            st.rerun()
+                            with st.spinner("Processing player picks..."):
+                                # We store your loser selection in the "winner" column to avoid schema table migrations
+                                supabase.table("nfl_schedule").update({"winner": loser_selection, "is_shutout": is_so}).eq("id", m_id).execute()
+                                
+                                # Pull all active player picks for these teams
+                                picks = supabase.table("user_picks").select("*").eq("game_type", game_slug).eq("week", admin_week).in_("team_picked", [away, f"{away}_SO", home, f"{home}_SO"]).execute().data
+                                
+                                for p in picks:
+                                    chosen_team = p["team_picked"].replace("_SO", "")
+                                    
+                                    # 🏈 SWITCHED LOGIC CORE RULE: 
+                                    # If the game was a TIE, everyone is Incorrect.
+                                    # If the player successfully picked the LOSING team, they are Correct! Otherwise, they are Incorrect.
+                                    if loser_selection == "TIE":
+                                        pick_result = "Incorrect"
+                                    elif chosen_team == loser_selection:
+                                        pick_result = "Correct"
+                                    else:
+                                        pick_result = "Incorrect"
+                                        
+                                    final_team_name = f"{chosen_team}_SO" if pick_result == "Correct" and is_so else p["team_picked"]
+                                    supabase.table("user_picks").update({"pick_state": pick_result, "team_picked": final_team_name}).eq("id", p["id"]).execute()
+                                    
+                                    # Re-evaluate their global bracket status based on updated incorrect counts
+                                    upks = supabase.table("user_picks").select("*").eq("game_type", game_slug).eq("user_id", p["user_id"]).execute().data
+                                    wrg = sum(1 for k in upks if k["pick_state"] == "Incorrect")
+                                    new_bracket = "Loser Bracket" if wrg == 0 else "Winner Bracket" if wrg == 1 else "Eliminated"
+                                    
+                                    supabase.table("tournament_registrations").update({"bracket_status": new_bracket}).eq("user_id", p["user_id"]).eq("game_type", game_slug).execute()
+                                    
+                                st.success("Standings evaluated and locked!")
+                                st.rerun()
 
 # ==========================================
 # 👥 TAB 2: ROSTER & PROFILE MANAGEMENT
