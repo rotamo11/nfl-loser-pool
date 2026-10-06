@@ -354,8 +354,8 @@ else:
     # Render compact visual grid distribution deck mapping wide rules columns layout
     dist_cols = st.columns(min(len(sorted_distribution), 15))
     for idx, (team, count) in enumerate(sorted_distribution):
-        with dist_cols[idx % 10]:
-            so_label = " ✴️" if team.endswith("_SO") else ""
+        with dist_cols[idx % 15]:
+            so_label = " *" if team.endswith("_SO") else ""
             st.markdown(
                 f"""
                 <div style="border:1px solid #cbd5e1; padding:2px 2px; border-radius:1px; text-align:center; box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin-bottom:1px;">
