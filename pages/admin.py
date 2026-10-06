@@ -315,7 +315,7 @@ with tab_scores:
                         label_visibility="collapsed"
                     )
                 with col_check:
-                    is_so = st.checkbox("Shutout", value=current_db_so, key=f"so_check_{m_id}")
+                    is_so = st.checkbox("🎯 Shutout", value=current_db_so, key=f"so_check_{m_id}")
                     
                 # Cache parameters to ingest on bulk form submission pass
                 weekly_selections_cache[m_id] = {
