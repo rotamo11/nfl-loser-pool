@@ -171,6 +171,27 @@ with st.sidebar:
                                     }).eq("id", user_id).execute()
                                     st.toast("Profile Saved!")
                                     st.rerun()
+                # --- ACCORDION CONTAINER 2: SECURE PASSWORD MODIFICATION ---
+                with st.expander("🔒 Change Account Password"):
+                    with st.form("sidebar_password_form", clear_on_submit=True):
+                        sb_new_pw = st.text_input("New Secure Password:", type="password", key="sb_pwd1")
+                        sb_conf_pw = st.text_input("Confirm New Password:", type="password", key="sb_pwd2")
+                        
+                        if st.form_submit_button("Commit Password Change 🔐", width='stretch'):
+                            clean_sb_pw = sb_new_pw.strip()
+                            if len(clean_sb_pw) < 6:
+                                st.sidebar.error("❌ Password must be at least 6 characters long.")
+                            elif clean_sb_pw != sb_conf_pw.strip():
+                                st.sidebar.error("❌ Passwords do not match.")
+                            else:
+                                with st.spinner("Updating encryption vaults..."):
+                                    try:
+                                        # 🚀 Direct native API update pass over the active authenticated user session
+                                        supabase.auth.update_user({"password": clean_sb_pw})
+                                        st.sidebar.success("🎉 Password updated successfully!")
+                                        st.toast("Security encryption synchronized!")
+                                    except Exception as pw_err:
+                                        st.sidebar.error(f"Failed to update password: {str(pw_err)}")
                 # Logout button appears only when logged in
                 if st.button("Log Out", key="sidebar_logout_btn"): #, width='stretch'):
                     st.session_state.user = None
