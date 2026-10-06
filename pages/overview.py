@@ -335,7 +335,22 @@ else:
             return (1, -selection_count, team_name)
             
     sorted_distribution = sorted(counts.items(), key=sorting_weight_key)
-    
+
+    # Helper function to generate clean base64 image strings safely across Chrome/Firefox
+    def get_base64_logo_html(team_code):
+        try:
+            # 🚀 THE FIX: Strip out both _SO suffix strings AND whitespace before checking the file system paths
+            t_clean = team_code.replace("_SO", "").strip().upper()
+            
+            file_path = f"static/BYE.svg" if t_clean == "BYE" else f"static/{t_clean}.svg"
+            
+            if os.path.exists(file_path):
+                with open(file_path, "rb") as f:
+                    encoded = base64.b64encode(f.read()).decode("utf-8")
+                return f'<img src="data:image/svg+xml;base64,{encoded}" width="24" height="15" style="object-fit:contain; vertical-align:middle; margin-right:4px;"/>'
+        except Exception: pass
+        return ""
+
     # Render compact visual grid distribution deck mapping wide rules columns layout
     dist_cols = st.columns(min(len(sorted_distribution), 10))
     for idx, (team, count) in enumerate(sorted_distribution):
