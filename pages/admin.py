@@ -239,7 +239,7 @@ with header_col2:
 
 st.markdown("---")
 
-tab_scores, tab_users, tab_csv = st.tabs(["🏁 Game & Score Processing", "👥 League Roster Management", "📂 Applications Queue & CSV Utilities"])
+tab_scores, tab_users, tab_csv = st.tabs(["Game & Score Processing", "League Roster Management", "Applications Queue & CSV Utilities"])
 
 # ==========================================
 # TAB 1: GAME & SCORE PROCESSING
@@ -264,7 +264,7 @@ with tab_scores:
         st.info("No games matched for this week segment parameters.")
     else:
         st.markdown(f"### Record Matchup Outcomes — {get_week_label(SELECTED_WEEK)}")
-        st.caption("Select the LOSER for your active matchups (or TIE), then use the master synchronization button at the bottom.")
+        st.info("Select the LOSER for your active matchups (or TIE), designate any shutouts, and then Calculate & Update Weekly Standings.")
         
         # THE UNIFIED WRAPPER FORM: Groups all matchup items into a single submit button pass
         with st.form("global_weekly_scoring_form"):
@@ -331,36 +331,40 @@ with tab_scores:
             
             if submit_all_scores:
                 with st.spinner("Processing selections and synchronizing pool brackets..."):
-                    # Ingest choices into Supabase rows simultaneously
+                    
+                    # STEP 1: AUTOMATICALLY MARK ALL DRAFTED BYES AS CORRECT FOR THIS WEEK
+                    # This ensures players who use a bye option never register an accidental incorrect state
+                    supabase.table("user_picks").update({"pick_state": "Correct"}).eq("game_type", game_slug).eq("week", SELECTED_WEEK).eq("team_picked", "BYE").execute()
+                    
+                    # Step 2: Loop through every matchup row to score team picks
                     for m_id, data in weekly_selections_cache.items():
                         away_team = data["away"]
                         home_team = data["home"]
                         loser_code = data["selection"]
                         so_flag = data["is_shutout"]
                         
-                        # PROGRESS SAFETY VALVE: If a game is untouched, leave it unrecorded in database
                         if loser_code is None:
                             continue
                             
-                        # Update central schedule results table row
                         supabase.table("nfl_schedule").update({"winner": loser_code, "is_shutout": so_flag}).eq("id", m_id).execute()
                         
-                        # Pull all active player selections for this specific match window
+                        # Recover matching active pick submittals from your players (ignoring BYE since handled above)
                         picks = supabase.table("user_picks").select("*").eq("game_type", game_slug).eq("week", SELECTED_WEEK).in_("team_picked", [away_team, f"{away_team}_SO", home_team, f"{home_team}_SO"]).execute().data
                         
                         for p in picks:
                             chosen_team = p["team_picked"].replace("_SO", "")
                             
-                            # Standard core scoring rules evaluation
-                            if loser_code == "TIE": pick_result = "Incorrect"
-                            elif chosen_team == loser_code: pick_result = "Correct"
-                            else: pick_result = "Incorrect"
+                            if loser_code == "TIE":
+                                pick_result = "Incorrect"
+                            elif chosen_team == loser_code:
+                                pick_result = "Correct"
+                            else:
+                                pick_result = "Incorrect"
                                 
                             final_team_name = f"{chosen_team}_SO" if pick_result == "Correct" and so_flag else chosen_team
                             supabase.table("user_picks").update({"pick_state": pick_result, "team_picked": final_team_name}).eq("id", p["id"]).execute()
                             
                     # --- SYSTEM AUTOMATIC STANDINGS COMPLIANCE ENGINE ---
-                    # Loops over all registered track players to dynamically adjust standings and auto-correct errors
                     all_track_regs = supabase.table("tournament_registrations").select("user_id").eq("game_type", game_slug).execute().data
                     for reg in all_track_regs:
                         u_id = reg["user_id"]
@@ -372,6 +376,7 @@ with tab_scores:
                         
                     st.success("Standings updated and fully synchronized successfully!")
                     st.rerun()
+
 
 # ==========================================
 # 👥 TAB 2: ROSTER & PROFILE MANAGEMENT
