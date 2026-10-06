@@ -332,7 +332,7 @@ with tab_scores:
             if submit_all_scores:
                 with st.spinner("Processing selections and synchronizing pool brackets..."):
                     
-                    # STEP 1: AUTOMATICALLY MARK ALL DRAFTED BYES AS CORRECT FOR THIS WEEK
+                    # 🚀 STEP 1: AUTOMATICALLY MARK ALL DRAFTED BYES AS CORRECT FOR THIS WEEK
                     # This ensures players who use a bye option never register an accidental incorrect state
                     supabase.table("user_picks").update({"pick_state": "Correct"}).eq("game_type", game_slug).eq("week", SELECTED_WEEK).eq("team_picked", "BYE").execute()
                     
@@ -374,9 +374,8 @@ with tab_scores:
                         new_bracket = "Loser Bracket" if wrong_count == 0 else "Winner Bracket" if wrong_count == 1 else "Eliminated"
                         supabase.table("tournament_registrations").update({"bracket_status": new_bracket}).eq("user_id", u_id).eq("game_type", game_slug).execute()
                         
-                    st.success("Standings updated and fully synchronized successfully!")
+                    st.success("🎉 Standings updated and fully synchronized successfully!")
                     st.rerun()
-
 
 # ==========================================
 # 👥 TAB 2: ROSTER & PROFILE MANAGEMENT
