@@ -370,10 +370,10 @@ else:
     dist_cols = st.columns(min(len(sorted_distribution), 15))
     for idx, (team, count) in enumerate(sorted_distribution):
         with dist_cols[idx % 15]:
-            so_label = " ✴️" if team.endswith("_SO") else ""
+            so_label = " 🎯" if team.endswith("_SO") else ""
             clean_team_key = team.replace("_SO", "").strip()
             
-            # 🚀 DYNAMIC COLOR CARD HIGHLIGHT ENGINE
+            # DYNAMIC COLOR CARD HIGHLIGHT ENGINE
             # BYE option is automatically Correct. Other teams evaluate live outcomes.
             if clean_team_key == "BYE":
                 card_style = "background-color: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: var(--text-color);"
@@ -471,7 +471,7 @@ else:
                     # Clean the displayed name code string token representation
                     clean_team_display = t_pick.replace('_SO', '')
                     if t_pick.endswith("_SO"):
-                        clean_team_display += " SO"
+                        clean_team_display += "🎯"
                         
                     # Apply background cell color parameters natively based on performance states
                     if p_state == "Correct" or t_pick == "BYE":
