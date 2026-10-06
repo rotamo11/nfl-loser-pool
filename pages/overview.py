@@ -134,7 +134,7 @@ sidebar_bg = "#1d3d70" if game_slug == "Main" else "#974706"
 st.markdown(f"<style>[data-testid='stSidebar'] {{ background-color: {sidebar_bg} !important; }} [data-testid='stSidebar'] .stText, [data-testid='stSidebar'] p, [data-testid='stSidebar'] h3, [data-testid='stSidebar'] label {{ color: #ffffff !important; }} [data-testid='stSidebar'] div[data-baseweb='select'] div {{ color: #1e293b !important; }}</style>", unsafe_allow_html=True)
 
 # --- UNIFIED BRAND TITLE FRAME BANNER ---
-header_col1, header_col2 = st.columns()
+header_col1, header_col2 = st.columns(2)
 with header_col1:
     if os.path.exists("static/loser-logo.png"): st.image("static/loser-logo.png", width='stretch')
 with header_col2:
