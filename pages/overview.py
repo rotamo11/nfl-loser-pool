@@ -113,10 +113,13 @@ with st.sidebar:
                                 auth_payload = {"password": clean_sb_pw}
                                 import requests
                                 auth_response = requests.put(auth_endpoint, json=auth_payload, headers=auth_headers)
-                                if auth_response.status_code in [200, 201]:
+                                # FIX B: Use explicit OR checks instead of an in-list to avoid markdown issues
+                                if auth_response.status_code == 200 or auth_response.status_code == 201:
                                     st.sidebar.success("Password updated successfully!")
                                     st.toast("Security synchronized!")
-                                else: st.sidebar.error(f"Error: {auth_response.text}")
+                                else: 
+                                    st.sidebar.error(f"Error: {auth_response.text}")
+
         except Exception: pass
 
     st.markdown("<br>", unsafe_allow_html=True)
