@@ -309,24 +309,38 @@ elif not st.session_state.user:
     st.markdown("<br>", unsafe_allow_html=True)
 
 # ==========================================
-# SEGMENT A: WEEKLY PICK DISTRIBUTION LIST
+# 📊 SEGMENT A: WEEKLY PICK DISTRIBUTION LIST
 # ==========================================
 st.write(f"### Weekly Selection Distribution — {get_week_label(SELECTED_WEEK)}")
 
-# Fetch all active locked picks for this targeted timeline segment
+# 1. Fetch both picks and active schedule outcomes to determine card shading rules
 all_selections = supabase.table("user_picks").select("team_picked").eq("game_type", game_slug).eq("week", SELECTED_WEEK).execute().data
+schedule_map = supabase.table("nfl_schedule").select("away_team", "home_team", "winner").eq("week", SELECTED_WEEK).execute().data
+
+# Create an indexed outcome map for fast lookup: { 'BUF': 'Correct', 'MIA': 'Incorrect' }
+outcome_lookup = {}
+for match in (schedule_map or []):
+    away = match["away_team"].upper()
+    home = match["home_team"].upper()
+    loser_code = match.get("winner")  # Remember: your 'winner' column houses the losing team abbreviation
+    
+    if loser_code:
+        if loser_code == "TIE":
+            outcome_lookup[away] = "Incorrect"
+            outcome_lookup[home] = "Incorrect"
+        else:
+            outcome_lookup[loser_code] = "Correct"
+            opposing_team = home if loser_code == away else away
+            outcome_lookup[opposing_team] = "Incorrect"
 
 if not all_selections:
-    st.info(f"No selections have been finalized or committed yet for {get_week_label(SELECTED_WEEK)}.")
+    st.info(f"No selection records have been finalized or committed yet for {get_week_label(SELECTED_WEEK)}.")
 else:
-    # Tally selection frequencies
     counts = {}
     for s in all_selections:
         t = s["team_picked"].upper()
         counts[t] = counts.get(t, 0) + 1
         
-    # FIX C: ADVANCED CUSTOM ORDER SORTING ENGINE
-    # Forces 'BYE' to always sit at rank index 1, followed by highest count desc, then name asc
     def sorting_weight_key(item):
         team_name, selection_count = item
         if team_name == "BYE":
@@ -335,32 +349,33 @@ else:
             return (1, -selection_count, team_name)
             
     sorted_distribution = sorted(counts.items(), key=sorting_weight_key)
-
-    # Helper function to generate clean base64 image strings safely across Chrome/Firefox
-    def get_base64_logo_html(team_code):
-        try:
-            # THE FIX: Strip out both _SO suffix strings AND whitespace before checking the file system paths
-            t_clean = team_code.replace("_SO", "").strip().upper()
-            
-            file_path = f"static/BYE.svg" if t_clean == "BYE" else f"static/{t_clean}.svg"
-            
-            if os.path.exists(file_path):
-                with open(file_path, "rb") as f:
-                    encoded = base64.b64encode(f.read()).decode("utf-8")
-                return f'<img src="data:image/svg+xml;base64,{encoded}" width="30" height="24" style="object-fit:contain; vertical-align:middle; margin-right:4px;"/>'
-        except Exception: pass
-        return ""
-
-    # Render compact visual grid distribution deck mapping wide rules columns layout
-    dist_cols = st.columns(min(len(sorted_distribution), 15))
+    
+    dist_cols = st.columns(min(len(sorted_distribution), 10))
     for idx, (team, count) in enumerate(sorted_distribution):
-        with dist_cols[idx % 15]:
-            so_label = " *" if team.endswith("_SO") else ""
+        with dist_cols[idx % 10]:
+            so_label = " (SO)" if team.endswith("_SO") else ""
+            clean_team_key = team.replace("_SO", "").strip()
+            
+            # 🚀 DYNAMIC COLOR HIGHLIGHT ENGINE
+            # BYE option is automatically Correct. Other teams look up game results.
+            if clean_team_key == "BYE":
+                card_bg = "background-color: rgba(16, 185, 129, 0.15); border: 1px solid #10b981;" # Light Green
+            else:
+                game_state = outcome_lookup.get(clean_team_key, "Pending")
+                if game_state == "Correct":
+                    card_bg = "background-color: rgba(16, 185, 129, 0.15); border: 1px solid #10b981;" # Light Green
+                elif game_state == "Incorrect":
+                    card_bg = "background-color: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444;" # Light Red
+                else:
+                    card_bg = "background-color: var(--background-color, white); border: 1px solid #cbd5e1;" # Default White
+            
             st.markdown(
                 f"""
-                <div style="border:1px solid #cbd5e1; padding:4px 2px; border-radius:2px; text-align:center; box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin-bottom:2px;">
-                    <div style="display:flex; justify-content:center; margin-bottom:4px;">{get_base64_logo_html(team)}{so_label}</div>
+                <div style="{card_bg} padding:8px 4px; border-radius:6px; text-align:center; box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin-bottom:10px;">
+                    <div style="display:flex; justify-content:center; margin-bottom:4px;">{get_base64_logo_html(team)}</div>
+                    <b style="font-size:13px; color:var(--text-color);">{team.replace('_SO','')}{so_label}</b>
                     <span style="display:block; font-size:18px; font-weight:900; color:#2563eb; margin-top:2px;">{count}</span>
+                    <span style="font-size:10px; color:gray; display:block;">Picks</span>
                 </div>
                 """, 
                 unsafe_allow_html=True
