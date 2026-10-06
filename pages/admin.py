@@ -257,6 +257,7 @@ with tab_scores:
         st.rerun()
         
     st.markdown("---")
+    st.info(f"Select the LOSER of each game (or tie):")
     schedule_res = supabase.table("nfl_schedule").select("*").eq("week", SELECTED_WEEK).execute().data
     if not schedule_res:
         st.info(f"No games matched for this week segment parameters.")
