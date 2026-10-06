@@ -367,9 +367,9 @@ else:
             
     sorted_distribution = sorted(counts.items(), key=sorting_weight_key)
     
-    dist_cols = st.columns(min(len(sorted_distribution), 10))
+    dist_cols = st.columns(min(len(sorted_distribution), 15))
     for idx, (team, count) in enumerate(sorted_distribution):
-        with dist_cols[idx % 10]:
+        with dist_cols[idx % 15]:
             so_label = " ✴️" if team.endswith("_SO") else ""
             clean_team_key = team.replace("_SO", "").strip()
             
@@ -393,7 +393,6 @@ else:
                     <div style="display:flex; justify-content:center; margin-bottom:4px;">{get_base64_logo_html(team)}</div>
                     <b style="font-size:13px; color: inherit;">{team.replace('_SO','')}{so_label}</b>
                     <span style="display:block; font-size:18px; font-weight:900; color:#2563eb; margin-top:2px;">{count}</span>
-                    <span style="font-size:10px; color: gray; opacity: 0.8; display:block;">Picks</span>
                 </div>
                 """, 
                 unsafe_allow_html=True
