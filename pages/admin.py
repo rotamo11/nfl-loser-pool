@@ -245,11 +245,11 @@ tab_scores, tab_users, tab_csv = st.tabs(["🏁 Game & Score Processing", "👥 
 # TAB 1: GAME & SCORE PROCESSING
 # ==========================================
 with tab_scores:
-    # Recover configuration meta bounds
+    # Recover configuration metadata constraints
     sched_meta = supabase.table("nfl_schedule").select("second_chance_start").limit(1).execute().data
     sc_start = sched_meta[0]["second_chance_start"] if sched_meta else 6
     
-    st.markdown("### 🍩 Configure Post-Season / 2nd Chance Parameters")
+    st.markdown("### Configure Post-Season / 2nd Chance Parameters")
     new_sc_week = st.number_input("Set 2nd Chance Launch Target (NFL Week Number):", min_value=1, max_value=17, value=sc_start)
     if st.button("Update 2nd Chance Kickoff Line", width='stretch'):
         supabase.table("nfl_schedule").update({"second_chance_start": new_sc_week}).neq("week", 99).execute()
@@ -257,19 +257,26 @@ with tab_scores:
         st.rerun()
         
     st.markdown("---")
-    st.info(f"Select the LOSER of each game (or tie):")
+    # Pull schedule rows matching your central SELECTED_WEEK variable parameter
     schedule_res = supabase.table("nfl_schedule").select("*").eq("week", SELECTED_WEEK).execute().data
-    if not schedule_res:
-        st.info(f"No games matched for this week segment parameters.")
+    
+    if not schedule_res: 
+        st.info("No games matched for this week segment parameters.")
     else:
-        for match in schedule_res:
-            m_id = match["id"]
-            away, home = match["away_team"].upper(), match["home_team"].upper()
+        st.markdown(f"### Record Matchup Outcomes — {get_week_label(SELECTED_WEEK)}")
+        st.caption("Select the LOSER for your active matchups (or TIE), then use the master synchronization button at the bottom.")
+        
+        # THE UNIFIED WRAPPER FORM: Groups all matchup items into a single submit button pass
+        with st.form("global_weekly_scoring_form"):
+            weekly_selections_cache = {}
             
-            with st.container(border=True):
-                c_m, c_w, c_s, c_a = st.columns([2.5, 2, 1.5, 1.5])
+            for match in schedule_res:
+                m_id = match["id"]
+                away, home = match["away_team"].upper(), match["home_team"].upper()
+                current_db_loser = match.get("winner") # Note: 'winner' column houses your loser data mapping string
+                current_db_so = match.get("is_shutout", False)
                 
-                # --- LOGO EMBED ENGINE ---
+                # Secure High-Resolution Base64 Vector Embed Image String Generator Pass
                 try:
                     import base64
                     with open(f"static/{away}.svg", "rb") as f: encoded_away = base64.b64encode(f.read()).decode("utf-8")
@@ -282,56 +289,89 @@ with tab_scores:
                     home_logo = f'<img src="data:image/svg+xml;base64,{encoded_home}" width="28" height="18" style="object-fit:contain; vertical-align:middle; margin-right:6px;"/>'
                 except Exception: home_logo = ""
 
-                with c_m: 
-                    st.markdown(
-                        f'<div style="display:flex; align-items:center; gap:4px; padding-top:10px; font-family:sans-serif; color:var(--text-color); font-size:14px;">'
-                        f'{away_logo}<b>{away}</b> <span style="color:gray; font-size:12px; margin:0 4px;">@</span> {home_logo}<b>{home}</b>'
-                        f'</div>', 
-                        unsafe_allow_html=True
+                # Pre-calculate active selection indexing defaults from saved database states
+                default_radio_index = None # Unselected by default if game is unrecorded or in progress
+                if current_db_loser == away: default_radio_index = 0
+                elif current_db_loser == home: default_radio_index = 1
+                elif current_db_loser == "TIE": default_radio_index = 2
+
+                # Render Your Original Matchup Header Row
+                st.markdown(
+                    f'<div style="display:flex; align-items:center; gap:4px; padding-top:10px; font-family:sans-serif; color:var(--text-color); font-size:14px; margin-bottom:4px;">'
+                    f'{away_logo}<b>{away}</b> <span style="color:gray; font-size:12px; margin:0 4px;">@</span> {home_logo}<b>{home}</b>'
+                    f'</div>', 
+                    unsafe_allow_html=True
+                )
+                
+                # Inline Controls: Radio selection matching your column layout alongside the checkbox
+                col_radio, col_check = st.columns([3, 1])
+                with col_radio:
+                    loser_selection = st.radio(
+                        f"Loser selection for game {m_id}",
+                        options=[away, home, "TIE"],
+                        index=default_radio_index,
+                        key=f"los_radio_{m_id}",
+                        horizontal=True,
+                        label_visibility="collapsed"
                     )
+                with col_check:
+                    is_so = st.checkbox("Shutout", value=current_db_so, key=f"so_check_{m_id}")
                     
-                with c_w: 
-                    # 🏈 SWITCHED LOGIC: Prompting you to explicitly select the LOSING team or a TIE
-                    loser_selection = st.radio("Loser:", options=[away, home, "TIE"], index=None, key=f"los_{m_id}", horizontal=True, label_visibility="collapsed")
-                with c_s: 
-                    is_so = st.checkbox("Shutout", key=f"s_{m_id}")
-                with c_a:
-                    if st.button("Lock Results", key=f"l_{m_id}", width='stretch'):
-                        if not loser_selection: 
-                            st.error("Select loser")
-                        else:
-                            with st.spinner("Processing player picks..."):
-                                # We store your loser selection in the "winner" column to avoid schema table migrations
-                                supabase.table("nfl_schedule").update({"winner": loser_selection, "is_shutout": is_so}).eq("id", m_id).execute()
+                # Cache parameters to ingest on bulk form submission pass
+                weekly_selections_cache[m_id] = {
+                    "away": away, "home": home, 
+                    "selection": loser_selection, "is_shutout": is_so
+                }
+                st.markdown("<div style='margin-bottom:12px; border-bottom:1px solid rgba(0,0,0,0.05);'></div>", unsafe_allow_html=True)
+
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            # THE MASTER ACCUMULATOR ACTION BUTTON
+            submit_all_scores = st.form_submit_button("Calculate & Update Weekly Standings", width='stretch', type="primary")
+            
+            if submit_all_scores:
+                with st.spinner("Processing selections and synchronizing pool brackets..."):
+                    # Ingest choices into Supabase rows simultaneously
+                    for m_id, data in weekly_selections_cache.items():
+                        away_team = data["away"]
+                        home_team = data["home"]
+                        loser_code = data["selection"]
+                        so_flag = data["is_shutout"]
+                        
+                        # PROGRESS SAFETY VALVE: If a game is untouched, leave it unrecorded in database
+                        if loser_code is None:
+                            continue
+                            
+                        # Update central schedule results table row
+                        supabase.table("nfl_schedule").update({"winner": loser_code, "is_shutout": so_flag}).eq("id", m_id).execute()
+                        
+                        # Pull all active player selections for this specific match window
+                        picks = supabase.table("user_picks").select("*").eq("game_type", game_slug).eq("week", SELECTED_WEEK).in_("team_picked", [away_team, f"{away_team}_SO", home_team, f"{home_team}_SO"]).execute().data
+                        
+                        for p in picks:
+                            chosen_team = p["team_picked"].replace("_SO", "")
+                            
+                            # Standard core scoring rules evaluation
+                            if loser_code == "TIE": pick_result = "Incorrect"
+                            elif chosen_team == loser_code: pick_result = "Correct"
+                            else: pick_result = "Incorrect"
                                 
-                                # Pull all active player picks for these teams
-                                picks = supabase.table("user_picks").select("*").eq("game_type", game_slug).eq("week", admin_week).in_("team_picked", [away, f"{away}_SO", home, f"{home}_SO"]).execute().data
-                                
-                                for p in picks:
-                                    chosen_team = p["team_picked"].replace("_SO", "")
-                                    
-                                    # 🏈 SWITCHED LOGIC CORE RULE: 
-                                    # If the game was a TIE, everyone is Incorrect.
-                                    # If the player successfully picked the LOSING team, they are Correct! Otherwise, they are Incorrect.
-                                    if loser_selection == "TIE":
-                                        pick_result = "Incorrect"
-                                    elif chosen_team == loser_selection:
-                                        pick_result = "Correct"
-                                    else:
-                                        pick_result = "Incorrect"
-                                        
-                                    final_team_name = f"{chosen_team}_SO" if pick_result == "Correct" and is_so else p["team_picked"]
-                                    supabase.table("user_picks").update({"pick_state": pick_result, "team_picked": final_team_name}).eq("id", p["id"]).execute()
-                                    
-                                    # Re-evaluate their global bracket status based on updated incorrect counts
-                                    upks = supabase.table("user_picks").select("*").eq("game_type", game_slug).eq("user_id", p["user_id"]).execute().data
-                                    wrg = sum(1 for k in upks if k["pick_state"] == "Incorrect")
-                                    new_bracket = "Loser Bracket" if wrg == 0 else "Winner Bracket" if wrg == 1 else "Eliminated"
-                                    
-                                    supabase.table("tournament_registrations").update({"bracket_status": new_bracket}).eq("user_id", p["user_id"]).eq("game_type", game_slug).execute()
-                                    
-                                st.success("Standings evaluated and locked!")
-                                st.rerun()
+                            final_team_name = f"{chosen_team}_SO" if pick_result == "Correct" and so_flag else chosen_team
+                            supabase.table("user_picks").update({"pick_state": pick_result, "team_picked": final_team_name}).eq("id", p["id"]).execute()
+                            
+                    # --- SYSTEM AUTOMATIC STANDINGS COMPLIANCE ENGINE ---
+                    # Loops over all registered track players to dynamically adjust standings and auto-correct errors
+                    all_track_regs = supabase.table("tournament_registrations").select("user_id").eq("game_type", game_slug).execute().data
+                    for reg in all_track_regs:
+                        u_id = reg["user_id"]
+                        all_user_picks = supabase.table("user_picks").select("*").eq("game_type", game_slug).eq("user_id", u_id).execute().data
+                        wrong_count = sum(1 for k in all_user_picks if k["pick_state"] == "Incorrect")
+                        
+                        new_bracket = "Loser Bracket" if wrong_count == 0 else "Winner Bracket" if wrong_count == 1 else "Eliminated"
+                        supabase.table("tournament_registrations").update({"bracket_status": new_bracket}).eq("user_id", u_id).eq("game_type", game_slug).execute()
+                        
+                    st.success("Standings updated and fully synchronized successfully!")
+                    st.rerun()
 
 # ==========================================
 # 👥 TAB 2: ROSTER & PROFILE MANAGEMENT
