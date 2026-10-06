@@ -508,19 +508,17 @@ else:
 
         if all_picks_res:
             picks_by_week_map = {p["week"]: p for p in all_picks_res}
-            
-            # Build a unified raw HTML row grid block
             rail_html_cards = []
             
             for w in range(1, 23):
                 p = picks_by_week_map.get(w, None)
                 
                 if not p:
-                    # Low-profile empty placeholder cell text string
+                    # Low-profile empty placeholder cell text string (Theme-Adaptive text color variable)
                     card_html = f"""
-                    <div style="flex: 1; min-width: 40px; border: 1px dashed #cbd5e1; padding: 6px 2px; border-radius: 4px; text-align: center; min-height: 65px; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0.4; font-family: sans-serif;">
-                        <span style="font-size: 9px; color: gray; font-weight: bold; display: block;">Wk {w}</span>
-                        <span style="font-size: 12px; color: gray;">&bull;</span>
+                    <div style="flex: 1; min-width: 45px; border: 1px dashed rgba(148, 163, 184, 0.4); padding: 6px 2px; border-radius: 4px; text-align: center; min-height: 65px; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0.4; font-family: sans-serif;">
+                        <span style="font-size: 9px; color: var(--text-color); font-weight: bold; display: block;">Wk {w}</span>
+                        <span style="font-size: 12px; color: var(--text-color);">&bull;</span>
                     </div>
                     """
                 else:
@@ -528,19 +526,23 @@ else:
                     p_state = p.get("pick_state", "Pending")
                     clean_team_key = t_pick.replace("_SO", "").strip()
                     
+                    # 🚀 DYNAMIC COLOR HIGHLIGHT MATRIX
+                    # Uses text-color mapping variable so typography automatically turns white in dark mode layouts
                     if clean_team_key == "BYE":
-                        card_bg = "background-color: rgba(16, 185, 129, 0.15); border: 1px solid #10b981;"
+                        card_bg = "background-color: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: var(--text-color);"
                     else:
                         week_results = history_outcome_lookup.get(w, {})
                         game_outcome = week_results.get(clean_team_key, "Pending")
                         
                         if p_state == "Correct" or game_outcome == "Correct":
-                            card_bg = "background-color: rgba(16, 185, 129, 0.15); border: 1px solid #10b981;"
+                            card_bg = "background-color: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: var(--text-color);"
                         elif p_state == "Incorrect" or game_outcome == "Incorrect":
-                            card_bg = "background-color: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444;"
+                            card_bg = "background-color: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: var(--text-color);"
                         else:
-                            card_bg = "background-color: #ffffff; border: 1px solid #cbd5e1;"
+                            # Default card states use theme colors for absolute native visibility
+                            card_bg = "background-color: rgba(148, 163, 184, 0.05); border: 1px solid rgba(148, 163, 184, 0.3); color: var(--text-color);"
                     
+                    # 🖼️ SECURE VECTOR EMBED ENGINE PASS: Reads local files as binary data tags
                     logo_html = ""
                     try:
                         file_name = "BYE.svg" if clean_team_key == "BYE" else f"{clean_team_key}.svg"
@@ -553,12 +555,12 @@ else:
                         
                     has_so_star = "*" if t_pick.endswith("_SO") else ""
                     
-                    # Construct individual card cell component text strings
+                    # Construct individual card cell component text strings using secure inline flex templates
                     card_html = f"""
-                    <div style="{card_bg} flex: 1; min-width: 40px; padding: 6px 2px; border-radius: 4px; text-align: center; min-height: 65px; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 1px 1px rgba(0,0,0,0.02); font-family: sans-serif;">
-                        <span style="font-size: 9px; color: gray; font-weight: bold; display: block; margin-bottom: 2px;">Wk {w}</span>
-                        {logo_html}
-                        <span style="color: #1e293b; font-size: 10px; font-weight: 800; display: block;">{clean_team_key}{has_so_star}</span>
+                    <div style="{card_bg} flex: 1; min-width: 45px; padding: 6px 2px; border-radius: 4px; text-align: center; min-height: 65px; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 1px 1px rgba(0,0,0,0.02); font-family: sans-serif;">
+                        <span style="font-size: 9px; opacity: 0.7; font-weight: bold; display: block; margin-bottom: 2px; color: inherit;">Wk {w}</span>
+                        <div style="display: flex; justify-content: center; min-height: 15px; align-items: center;">{logo_html}</div>
+                        <span style="font-size: 10px; font-weight: 800; display: block; color: inherit; margin-top: 1px;">{clean_team_key}{has_so_star}</span>
                     </div>
                     """
                 rail_html_cards.append(card_html)
@@ -569,7 +571,6 @@ else:
                 {"".join(rail_html_cards)}
             </div>
             """
-            # Render via raw direct HTML to eliminate text code leakages natively
             st.html(unified_rail_container)
             
         else:
