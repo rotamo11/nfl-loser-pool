@@ -442,8 +442,8 @@ else:
                         clean_team_display += " SO"
                         
                     # Apply background cell color parameters natively based on performance states
-                    if p_state == "Correct":
-                        # Light Green tint block
+                    if p_state == "Correct" or t_pick == "BYE":
+                        # Light Green tint block: Matches your design constraint for clean successes and byes
                         bg_style = "background-color: rgba(16, 185, 129, 0.15); padding: 4px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 2px;"
                     elif p_state == "Incorrect":
                         # Light Red tint block
