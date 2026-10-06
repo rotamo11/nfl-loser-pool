@@ -498,7 +498,7 @@ else:
         # ====================================================================
         # 📜 SELECTION LEDGER DISCOVERY ENGINE (22-WEEK HISTORY RAIL)
         # ====================================================================
-        st.write("### 📜 Your Season Selection History")
+        st.write("### Your Season Selection History")
         
         # 1. Fetch active schedule records to determine real-time card color shading
         sched_rows = supabase.table("nfl_schedule").select("week", "away_team", "home_team", "winner").execute().data
@@ -562,13 +562,14 @@ else:
                         
                     has_so_star = "🎯" if t_pick.endswith("_SO") else ""
                     
-                    card_html = f"""
-                    <div style="{card_bg} flex: 1; min-width: 45px; padding: 6px 2px; border-radius: 4px; text-align: center; min-height: 65px; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 1px 1px rgba(0,0,0,0.02); font-family: sans-serif;">
-                        <span style="font-size: 9px; opacity: 0.7; font-weight: bold; display: block; color: inherit;">Wk {w}</span>
-                        <div style="display: flex; justify-content: center; min-height: 15px; align-items: center;">{logo_html}</div>
-                        <span style="font-size: 10px; font-weight: 800; display: block; color: inherit; margin-top: 1px;">{clean_team_key}{has_so_star}</span>
-                    </div>
-                    """
+                    # 🚀 THE ABSOLUTE FIXED STRUCTURE: Uses unbroken single-quote inline structures to prevent string clashes
+                    card_html = (
+                        f'<div style="{card_bg} flex: 1; min-width: 55px; padding: 6px 2px; border-radius: 4px; text-align: center; min-height: 65px; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 1px 1px rgba(0,0,0,0.02); font-family: sans-serif; box-sizing: border-box;">'
+                        f'<span style="font-size: 9px; opacity: 0.7; font-weight: bold; display: block; color: inherit; margin-bottom: 2px;">Wk {w}</span>'
+                        f'<div style="display: flex; justify-content: center; min-height: 15px; align-items: center; width: 100%; margin-bottom: 2px;">{logo_html}</div>'
+                        f'<span style="font-size: 10px; font-weight: 800; display: block; color: inherit; line-height: 1;">{clean_team_key}{has_so_star}</span>'
+                        f'</div>'
+                    )
                 rail_html_cards.append(card_html)
             
             # Combine all cards into a high-density horizontal flexbox container frame wrapper
