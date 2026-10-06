@@ -66,7 +66,24 @@ with st.sidebar:
             return "Super Bowl"
         else:
             return f"Week {week_num}"
-    
+
+    # Helper function to generate clean base64 image strings safely across Chrome/Firefox
+    def get_base64_logo_html(team_code):
+        try:
+            # 🚀 Strip out both _SO suffix strings AND whitespace before checking file paths
+            t_clean = team_code.replace("_SO", "").strip().upper()
+            
+            # Diverts routing to look up BYE.svg asset if player utilized their bye slot option
+            file_path = f"static/BYE.svg" if t_clean == "BYE" else f"static/{t_clean}.svg"
+            
+            if os.path.exists(file_path):
+                with open(file_path, "rb") as f:
+                    encoded = base64.b64encode(f.read()).decode("utf-8")
+                return f'<img src="data:image/svg+xml;base64,{encoded}" width="24" height="15" style="object-fit:contain; vertical-align:middle; margin-right:4px;"/>'
+        except Exception: 
+            pass
+        return ""
+
     # --- SIDEBAR INTERFACE ENHANCEMENT ---
     with st.sidebar:
         week_options = []
