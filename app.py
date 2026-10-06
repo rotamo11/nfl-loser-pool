@@ -543,29 +543,33 @@ else:
                             card_bg = "background-color: rgba(148, 163, 184, 0.05); border: 1px solid rgba(148, 163, 184, 0.3); color: var(--text-color);"
                     
                     # Look up local vector graphics using uniform path structures
+                    # 🚀 THE BULLETPROOF FALLBACK EMBED ENGINE
                     logo_html = ""
                     try:
                         file_name = "BYE.svg" if clean_team_key == "BYE" else f"{clean_team_key}.svg"
                         
-                        # 👤 Dynamic System Path Reckoner: Pinpoints your root static folder directory
                         base_dir = os.path.dirname(os.path.abspath(__file__))
                         absolute_logo_path = os.path.join(base_dir, "static", file_name)
                         
                         if os.path.exists(absolute_logo_path):
                             with open(absolute_logo_path, "rb") as f:
                                 encoded = base64.b64encode(f.read()).decode("utf-8")
-                            logo_html = f'<img src="data:image/svg+xml;base64,{encoded}" width="20" height="13" style="object-fit:contain; display:block; margin:0 auto;"/>'
+                            # Explicitly force inline height parameters to ensure browser compliance
+                            logo_html = f'<img src="data:image/svg+xml;base64,{encoded}" style="width:20px; height:13px; object-fit:contain; display:inline-block;" />'
+                        else:
+                            # 📝 SMART FALLBACK LABEL: If the SVG file is missing on the server, display text!
+                            logo_html = f'<span style="font-size: 8px; color: gray; font-weight: bold; text-transform: uppercase;">📄 {clean_team_key}</span>'
                     except Exception:
-                        pass
+                        logo_html = f'<span style="font-size: 8px; color: gray; font-weight: bold;">📄 {clean_team_key}</span>'
                         
                     has_so_star = "*" if t_pick.endswith("_SO") else ""
                     
-                    # Construct individual card cell component text strings using secure inline flex templates
+                    # Construct individual card cell component text strings using secure inline templates
                     card_html = f"""
-                    <div style="{card_bg} flex: 1; min-width: 45px; padding: 6px 2px; border-radius: 4px; text-align: center; min-height: 65px; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 1px 1px rgba(0,0,0,0.02); font-family: sans-serif;">
-                        <span style="font-size: 9px; opacity: 0.7; font-weight: bold; display: block; margin-bottom: 2px; color: inherit;">Wk {w}</span>
-                        <div style="display: flex; justify-content: center; min-height: 15px; align-items: center;">{logo_html}</div>
-                        <span style="font-size: 10px; font-weight: 800; display: block; color: inherit; margin-top: 1px;">{clean_team_key}{has_so_star}</span>
+                    <div style="{card_bg} flex: 1; min-width: 48px; padding: 6px 2px; border-radius: 4px; text-align: center; min-height: 65px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; box-shadow: 0 1px 1px rgba(0,0,0,0.02); font-family: sans-serif; box-sizing: border-box;">
+                        <span style="font-size: 9px; opacity: 0.7; font-weight: bold; display: block; color: inherit;">Wk {w}</span>
+                        <div style="display: flex; justify-content: center; min-height: 15px; align-items: center; width: 100%; margin: 2px 0;">{logo_html}</div>
+                        <span style="font-size: 10px; font-weight: 800; display: block; color: inherit; line-height: 1;">{clean_team_key}{has_so_star}</span>
                     </div>
                     """
                 rail_html_cards.append(card_html)
