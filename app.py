@@ -507,71 +507,71 @@ else:
                     history_outcome_lookup[w_num][opposing_team] = "Incorrect"
 
         if all_picks_res:
-            # Create a 22-slot dictionary to ensure all weeks maintain an explicit column row slot position
             picks_by_week_map = {p["week"]: p for p in all_picks_res}
             
-            # 22 COLUMNS ROW: Locks your full campaign grid into an inline, single-row layout frame
-            history_columns = st.columns(22)
+            # Build a unified raw HTML row grid block
+            rail_html_cards = []
             
             for w in range(1, 23):
-                with history_columns[w - 1]:
-                    p = picks_by_week_map.get(w, None)
+                p = picks_by_week_map.get(w, None)
+                
+                if not p:
+                    # Low-profile empty placeholder cell text string
+                    card_html = f"""
+                    <div style="flex: 1; min-width: 40px; border: 1px dashed #cbd5e1; padding: 6px 2px; border-radius: 4px; text-align: center; min-height: 65px; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0.4; font-family: sans-serif;">
+                        <span style="font-size: 9px; color: gray; font-weight: bold; display: block;">Wk {w}</span>
+                        <span style="font-size: 12px; color: gray;">&bull;</span>
+                    </div>
+                    """
+                else:
+                    t_pick = p["team_picked"].upper()
+                    p_state = p.get("pick_state", "Pending")
+                    clean_team_key = t_pick.replace("_SO", "").strip()
                     
-                    if not p:
-                        # Renders an elegant placeholder slot block if a future week hasn't been submitted yet
-                        st.markdown(
-                            f"""
-                            <div style="border:1px dashed #cbd5e1; padding:6px 2px; border-radius:4px; text-align:center; min-height:65px; display:flex; flex-direction:column; align-items:center; justify-content:center; opacity:0.4;">
-                                <span style="font-size:9px; color:gray; font-weight:bold; display:block;">Wk {w}</span>
-                                <span style="font-size:12px; color:gray;">&bull;</span>
-                            </div>
-                            """, 
-                            unsafe_allow_html=True
-                        )
+                    if clean_team_key == "BYE":
+                        card_bg = "background-color: rgba(16, 185, 129, 0.15); border: 1px solid #10b981;"
                     else:
-                        t_pick = p["team_picked"].upper()
-                        p_state = p.get("pick_state", "Pending")
-                        clean_team_key = t_pick.replace("_SO", "").strip()
+                        week_results = history_outcome_lookup.get(w, {})
+                        game_outcome = week_results.get(clean_team_key, "Pending")
                         
-                        # DYNAMIC BACKGROUND HIGHLIGHT MATRIX
-                        if clean_team_key == "BYE":
-                            card_bg = "background-color: rgba(16, 185, 129, 0.15); border: 1px solid #10b981;" # Light Green
+                        if p_state == "Correct" or game_outcome == "Correct":
+                            card_bg = "background-color: rgba(16, 185, 129, 0.15); border: 1px solid #10b981;"
+                        elif p_state == "Incorrect" or game_outcome == "Incorrect":
+                            card_bg = "background-color: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444;"
                         else:
-                            # Look up the score outcome from our schedule table cache
-                            week_results = history_outcome_lookup.get(w, {})
-                            game_outcome = week_results.get(clean_team_key, "Pending")
-                            
-                            if p_state == "Correct" or game_outcome == "Correct":
-                                card_bg = "background-color: rgba(16, 185, 129, 0.15); border: 1px solid #10b981;" # Light Green
-                            elif p_state == "Incorrect" or game_outcome == "Incorrect":
-                                card_bg = "background-color: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444;" # Light Red
-                            else:
-                                card_bg = "background-color: #ffffff; border: 1px solid #cbd5e1;" # Default White
+                            card_bg = "background-color: #ffffff; border: 1px solid #cbd5e1;"
+                    
+                    logo_html = ""
+                    try:
+                        file_name = "BYE.svg" if clean_team_key == "BYE" else f"{clean_team_key}.svg"
+                        if os.path.exists(f"static/{file_name}"):
+                            with open(f"static/{file_name}", "rb") as f:
+                                encoded = base64.b64encode(f.read()).decode("utf-8")
+                            logo_html = f'<img src="data:image/svg+xml;base64,{encoded}" width="20" height="13" style="object-fit:contain; margin-bottom:2px; display:block;"/>'
+                    except Exception:
+                        pass
                         
-                        # Secure layout base64 conversion mapping router
-                        logo_html = ""
-                        try:
-                            file_name = "BYE.svg" if clean_team_key == "BYE" else f"{clean_team_key}.svg"
-                            if os.path.exists(f"static/{file_name}"):
-                                with open(f"static/{file_name}", "rb") as f:
-                                    encoded = base64.b64encode(f.read()).decode("utf-8")
-                                logo_html = f'<img src="data:image/svg+xml;base64,{encoded}" width="20" height="13" style="object-fit:contain; margin-bottom:2px;"/>'
-                        except Exception:
-                            pass
-                            
-                        has_so_star = "*" if t_pick.endswith("_SO") else ""
-                        
-                        # 🚀 THE ABSOLUTE FIX: Simplified text tags to prevent raw HTML code leaks
-                        st.markdown(
-                            f"""
-                            <div style="{card_bg} padding:6px 2px; border-radius:4px; text-align:center; min-height:65px; display:flex; flex-direction:column; align-items:center; justify-content:center; box-shadow: 0 1px 1px rgba(0,0,0,0.02);">
-                                <span style="font-size:9px; color:gray; font-weight:bold; display:block; margin-bottom:2px;">Wk {w}</span>
-                                {logo_html}
-                                <span style="color:#1e293b; font-size:10px; font-weight:800; font-family:sans-serif;">{clean_team_key}{has_so_star}</span>
-                            </div>
-                            """, 
-                            unsafe_allow_html=True
-                        )
+                    has_so_star = "*" if t_pick.endswith("_SO") else ""
+                    
+                    # Construct individual card cell component text strings
+                    card_html = f"""
+                    <div style="{card_bg} flex: 1; min-width: 40px; padding: 6px 2px; border-radius: 4px; text-align: center; min-height: 65px; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 1px 1px rgba(0,0,0,0.02); font-family: sans-serif;">
+                        <span style="font-size: 9px; color: gray; font-weight: bold; display: block; margin-bottom: 2px;">Wk {w}</span>
+                        {logo_html}
+                        <span style="color: #1e293b; font-size: 10px; font-weight: 800; display: block;">{clean_team_key}{has_so_star}</span>
+                    </div>
+                    """
+                rail_html_cards.append(card_html)
+            
+            # Combine all cards into a high-density horizontal flexbox container frame wrapper
+            unified_rail_container = f"""
+            <div style="display: flex; gap: 4px; width: 100%; overflow-x: auto; padding: 5px 0; margin-bottom: 15px;">
+                {"".join(rail_html_cards)}
+            </div>
+            """
+            # Render via raw direct HTML to eliminate text code leakages natively
+            st.html(unified_rail_container)
+            
         else:
             st.info("No prior selection records on file yet for this regular season campaign.")
             
