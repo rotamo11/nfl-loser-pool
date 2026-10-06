@@ -347,19 +347,19 @@ else:
             if os.path.exists(file_path):
                 with open(file_path, "rb") as f:
                     encoded = base64.b64encode(f.read()).decode("utf-8")
-                return f'<img src="data:image/svg+xml;base64,{encoded}" width="24" height="24" style="object-fit:contain; vertical-align:middle; margin-right:4px;"/>'
+                return f'<img src="data:image/svg+xml;base64,{encoded}" width="30" height="24" style="object-fit:contain; vertical-align:middle; margin-right:4px;"/>'
         except Exception: pass
         return ""
 
     # Render compact visual grid distribution deck mapping wide rules columns layout
-    dist_cols = st.columns(min(len(sorted_distribution), 10))
+    dist_cols = st.columns(min(len(sorted_distribution), 15))
     for idx, (team, count) in enumerate(sorted_distribution):
         with dist_cols[idx % 10]:
             so_label = " ✴️" if team.endswith("_SO") else ""
             st.markdown(
                 f"""
-                <div style="border:1px solid #cbd5e1; padding:4px 2px; border-radius:4px; text-align:center; box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin-bottom:4px;">
-                    <div style="display:flex; justify-content:center; margin-bottom:4px;">{get_base64_logo_html(team)} {so_label}</div>
+                <div style="border:1px solid #cbd5e1; padding:2px 2px; border-radius:1px; text-align:center; box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin-bottom:1px;">
+                    <div style="display:flex; justify-content:center; margin-bottom:4px;">{get_base64_logo_html(team)}{so_label}</div>
                     <span style="display:block; font-size:18px; font-weight:900; color:#2563eb; margin-top:2px;">{count}</span>
                 </div>
                 """, 
