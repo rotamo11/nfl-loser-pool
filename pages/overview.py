@@ -268,7 +268,7 @@ if 'force_password_change' not in st.session_state:
     st.session_state.force_password_change = False
 
 if st.session_state.force_password_change:
-    st.subheader("🔒 Update Your Temporary Password")
+    st.subheader("Update Your Temporary Password")
     new_pw = st.text_input("New Permanent Password", type="password")
     confirm_pw = st.text_input("Confirm Permanent Password", type="password")
     
@@ -309,15 +309,15 @@ elif not st.session_state.user:
     st.markdown("<br>", unsafe_allow_html=True)
 
 # ==========================================
-# 📊 SEGMENT A: WEEKLY PICK DISTRIBUTION LIST
+# SEGMENT A: WEEKLY PICK DISTRIBUTION LIST
 # ==========================================
-st.write(f"### 📊 Weekly Selection Distribution — {get_week_label(SELECTED_WEEK)}")
+st.write(f"### Weekly Selection Distribution — {get_week_label(SELECTED_WEEK)}")
 
 # Fetch all active locked picks for this targeted timeline segment
 all_selections = supabase.table("user_picks").select("team_picked").eq("game_type", game_slug).eq("week", SELECTED_WEEK).execute().data
 
 if not all_selections:
-    st.info(f"No selection records have been finalized or committed yet for {get_week_label(SELECTED_WEEK)}.")
+    st.info(f"No selections have been finalized or committed yet for {get_week_label(SELECTED_WEEK)}.")
 else:
     # Tally selection frequencies
     counts = {}
@@ -325,7 +325,7 @@ else:
         t = s["team_picked"].upper()
         counts[t] = counts.get(t, 0) + 1
         
-    # 🚀 FIX C: ADVANCED CUSTOM ORDER SORTING ENGINE
+    # FIX C: ADVANCED CUSTOM ORDER SORTING ENGINE
     # Forces 'BYE' to always sit at rank index 1, followed by highest count desc, then name asc
     def sorting_weight_key(item):
         team_name, selection_count = item
@@ -339,7 +339,7 @@ else:
     # Helper function to generate clean base64 image strings safely across Chrome/Firefox
     def get_base64_logo_html(team_code):
         try:
-            # 🚀 THE FIX: Strip out both _SO suffix strings AND whitespace before checking the file system paths
+            # THE FIX: Strip out both _SO suffix strings AND whitespace before checking the file system paths
             t_clean = team_code.replace("_SO", "").strip().upper()
             
             file_path = f"static/BYE.svg" if t_clean == "BYE" else f"static/{t_clean}.svg"
@@ -347,7 +347,7 @@ else:
             if os.path.exists(file_path):
                 with open(file_path, "rb") as f:
                     encoded = base64.b64encode(f.read()).decode("utf-8")
-                return f'<img src="data:image/svg+xml;base64,{encoded}" width="24" height="15" style="object-fit:contain; vertical-align:middle; margin-right:4px;"/>'
+                return f'<img src="data:image/svg+xml;base64,{encoded}" width="24" height="24" style="object-fit:contain; vertical-align:middle; margin-right:4px;"/>'
         except Exception: pass
         return ""
 
@@ -358,11 +358,9 @@ else:
             so_label = " ✴️" if team.endswith("_SO") else ""
             st.markdown(
                 f"""
-                <div style="border:1px solid #cbd5e1; padding:8px 4px; border-radius:6px; text-align:center; background:var(--background-color, white); box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin-bottom:10px;">
-                    <div style="display:flex; justify-content:center; margin-bottom:4px;">{get_base64_logo_html(team)}</div>
-                    <b style="font-size:13px; color:var(--text-color);">{team.replace('_SO','')}{so_label}</b>
+                <div style="border:1px solid #cbd5e1; padding:4px 2px; border-radius:4px; text-align:center; box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin-bottom:4px;">
+                    <div style="display:flex; justify-content:center; margin-bottom:4px;">{get_base64_logo_html(team)} {so_label}</div>
                     <span style="display:block; font-size:18px; font-weight:900; color:#2563eb; margin-top:2px;">{count}</span>
-                    <span style="font-size:10px; color:gray; display:block;">Picks</span>
                 </div>
                 """, 
                 unsafe_allow_html=True
