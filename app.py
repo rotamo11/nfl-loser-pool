@@ -579,14 +579,14 @@ else:
                     except Exception:
                         logo_html = f'<span style="font-size: 8px; color: gray; font-weight: bold;">📄 {clean_team_key}</span>'
                         
-                    has_so_star = "*" if t_pick.endswith("_SO") else ""
+                    has_so_star = "🎯" if t_pick.endswith("_SO") else ""
                     
                     # Construct individual card cell component text strings using secure inline templates
                     card_html = f"""
-                    <div style="{card_bg} flex: 1; min-width: 48px; padding: 6px 2px; border-radius: 4px; text-align: center; min-height: 65px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; box-shadow: 0 1px 1px rgba(0,0,0,0.02); font-family: sans-serif; box-sizing: border-box;">
+                    <div style="{card_bg} flex: 1; min-width: 45px; padding: 6px 2px; border-radius: 4px; text-align: center; min-height: 65px; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 1px 1px rgba(0,0,0,0.02); font-family: sans-serif;">
                         <span style="font-size: 9px; opacity: 0.7; font-weight: bold; display: block; color: inherit;">Wk {w}</span>
-                        <div style="display: flex; justify-content: center; min-height: 15px; align-items: center; width: 100%; margin: 2px 0;">{logo_html}</div>
-                        <span style="font-size: 10px; font-weight: 800; display: block; color: inherit; line-height: 1;">{clean_team_key}{has_so_star}</span>
+                        <div style="display: flex; justify-content: center; min-height: 15px; align-items: center;">{logo_html}</div>
+                        <span style="font-size: 10px; font-weight: 800; display: block; color: inherit; margin-top: 1px;">{clean_team_key}{has_so_star}</span>
                     </div>
                     """
                 rail_html_cards.append(card_html)
