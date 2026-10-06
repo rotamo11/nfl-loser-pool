@@ -358,7 +358,7 @@ else:
             so_label = " *" if team.endswith("_SO") else ""
             st.markdown(
                 f"""
-                <div style="border:1px solid #cbd5e1; padding:2px 2px; border-radius:1px; text-align:center; box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin-bottom:1px;">
+                <div style="border:1px solid #cbd5e1; padding:4px 2px; border-radius:2px; text-align:center; box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin-bottom:2px;">
                     <div style="display:flex; justify-content:center; margin-bottom:4px;">{get_base64_logo_html(team)}{so_label}</div>
                     <span style="display:block; font-size:18px; font-weight:900; color:#2563eb; margin-top:2px;">{count}</span>
                 </div>
@@ -371,8 +371,6 @@ st.markdown("---")
 # ==========================================
 # 🏆 SEGMENT B: COMPLETE LEAGUE STANDINGS MATRIX
 # ==========================================
-st.write("### 🏆 Live Championship Standings Grid")
-
 users_list = supabase.table("users").select("id", "username").order("username").execute().data
 registrations = supabase.table("tournament_registrations").select("*").eq("game_type", game_slug).eq("is_enrolled", True).execute().data
 all_historical_picks = supabase.table("user_picks").select("*").eq("game_type", game_slug).execute().data
@@ -414,7 +412,7 @@ else:
             st.caption(f"*No players currently active inside {bracket_title}*")
             return
             
-        st.markdown(f"#### 🏅 {bracket_title}")
+        st.markdown(f"#### {bracket_title}")
         
         # Build Table Headers dynamically based on calculated week parameters
         header_row = "| Player | " + " | ".join(f"Wk {w}" for w in visible_weeks) + " |"
@@ -441,7 +439,7 @@ else:
                     # Clean the displayed name code string token representation
                     clean_team_display = t_pick.replace('_SO', '')
                     if t_pick.endswith("_SO"):
-                        clean_team_display += "*"
+                        clean_team_display += " SO"
                         
                     # Apply background cell color parameters natively based on performance states
                     if p_state == "Correct":
