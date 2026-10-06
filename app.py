@@ -478,29 +478,102 @@ else:
         # --- RECOVER USER COMPREHENSIVE SELECTION RECORDS ---
         all_picks_res = supabase.table("user_picks").select("*").eq("user_id", user_id).eq("game_type", game_slug).execute().data
         
+        # ====================================================================
+        # SELECTION LEDGER DISCOVERY ENGINE (22-WEEK HISTORY RAIL)
+        # ====================================================================
         st.write("### Your Season Selection History")
+        
+        # 1. Fetch active schedule records for the season to determine real-time card color shading
+        sched_rows = supabase.table("nfl_schedule").select("week", "away_team", "home_team", "winner").execute().data
+        
+        # Build an indexed game outcome lookup table: { week_num: { 'BUF': 'Correct', 'MIA': 'Incorrect' } }
+        history_outcome_lookup = {}
+        for match in (sched_rows or []):
+            w_num = match["week"]
+            away = match["away_team"].upper()
+            home = match["home_team"].upper()
+            loser_code = match.get("winner") # Remember: your 'winner' column houses the losing team abbreviation
+            
+            if w_num not in history_outcome_lookup:
+                history_outcome_lookup[w_num] = {}
+                
+            if loser_code:
+                if loser_code == "TIE":
+                    history_outcome_lookup[w_num][away] = "Incorrect"
+                    history_outcome_lookup[w_num][home] = "Incorrect"
+                else:
+                    history_outcome_lookup[w_num][loser_code] = "Correct"
+                    opposing_team = home if loser_code == away else away
+                    history_outcome_lookup[w_num][opposing_team] = "Incorrect"
+
         if all_picks_res:
-            num_cols = min(len(all_picks_res), 18)
-            if num_cols > 0:
-                cols = st.columns(num_cols)
-                for i, p in enumerate(sorted(all_picks_res, key=lambda x: x["week"])):
-                    with cols[i % num_cols]:
-                        clean_t = p["team_picked"].replace("_SO", "")
-                        has_so = "*" if p["team_picked"].endswith("_SO") else ""
+            # Create a 22-slot dictionary to ensure all weeks maintain an explicit column row slot position
+            picks_by_week_map = {p["week"]: p for p in all_picks_res}
+            
+            # 22 COLUMNS ROW: Locks your full campaign grid into an inline, single-row layout frame
+            history_columns = st.columns(22)
+            
+            for w in range(1, 23):
+                with history_columns[w - 1]:
+                    p = picks_by_week_map.get(w, None)
+                    
+                    if not p:
+                        # Renders an elegant placeholder slot block if a future week hasn't been submitted yet
                         st.markdown(
                             f"""
-                            <div style="border:1px solid #cbd5e1; padding:6px 4px; border-radius:4px; text-align:center; background:#000000; font-size:12px; font-family:sans-serif; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
-                                <span style="color:#cbd5e1; font-size:12px; font-weight:bold; display:block; margin-bottom:2px;">Week {p['week']}</span>
-                                <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;">
-                                    <img src="app/static/{clean_t.upper()}.svg" width="28" height="18" style="object-fit:contain;"/>
-                                    <b style="color:#cbd5e1; font-size:12px;">{clean_t.upper()}{has_so}</b>
-                                </div>
+                            <div style="border:1px dashed #cbd5e1; padding:6px 2px; border-radius:4px; text-align:center; min-height:65px; display:flex; flex-direction:column; align-items:center; justify-content:center; opacity:0.4;">
+                                <span style="font-size:9px; color:gray; font-weight:bold; display:block;">Wk {w}</span>
+                                <span style="font-size:12px; color:gray;">&bull;</span>
+                            </div>
+                            """, 
+                            unsafe_allow_html=True
+                        )
+                    else:
+                        t_pick = p["team_picked"].upper()
+                        p_state = p.get("pick_state", "Pending")
+                        clean_team_key = t_pick.replace("_SO", "").strip()
+                        
+                        # DYNAMIC BACKGROUND HIGHLIGHT MATRIX
+                        if clean_team_key == "BYE":
+                            card_bg = "background-color: rgba(16, 185, 129, 0.15); border: 1px solid #10b981;" # Light Green
+                        else:
+                            # Look up the score outcome from our schedule table cache
+                            week_results = history_outcome_lookup.get(w, {})
+                            game_outcome = week_results.get(clean_team_key, "Pending")
+                            
+                            if p_state == "Correct" or game_outcome == "Correct":
+                                card_bg = "background-color: rgba(16, 185, 129, 0.15); border: 1px solid #10b981;" # Light Green
+                            elif p_state == "Incorrect" or game_outcome == "Incorrect":
+                                card_bg = "background-color: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444;" # Light Red
+                            else:
+                                card_bg = "background-color: #ffffff; border: 1px solid #cbd5e1;" # Default White
+                        
+                        # Secure layout base64 conversion mapping router
+                        logo_html = ""
+                        try:
+                            file_name = "BYE.svg" if clean_team_key == "BYE" else f"{clean_team_key}.svg"
+                            if os.path.exists(f"static/{file_name}"):
+                                with open(f"static/{file_name}", "rb") as f:
+                                    encoded = base64.b64encode(f.read()).decode("utf-8")
+                                logo_html = f'<img src="data:image/svg+xml;base64,{encoded}" width="20" height="13" style="object-fit:contain; margin-bottom:2px;"/>'
+                        except Exception:
+                            pass
+                            
+                        has_so_star = "*" if t_pick.endswith("_SO") else ""
+                        st.markdown(
+                            f"""
+                            <div style="{card_bg} padding:6px 2px; border-radius:4px; text-align:center; min-height:65px; display:flex; flex-direction:column; align-items:center; justify-content:center; box-shadow: 0 1px 1px rgba(0,0,0,0.02);">
+                                <span style="font-size:9px; color:gray; font-weight:bold; display:block; margin-bottom:2px;">Wk {w}</span>
+                                {logo_html}
+                                <b style="color:#1e293b; font-size:10px; font-weight:800; display:block; line-height:1;">{clean_team_key}{has_so_star}</b>
                             </div>
                             """, 
                             unsafe_allow_html=True
                         )
         else:
-            st.info("No prior weeks on record yet for this season.")
+            st.info("No prior selection records on file yet for this regular season campaign.")
+            
+        st.markdown("<br>", unsafe_allow_html=True)
 
         used_teams = []
         for p in all_picks_res:
