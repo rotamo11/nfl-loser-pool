@@ -258,14 +258,14 @@ with tab_scores:
         
     st.markdown("---")
     st.info(f"Select the LOSER of each game (or tie):")
-    # FIXED: Switched to SELECTED_WEEK to align with your global timeline dropdown parameters
+    # Query matching schedule rows mapping your global timeline selection parameter
     schedule_res = supabase.table("nfl_schedule").select("*").eq("week", SELECTED_WEEK).execute().data
     
     if not schedule_res: 
         st.info(f"No games matched for this week segment parameters.")
     else:
         st.markdown(f"### Record Outcomes — {get_week_label(SELECTED_WEEK)}")
-        st.caption("Select the losing team, indicate a TIE, or leave as In Progress. Click the master button below to save changes or correct mistakes anytime.")
+        st.caption("Select the losing team, indicate a TIE, or leave blank to save later. Click the master button below to synchronize rosters.")
         
         with st.form("global_scoring_form"):
             weekly_selections_cache = {}
@@ -276,84 +276,95 @@ with tab_scores:
                 current_db_loser = match.get("winner") # Note: 'winner' column houses your loser data mapping string
                 current_db_so = match.get("is_shutout", False)
                 
-                # MINIMAL HIGH-RES VISUAL LOGO BADGE STRIP
+                # SECURE HIGH-RES BASE64 IMAGE ENCODER PASS
                 try:
                     import base64
                     with open(f"static/{away}.svg", "rb") as f: encoded_away = base64.b64encode(f.read()).decode("utf-8")
-                    away_img = f'<img src="data:image/svg+xml;base64,{encoded_away}" width="20" height="13" style="object-fit:contain; vertical-align:middle; margin-right:4px;"/>'
+                    away_img = f'<img src="data:image/svg+xml;base64,{encoded_away}" width="24" height="16" style="object-fit:contain; vertical-align:middle;"/>'
                 except Exception: away_img = ""
                     
                 try:
                     import base64
                     with open(f"static/{home}.svg", "rb") as f: encoded_home = base64.b64encode(f.read()).decode("utf-8")
-                    home_img = f'<img src="data:image/svg+xml;base64,{encoded_home}" width="20" height="13" style="object-fit:contain; vertical-align:middle; margin-right:4px;"/>'
+                    home_img = f'<img src="data:image/svg+xml;base64,{encoded_home}" width="24" height="16" style="object-fit:contain; vertical-align:middle;"/>'
                 except Exception: home_img = ""
 
+                # --- ROW 1: THE ALIGNED TEAM LOGO HEADER MATRIX ---
                 st.markdown(
-                    f'<div style="display:flex; align-items:center; gap:2px; font-size:12px; margin-bottom:-10px; opacity:0.8; color:var(--text-color);">'
-                    f'{away_img}<b>{away}</b> <span style="color:gray; margin:0 2px;">@</span> {home_img}<b>{home}</b>'
-                    f'</div>', 
+                    f"""
+                    <table style="width:100%; border:none; margin-bottom:-5px; font-family:sans-serif; background:transparent;">
+                        <tr style="background:transparent; border:none;">
+                            <td style="width:40%; text-align:center; border:none; padding:2px;">{away_img} <b style="font-size:13px; color:var(--text-color);">{away}</b></td>
+                            <td style="width:20%; text-align:center; border:none; padding:2px; color:gray; font-size:12px; font-weight:bold;">@</td>
+                            <td style="width:40%; text-align:center; border:none; padding:2px;">{home_img} <b style="font-size:13px; color:var(--text-color);">{home}</b></td>
+                        </tr>
+                    </table>
+                    """, 
                     unsafe_allow_html=True
                 )
                 
-                # Pre-populate index selections based on what is currently stored inside Supabase
-                default_radio_index = 0  # Defaults to "Unrecorded / In Progress"
-                if current_db_loser == away: default_radio_index = 1
-                elif current_db_loser == home: default_radio_index = 2
-                elif current_db_loser == "TIE": default_radio_index = 3
+                # --- ROW 2: THE MOBILE COMPACT ALIGNED SELECTION MATRIX ---
+                col_sel1, col_sel2, col_sel3 = st.columns([5, 2.5, 2.5])
                 
-                col_radio, col_check = st.columns([3, 1])
-                with col_radio:
-                    radio_choices = [
-                        "⏳ Unrecorded / In Progress",
-                        f"{away} Lost (Away)", 
-                        f"{home} Lost (Home)", 
-                        "Game ended in a TIE"
-                    ]
-                    outcome_selection = st.radio(
-                        f"Match {m_id} Outcome Selector:",
-                        options=radio_choices,
+                with col_sel1:
+                    # Pre-calculate active selection indexing defaults from active database states
+                    default_radio_index = None
+                    if current_db_loser == away: default_radio_index = 0
+                    elif current_db_loser == home: default_radio_index = 1
+                    
+                    # Renders tight, text-abbreviated radio nodes for team selections
+                    team_outcome = st.radio(
+                        f"Team Selector {m_id}",
+                        options=[f"{away} Lost", f"{home} Lost"],
                         index=default_radio_index,
-                        key=f"los_{m_id}",
+                        key=f"team_los_{m_id}",
                         horizontal=True,
                         label_visibility="collapsed"
                     )
-                with col_check:
-                    is_so = st.checkbox("Shutout", value=current_db_so, key=f"s_{m_id}")
+                    
+                with col_sel2:
+                    # Isolate Tie declarations onto a separate component line to prevent mobile wrapping text crashes
+                    tie_checked = st.checkbox("TIE", value=(current_db_loser == "TIE"), key=f"tie_chk_{m_id}")
+                    
+                with col_sel3:
+                    is_so = st.checkbox("SO", value=current_db_so, key=f"s_{m_id}")
                 
+                # Append selection results into our structural caching dictionary pass
                 weekly_selections_cache[m_id] = {
                     "away": away, "home": home, 
-                    "selection": outcome_selection, "is_shutout": is_so
+                    "team_outcome": team_outcome, "tie_checked": tie_checked, "is_shutout": is_so
                 }
-                st.markdown("<div style='margin-bottom:8px; border-bottom:1px solid rgba(0,0,0,0.05);'></div>", unsafe_allow_html=True)
+                st.markdown("<div style='margin-bottom:6px; border-bottom:1px solid rgba(0,0,0,0.04);'></div>", unsafe_allow_html=True)
 
             st.markdown("<br>", unsafe_allow_html=True)
             
-            # 🚀 SINGLE MASTER BUTTON AT THE BOTTOM
-            submit_all_scores = st.form_submit_button("Save & Synchronize Weekly Standings", width='stretch', type="primary")
+            # --- SINGLE MASTER EXECUTION BUTTON ---
+            submit_all_scores = st.form_submit_button("Calculate & Lock Weekly Standings", width='stretch', type="primary")
             
             if submit_all_scores:
-                with st.spinner("Updating league transactions and bracket status states..."):
-                    # Process every matchup row on the screen
+                with st.spinner("Updating league standings and player bracket paths..."):
                     for m_id, data in weekly_selections_cache.items():
                         away_team = data["away"]
                         home_team = data["home"]
-                        sel_string = data["selection"]
+                        team_sel = data["team_outcome"]
+                        tie_sel = data["tie_checked"]
                         so_flag = data["is_shutout"]
                         
-                        # FIX: Convert selection option text back into structural database database parameters
-                        if "Progress" in sel_string:
-                            # If a game is unrecorded or reset to in progress, clear database records safely
-                            supabase.table("nfl_schedule").update({"winner": None, "is_shutout": False}).eq("id", m_id).execute()
+                        # RESOLVE FINAL LOSER CODE WITH NO BLANK RUNTIME COLLISIONS
+                        if tie_sel:
+                            loser_code = "TIE"
+                        elif team_sel == f"{away_team} Lost":
+                            loser_code = away_team
+                        elif team_sel == f"{home_team} Lost":
+                            loser_code = home_team
+                        else:
+                            # If neither team radio is tapped and TIE is unchecked, leave game untouched (In Progress)
                             continue
-                        elif "Away" in sel_string: loser_code = away_team
-                        elif "Home" in sel_string: loser_code = home_team
-                        else: loser_code = "TIE"
                         
-                        # Update schedule row attributes
+                        # Update match scoreboards rows
                         supabase.table("nfl_schedule").update({"winner": loser_code, "is_shutout": so_flag}).eq("id", m_id).execute()
                         
-                        # Recover all user pick records matching these active teams
+                        # Recover matching active pick submittals from your players
                         picks = supabase.table("user_picks").select("*").eq("game_type", game_slug).eq("week", SELECTED_WEEK).in_("team_picked", [away_team, f"{away_team}_SO", home_team, f"{home_team}_SO"]).execute().data
                         
                         for p in picks:
@@ -366,22 +377,17 @@ with tab_scores:
                             final_team_name = f"{chosen_team}_SO" if pick_result == "Correct" and so_flag else chosen_team
                             supabase.table("user_picks").update({"pick_state": pick_result, "team_picked": final_team_name}).eq("id", p["id"]).execute()
                             
-                    # AUTOMATIC ERROR-CORRECTING BRACKET COMPLIANCE ENGINE
-                    # Re-evaluates ALL active players registered to this track from week 1 forward to recalculate standings perfectly
+                    # --- AUTOMATIC LEAGUE STANDINGS RE-COMPLIANCE CALCULATION PASS ---
                     all_track_regs = supabase.table("tournament_registrations").select("user_id").eq("game_type", game_slug).execute().data
-                    
                     for reg in all_track_regs:
                         u_id = reg["user_id"]
                         all_user_picks = supabase.table("user_picks").select("*").eq("game_type", game_slug).eq("user_id", u_id).execute().data
-                        
-                        # Count only items explicitly locked down as Incorrect
                         wrong_count = sum(1 for k in all_user_picks if k["pick_state"] == "Incorrect")
                         
-                        # Re-assign brackets dynamically. If an error was fixed, an incorrectly eliminated player pops right back into the pool!
                         new_bracket = "Loser Bracket" if wrong_count == 0 else "Winner Bracket" if wrong_count == 1 else "Eliminated"
                         supabase.table("tournament_registrations").update({"bracket_status": new_bracket}).eq("user_id", u_id).eq("game_type", game_slug).execute()
                         
-                    st.success("Weekly scoreboards synchronized! Standings and player bracket tracking updated.")
+                    st.success("🎉 Weekly scoreboards synchronized! Standings updated.")
                     st.rerun()
 
 # ==========================================
