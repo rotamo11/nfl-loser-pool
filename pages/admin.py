@@ -257,16 +257,14 @@ with tab_scores:
         st.rerun()
         
     st.markdown("---")
-    st.info(f"Select the LOSER of each game (or tie):")
-    st.markdown("---")
     # Query matching schedule rows mapping your global timeline selection parameter
     schedule_res = supabase.table("nfl_schedule").select("*").eq("week", SELECTED_WEEK).execute().data
     
     if not schedule_res: 
         st.info(f"No games matched for this week segment parameters.")
     else:
-        st.markdown(f"### 🏈 Record Outcomes — {get_week_label(SELECTED_WEEK)}")
-        st.caption("Select the losing team, indicate a TIE, or leave blank to save later. Click the master button below to synchronize rosters.")
+        st.markdown(f"### Record Outcomes — {get_week_label(SELECTED_WEEK)}")
+        st.caption("Select the losing team, indicate a TIE, or leave blank to save later. Click the Calculate button below to synchronize rosters.")
         
         with st.form("global_scoring_form"):
             weekly_selections_cache = {}
@@ -295,9 +293,9 @@ with tab_scores:
                     f"""
                     <table style="width:100%; border:none; margin-bottom:-5px; font-family:sans-serif; background:transparent;">
                         <tr style="background:transparent; border:none;">
-                            <td style="width:40%; text-align:center; border:none; padding:2px;">{away_img} <b style="font-size:13px; color:var(--text-color);">{away}</b></td>
+                            <td style="width:40%; text-align:center; border:none; padding:2px;">{away_img}</td>
                             <td style="width:20%; text-align:center; border:none; padding:2px; color:gray; font-size:12px; font-weight:bold;">@</td>
-                            <td style="width:40%; text-align:center; border:none; padding:2px;">{home_img} <b style="font-size:13px; color:var(--text-color);">{home}</b></td>
+                            <td style="width:40%; text-align:center; border:none; padding:2px;">{home_img}</td>
                         </tr>
                     </table>
                     """, 
@@ -316,7 +314,7 @@ with tab_scores:
                     # Renders tight, text-abbreviated radio nodes for team selections
                     team_outcome = st.radio(
                         f"Team Selector {m_id}",
-                        options=[f"{away} Lost", f"{home} Lost"],
+                        options=[f"{away}", f"{home}"],
                         index=default_radio_index,
                         key=f"team_los_{m_id}",
                         horizontal=True,
@@ -325,10 +323,10 @@ with tab_scores:
                     
                 with col_sel2:
                     # Isolate Tie declarations onto a separate component line to prevent mobile wrapping text crashes
-                    tie_checked = st.checkbox("👔 TIE", value=(current_db_loser == "TIE"), key=f"tie_chk_{m_id}")
+                    tie_checked = st.checkbox("TIE", value=(current_db_loser == "TIE"), key=f"tie_chk_{m_id}")
                     
                 with col_sel3:
-                    is_so = st.checkbox("✴️ SO", value=current_db_so, key=f"s_{m_id}")
+                    is_so = st.checkbox("SO", value=current_db_so, key=f"s_{m_id}")
                 
                 # Append selection results into our structural caching dictionary pass
                 weekly_selections_cache[m_id] = {
