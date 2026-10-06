@@ -258,13 +258,14 @@ with tab_scores:
         
     st.markdown("---")
     st.info(f"Select the LOSER of each game (or tie):")
+    st.markdown("---")
     # Query matching schedule rows mapping your global timeline selection parameter
     schedule_res = supabase.table("nfl_schedule").select("*").eq("week", SELECTED_WEEK).execute().data
     
     if not schedule_res: 
         st.info(f"No games matched for this week segment parameters.")
     else:
-        st.markdown(f"### Record Outcomes — {get_week_label(SELECTED_WEEK)}")
+        st.markdown(f"### 🏈 Record Outcomes — {get_week_label(SELECTED_WEEK)}")
         st.caption("Select the losing team, indicate a TIE, or leave blank to save later. Click the master button below to synchronize rosters.")
         
         with st.form("global_scoring_form"):
@@ -276,7 +277,7 @@ with tab_scores:
                 current_db_loser = match.get("winner") # Note: 'winner' column houses your loser data mapping string
                 current_db_so = match.get("is_shutout", False)
                 
-                # SECURE HIGH-RES BASE64 IMAGE ENCODER PASS
+                # 🖼️ SECURE HIGH-RES BASE64 IMAGE ENCODER PASS
                 try:
                     import base64
                     with open(f"static/{away}.svg", "rb") as f: encoded_away = base64.b64encode(f.read()).decode("utf-8")
@@ -289,7 +290,7 @@ with tab_scores:
                     home_img = f'<img src="data:image/svg+xml;base64,{encoded_home}" width="24" height="16" style="object-fit:contain; vertical-align:middle;"/>'
                 except Exception: home_img = ""
 
-                # --- ROW 1: THE ALIGNED TEAM LOGO HEADER MATRIX ---
+                # --- 📈 ROW 1: THE ALIGNED TEAM LOGO HEADER MATRIX ---
                 st.markdown(
                     f"""
                     <table style="width:100%; border:none; margin-bottom:-5px; font-family:sans-serif; background:transparent;">
@@ -303,7 +304,7 @@ with tab_scores:
                     unsafe_allow_html=True
                 )
                 
-                # --- ROW 2: THE MOBILE COMPACT ALIGNED SELECTION MATRIX ---
+                # --- 📱 ROW 2: THE MOBILE COMPACT ALIGNED SELECTION MATRIX ---
                 col_sel1, col_sel2, col_sel3 = st.columns([5, 2.5, 2.5])
                 
                 with col_sel1:
@@ -324,10 +325,10 @@ with tab_scores:
                     
                 with col_sel2:
                     # Isolate Tie declarations onto a separate component line to prevent mobile wrapping text crashes
-                    tie_checked = st.checkbox("TIE", value=(current_db_loser == "TIE"), key=f"tie_chk_{m_id}")
+                    tie_checked = st.checkbox("👔 TIE", value=(current_db_loser == "TIE"), key=f"tie_chk_{m_id}")
                     
                 with col_sel3:
-                    is_so = st.checkbox("SO", value=current_db_so, key=f"s_{m_id}")
+                    is_so = st.checkbox("✴️ SO", value=current_db_so, key=f"s_{m_id}")
                 
                 # Append selection results into our structural caching dictionary pass
                 weekly_selections_cache[m_id] = {
@@ -338,8 +339,8 @@ with tab_scores:
 
             st.markdown("<br>", unsafe_allow_html=True)
             
-            # --- SINGLE MASTER EXECUTION BUTTON ---
-            submit_all_scores = st.form_submit_button("Calculate & Lock Weekly Standings", width='stretch', type="primary")
+            # --- 🏁 SINGLE MASTER EXECUTION BUTTON ---
+            submit_all_scores = st.form_submit_button("🏁 Calculate & Lock Weekly Standings", width='stretch', type="primary")
             
             if submit_all_scores:
                 with st.spinner("Updating league standings and player bracket paths..."):
@@ -350,7 +351,7 @@ with tab_scores:
                         tie_sel = data["tie_checked"]
                         so_flag = data["is_shutout"]
                         
-                        # RESOLVE FINAL LOSER CODE WITH NO BLANK RUNTIME COLLISIONS
+                        # 🚀 RESOLVE FINAL LOSER CODE WITH NO BLANK RUNTIME COLLISIONS
                         if tie_sel:
                             loser_code = "TIE"
                         elif team_sel == f"{away_team} Lost":
@@ -377,7 +378,7 @@ with tab_scores:
                             final_team_name = f"{chosen_team}_SO" if pick_result == "Correct" and so_flag else chosen_team
                             supabase.table("user_picks").update({"pick_state": pick_result, "team_picked": final_team_name}).eq("id", p["id"]).execute()
                             
-                    # --- AUTOMATIC LEAGUE STANDINGS RE-COMPLIANCE CALCULATION PASS ---
+                    # --- 👑 AUTOMATIC LEAGUE STANDINGS RE-COMPLIANCE CALCULATION PASS ---
                     all_track_regs = supabase.table("tournament_registrations").select("user_id").eq("game_type", game_slug).execute().data
                     for reg in all_track_regs:
                         u_id = reg["user_id"]
