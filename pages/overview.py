@@ -55,7 +55,7 @@ with st.sidebar:
     elif "Divisional" in clean_label: SELECTED_WEEK = 20
     elif "Conference" in clean_label: SELECTED_WEEK = 21
     elif "Super Bowl" in clean_label: SELECTED_WEEK = 22
-    else: SELECTED_WEEK = int(clean_label.split(" "))
+    else: SELECTED_WEEK = int(clean_label.split(" ")[-1])
     
     st.markdown("<br>### 🗂️ Tournament Menu", unsafe_allow_html=True)
     st.page_link("app.py", label="Picks", icon="🔐")
