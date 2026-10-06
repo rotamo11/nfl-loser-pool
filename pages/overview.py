@@ -328,18 +328,18 @@ elif not st.session_state.user:
 # ==========================================
 # 📊 SEGMENT A: WEEKLY PICK DISTRIBUTION LIST
 # ==========================================
-st.write(f"### Weekly Selection Distribution — {get_week_label(SELECTED_WEEK)}")
+st.write(f"### Selection Distribution — {get_week_label(SELECTED_WEEK)}")
 
-# 1. Fetch both picks and active schedule outcomes to determine card shading rules
+# 1. Fetch active selection arrays and matchup parameters simultaneously
 all_selections = supabase.table("user_picks").select("team_picked").eq("game_type", game_slug).eq("week", SELECTED_WEEK).execute().data
 schedule_map = supabase.table("nfl_schedule").select("away_team", "home_team", "winner").eq("week", SELECTED_WEEK).execute().data
 
-# Create an indexed outcome map for fast lookup: { 'BUF': 'Correct', 'MIA': 'Incorrect' }
+# Build an indexed game outcomes lookup grid
 outcome_lookup = {}
 for match in (schedule_map or []):
     away = match["away_team"].upper()
     home = match["home_team"].upper()
-    loser_code = match.get("winner")  # Remember: your 'winner' column houses the losing team abbreviation
+    loser_code = match.get("winner")  # Note: your 'winner' column houses the losing team abbreviation
     
     if loser_code:
         if loser_code == "TIE":
@@ -367,31 +367,33 @@ else:
             
     sorted_distribution = sorted(counts.items(), key=sorting_weight_key)
     
-    dist_cols = st.columns(min(len(sorted_distribution), 15))
+    dist_cols = st.columns(min(len(sorted_distribution), 10))
     for idx, (team, count) in enumerate(sorted_distribution):
-        with dist_cols[idx % 15]:
-            so_label = " (SO)" if team.endswith("_SO") else ""
+        with dist_cols[idx % 10]:
+            so_label = " ✴️" if team.endswith("_SO") else ""
             clean_team_key = team.replace("_SO", "").strip()
             
-            # 🚀 DYNAMIC COLOR HIGHLIGHT ENGINE
-            # BYE option is automatically Correct. Other teams look up game results.
+            # 🚀 DYNAMIC COLOR CARD HIGHLIGHT ENGINE
+            # BYE option is automatically Correct. Other teams evaluate live outcomes.
             if clean_team_key == "BYE":
-                card_bg = "background-color: rgba(16, 185, 129, 0.15); border: 1px solid #10b981;" # Light Green
+                card_style = "background-color: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: var(--text-color);"
             else:
                 game_state = outcome_lookup.get(clean_team_key, "Pending")
                 if game_state == "Correct":
-                    card_bg = "background-color: rgba(16, 185, 129, 0.15); border: 1px solid #10b981;" # Light Green
+                    card_style = "background-color: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: var(--text-color);"
                 elif game_state == "Incorrect":
-                    card_bg = "background-color: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444;" # Light Red
+                    card_style = "background-color: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: var(--text-color);"
                 else:
-                    card_bg = "background-color: var(--background-color, white); border: 1px solid #cbd5e1;" # Default White
+                    # 🚀 NO FILL STATE: Uses completely transparent styling if a game is unrecorded or in progress
+                    card_style = "background-color: transparent; border: 1px solid rgba(148, 163, 184, 0.3); color: var(--text-color);"
             
             st.markdown(
                 f"""
-                <div style="{card_bg} padding:8px 4px; border-radius:6px; text-align:center; box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin-bottom:10px;">
+                <div style="{card_style} padding:8px 4px; border-radius:6px; text-align:center; box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin-bottom:10px; font-family:sans-serif;">
                     <div style="display:flex; justify-content:center; margin-bottom:4px;">{get_base64_logo_html(team)}</div>
-                    <b style="font-size:13px; color:var(--text-color);">{team.replace('_SO','')}{so_label}</b>
+                    <b style="font-size:13px; color: inherit;">{team.replace('_SO','')}{so_label}</b>
                     <span style="display:block; font-size:18px; font-weight:900; color:#2563eb; margin-top:2px;">{count}</span>
+                    <span style="font-size:10px; color: gray; opacity: 0.8; display:block;">Picks</span>
                 </div>
                 """, 
                 unsafe_allow_html=True
