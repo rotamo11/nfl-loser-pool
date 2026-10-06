@@ -200,7 +200,7 @@ with st.sidebar:
                                         auth_response = requests.put(auth_endpoint, json=auth_payload, headers=auth_headers)
                                         
                                         if auth_response.status_code in:
-                                            st.sidebar.success("🎉 Password updated successfully!")
+                                            st.sidebar.success("Password updated successfully!")
                                             st.toast("Security encryption synchronized!")
                                         else:
                                             st.sidebar.error(f"❌ Server Rejected Update: {auth_response.text}")
