@@ -542,14 +542,23 @@ else:
                             # Default card states use theme colors for absolute native visibility
                             card_bg = "background-color: rgba(148, 163, 184, 0.05); border: 1px solid rgba(148, 163, 184, 0.3); color: var(--text-color);"
                     
-                    # 🖼️ SECURE VECTOR EMBED ENGINE PASS: Reads local files as binary data tags
+                    # THE ABSOLUTE PATH PATH FIX: Look up local vector graphics using uniform path structures
                     logo_html = ""
                     try:
                         file_name = "BYE.svg" if clean_team_key == "BYE" else f"{clean_team_key}.svg"
-                        if os.path.exists(f"static/{file_name}"):
-                            with open(f"static/{file_name}", "rb") as f:
+                        
+                        # Check both the standard path layout and root assets folder parameters simultaneously
+                        possible_paths = [f"static/{file_name}", file_name]
+                        resolved_path = None
+                        for path in possible_paths:
+                            if os.path.exists(path):
+                                resolved_path = path
+                                break
+                                
+                        if resolved_path:
+                            with open(resolved_path, "rb") as f:
                                 encoded = base64.b64encode(f.read()).decode("utf-8")
-                            logo_html = f'<img src="data:image/svg+xml;base64,{encoded}" width="20" height="13" style="object-fit:contain; margin-bottom:2px; display:block;"/>'
+                            logo_html = f'<img src="data:image/svg+xml;base64,{encoded}" width="20" height="13" style="object-fit:contain; display:block; filter: drop-shadow(0px 1px 1px rgba(0,0,0,0.1));"/>'
                     except Exception:
                         pass
                         
