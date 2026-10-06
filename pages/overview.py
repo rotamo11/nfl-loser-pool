@@ -373,7 +373,6 @@ st.markdown("---")
 # ==========================================
 st.write("### 🏆 Live Championship Standings Grid")
 
-# 🚀 FIX A: Replaced old CSS grid blocks with native Streamlit wide column blocks to guarantee Chrome rendering compliance
 users_list = supabase.table("users").select("id", "username").order("username").execute().data
 registrations = supabase.table("tournament_registrations").select("*").eq("game_type", game_slug).eq("is_enrolled", True).execute().data
 all_historical_picks = supabase.table("user_picks").select("*").eq("game_type", game_slug).execute().data
@@ -381,76 +380,90 @@ all_historical_picks = supabase.table("user_picks").select("*").eq("game_type", 
 if not registrations:
     st.info("No active enrolled competitor rows verified on record for this game tournament track.")
 else:
-    # Group logs by user accounts keys
+    # 1. Map lookups and group picks by user
     user_map = {u["id"]: u["username"] for u in users_list}
     picks_by_user = {}
     for p in all_historical_picks:
         picks_by_user.setdefault(p["user_id"], {})[p["week"]] = p
         
-    # Sort league participants cleanly by their bracket rankings (Loser > Winner > Eliminated)
-    def bracket_rank_weight(r):
-        b = r.get("bracket_status", "Eliminated")
-        return 0 if b == "Loser Bracket" else 1 if b == "Winner Bracket" else 2
-        
-    sorted_regs = sorted(registrations, key=bracket_rank_weight)
+    # 2. Separate players into strict bracket tiers
+    loser_bracket_players = []
+    winner_bracket_players = []
+    eliminated_players = []
     
-    # Establish complete seasonal grid columns header mapping arrays
-    # Maps up to the calculated week index to prevent columns from spilling empty nodes forward
-    visible_weeks_range = range(1, CALCULATED_CURRENT_WEEK + 1)
+    for reg in registrations:
+        status = reg.get("bracket_status", "Eliminated")
+        if status == "Loser Bracket":
+            loser_bracket_players.append(reg)
+        elif status == "Winner Bracket":
+            winner_bracket_players.append(reg)
+        else:
+            eliminated_players.append(reg)
+            
+    # 3. Sort each bracket section alphabetically by username string values
+    loser_bracket_players.sort(key=lambda r: user_map.get(r["user_id"], "").lower())
+    winner_bracket_players.sort(key=lambda r: user_map.get(r["user_id"], "").lower())
+    eliminated_players.sort(key=lambda r: user_map.get(r["user_id"], "").lower())
     
-    for p_reg in sorted_regs:
-        u_id = p_reg["user_id"]
-        uname = user_map.get(u_id, "Anonymous")
-        b_status = p_reg["bracket_status"]
+    # Establish total visible seasonal headers columns mapping range array
+    visible_weeks = list(range(1, CALCULATED_CURRENT_WEEK + 1))
+    
+    # --- HELPER: Renders a single standalone bracket group table grid ---
+    def render_bracket_table(bracket_title, players_group):
+        if not players_group:
+            st.caption(f"*No players currently active inside {bracket_title}*")
+            return
+            
+        st.markdown(f"#### 🏅 {bracket_title}")
         
-        # Color coding assignment strings matching bracket weights
-        if b_status == "Loser Bracket": b_color = "#10b981"
-        elif b_status == "Winner Bracket": b_color = "#f59e0b"
-        else: b_color = "#ef4444"
+        # Build Table Headers dynamically based on calculated week parameters
+        header_row = "| Player | " + " | ".join(f"Wk {w}" for w in visible_weeks) + " |"
+        divider_row = "| :--- | " + " | ".join(" :---: " for _ in visible_weeks) + " |"
+        
+        table_markdown_lines = [header_row, divider_row]
+        
+        for reg in players_group:
+            u_id = reg["user_id"]
+            uname = user_map.get(u_id, "Anonymous")
+            user_weeks_map = picks_by_user.get(u_id, {})
             
-        with st.container(border=True):
-            # Split profile and seasonal cells cleanly inside an elastic wide grid layer
-            col_profile, col_weeks_strip = st.columns([2.5, 9.5])
+            row_cells = [f"**{uname}**"]
             
-            with col_profile:
-                st.markdown(
-                    f"""
-                    <div style="padding-top:4px; font-family:sans-serif;">
-                        <b style="font-size:15px; color:var(--text-color);">{uname}</b><br>
-                        <span style="display:inline-block; padding:2px 6px; font-size:11px; font-weight:bold; color:white; background:{b_color}; border-radius:4px; margin-top:4px;">{b_status}</span>
-                    </div>
-                    """, 
-                    unsafe_allow_html=True
-                )
-                
-            with col_weeks_strip:
-                user_weeks_map = picks_by_user.get(u_id, {})
-                num_strip_cols = max(len(visible_weeks_range), 1)
-                strip_columns = st.columns(num_strip_cols)
-                
-                for idx, w_num in enumerate(visible_weeks_range):
-                    with strip_columns[idx % num_strip_cols]:
-                        p_data = user_weeks_map.get(w_num, None)
+            for w_num in visible_weeks:
+                p_data = user_weeks_map.get(w_num, None)
+                if not p_data:
+                    row_cells.append("&bull;")
+                else:
+                    t_pick = p_data["team_picked"].upper()
+                    p_state = p_data.get("pick_state", "Pending")
+                    logo_html = get_base64_logo_html(t_pick)
+                    
+                    # Clean the displayed name code string token representation
+                    clean_team_display = t_pick.replace('_SO', '')
+                    if t_pick.endswith("_SO"):
+                        clean_team_display += "*"
                         
-                        if not p_data:
-                            st.markdown("<center style='color:#cbd5e1; font-size:12px; padding-top:10px;'>&bull;</center>", unsafe_allow_html=True)
-                        else:
-                            t_pick = p_data["team_picked"].upper()
-                            p_state = p_data.get("pick_state", "Pending")
-                            
-                            # Add subtle card outlines indicating win/loss results
-                            state_border = "2px solid #10b981" if p_state == "Correct" else "2px solid #ef4444" if p_state == "Incorrect" else "1px dashed #cbd5e1"
-                            has_so_star = "*" if t_pick.endswith("_SO") else ""
-                            
-                            st.markdown(
-                                f"""
-                                <div style="border:{state_border}; padding:4px 2px; border-radius:4px; text-align:center; background:#ffffff; font-size:11px; box-shadow:0 1px 1px rgba(0,0,0,0.02);">
-                                    <span style="font-size:9px; color:gray; font-weight:bold; display:block; margin-bottom:2px;">Wk {w_num}</span>
-                                    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px;">
-                                        {get_base64_logo_html(t_pick)}
-                                        <b style="color:#1e293b; font-size:10px; font-weight:700;">{t_pick.replace('_SO','')}{has_so_star}</b>
-                                    </div>
-                                </div>
-                                """, 
-                                unsafe_allow_html=True
-                            )
+                    # Apply background cell color parameters natively based on performance states
+                    if p_state == "Correct":
+                        # Light Green tint block
+                        bg_style = "background-color: rgba(16, 185, 129, 0.15); padding: 4px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 2px;"
+                    elif p_state == "Incorrect":
+                        # Light Red tint block
+                        bg_style = "background-color: rgba(239, 68, 68, 0.15); padding: 4px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 2px;"
+                    else:
+                        # Blank background style rule for uncalculated/pending picks
+                        bg_style = "display: inline-flex; align-items: center; gap: 2px;"
+                        
+                    cell_content = f'<div style="{bg_style}">{logo_html}<span style="font-weight:600; font-size:11px;">{clean_team_display}</span></div>'
+                    row_cells.append(cell_content)
+                    
+            table_markdown_lines.append("| " + " | ".join(row_cells) + " |")
+            
+        # Compile list rows down into a unified raw markdown table grid block
+        st.markdown("\n".join(table_markdown_lines), unsafe_allow_html=True)
+        st.markdown("<br>", unsafe_allow_html=True)
+
+    # 4. Render each section in descending priority stack order
+    render_bracket_table("Loser Bracket", loser_bracket_players)
+    render_bracket_table("Winner Bracket", winner_bracket_players)
+    render_bracket_table("Eliminated", eliminated_players)
