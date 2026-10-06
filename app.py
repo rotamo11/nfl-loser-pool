@@ -558,11 +558,28 @@ else:
                     
                     # 🚀 THE CROSS-PAGE SYNCHRONIZED FIX:
                     # Invokes your functioning base64 loader tool directly inside the HTML card loop string compilation pass!
-                    logo_html = get_base64_logo_html(t_pick)
+                    # 🚀 THE UNBREAKABLE INLINE FIXED EMBED ENGINE:
+                    # Bypasses all cross-page function references to decode files directly inline
+                    logo_html = ""
+                    try:
+                        t_clean = t_pick.replace("_SO", "").strip().upper()
+                        file_name = "BYE.svg" if t_clean == "BYE" else f"{t_clean}.svg"
+                        
+                        # Pinpoint exact system physical folder boundaries
+                        base_dir = os.path.dirname(os.path.abspath(__file__))
+                        absolute_logo_path = os.path.join(base_dir, "static", file_name)
+                        
+                        if os.path.exists(absolute_logo_path):
+                            import base64
+                            with open(absolute_logo_path, "rb") as f:
+                                encoded_raw_bytes = base64.b64encode(f.read()).decode("utf-8")
+                            logo_html = f'<img src="data:image/svg+xml;base64,{encoded_raw_bytes}" width="24" height="15" style="object-fit:contain; vertical-align:middle; display:block; margin:0 auto;"/>'
+                    except Exception:
+                        pass
                         
                     has_so_star = "🎯" if t_pick.endswith("_SO") else ""
                     
-                    # 🚀 THE ABSOLUTE FIXED STRUCTURE: Uses unbroken single-quote inline structures to prevent string clashes
+                    # Unified clean single-quote html card block wrapper concatenation
                     card_html = (
                         f'<div style="{card_bg} flex: 1; min-width: 55px; padding: 6px 2px; border-radius: 4px; text-align: center; min-height: 65px; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 1px 1px rgba(0,0,0,0.02); font-family: sans-serif; box-sizing: border-box;">'
                         f'<span style="font-size: 9px; opacity: 0.7; font-weight: bold; display: block; color: inherit; margin-bottom: 2px;">Wk {w}</span>'
