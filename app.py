@@ -542,23 +542,19 @@ else:
                             # Default card states use theme colors for absolute native visibility
                             card_bg = "background-color: rgba(148, 163, 184, 0.05); border: 1px solid rgba(148, 163, 184, 0.3); color: var(--text-color);"
                     
-                    # THE ABSOLUTE PATH PATH FIX: Look up local vector graphics using uniform path structures
+                    # Look up local vector graphics using uniform path structures
                     logo_html = ""
                     try:
                         file_name = "BYE.svg" if clean_team_key == "BYE" else f"{clean_team_key}.svg"
                         
-                        # Check both the standard path layout and root assets folder parameters simultaneously
-                        possible_paths = [f"static/{file_name}", file_name]
-                        resolved_path = None
-                        for path in possible_paths:
-                            if os.path.exists(path):
-                                resolved_path = path
-                                break
-                                
-                        if resolved_path:
-                            with open(resolved_path, "rb") as f:
+                        # 👤 Dynamic System Path Reckoner: Pinpoints your root static folder directory
+                        base_dir = os.path.dirname(os.path.abspath(__file__))
+                        absolute_logo_path = os.path.join(base_dir, "static", file_name)
+                        
+                        if os.path.exists(absolute_logo_path):
+                            with open(absolute_logo_path, "rb") as f:
                                 encoded = base64.b64encode(f.read()).decode("utf-8")
-                            logo_html = f'<img src="data:image/svg+xml;base64,{encoded}" width="20" height="13" style="object-fit:contain; display:block; filter: drop-shadow(0px 1px 1px rgba(0,0,0,0.1));"/>'
+                            logo_html = f'<img src="data:image/svg+xml;base64,{encoded}" width="20" height="13" style="object-fit:contain; display:block; margin:0 auto;"/>'
                     except Exception:
                         pass
                         
