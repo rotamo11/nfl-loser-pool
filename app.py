@@ -177,7 +177,7 @@ with st.sidebar:
                         sb_new_pw = st.text_input("New Secure Password:", type="password", key="sb_pwd1")
                         sb_conf_pw = st.text_input("Confirm New Password:", type="password", key="sb_pwd2")
                         
-                        if st.form_submit_button("Commit Password Change 🔐", width='stretch'):
+                        if st.form_submit_button("Submit Password Change", width='stretch'):
                             clean_sb_pw = sb_new_pw.strip()
                             if len(clean_sb_pw) < 6:
                                 st.sidebar.error("❌ Password must be at least 6 characters long.")
