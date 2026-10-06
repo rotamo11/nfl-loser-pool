@@ -138,7 +138,13 @@ header_col1, header_col2 = st.columns(2)
 with header_col1:
     if os.path.exists("static/loser-logo.png"): st.image("static/loser-logo.png", width='stretch')
 with header_col2:
-    st.html(f"<div style='display: flex; align-items: flex-end; height: 100px; padding-bottom: 5px;'><h1 style='margin:0; font-weight:900; font-size:32px; letter-spacing:-1px;'>2026 NFL Loser Pool &bull; {game_mode} &bull; Standings Dashboard</h1></div>")
+    st.html(
+        f"""<div style='display: flex; align-items: flex-end; height: 100px; padding-bottom: 5px;'>
+            <h1 style='margin:0; font-weight:900; font-size:32px; letter-spacing:-1px;'>
+                2026 NFL Loser Pool &bull; {game_mode} &bull; Standings Dashboard
+            </h1>
+        </div>"""
+    )
 
 st.markdown("---")
 
