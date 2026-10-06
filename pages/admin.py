@@ -258,7 +258,7 @@ with tab_scores:
         
     st.markdown("---")
     # Pull schedule rows matching your central SELECTED_WEEK variable parameter
-    schedule_res = supabase.table("nfl_schedule").select("*").eq("week", SELECTED_WEEK).execute().data
+    schedule_res = supabase.table("nfl_schedule").select("*").eq("week", SELECTED_WEEK).order("id").execute().data
     
     if not schedule_res: 
         st.info("No games matched for this week segment parameters.")
