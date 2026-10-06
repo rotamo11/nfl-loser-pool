@@ -496,20 +496,20 @@ else:
         all_picks_res = supabase.table("user_picks").select("*").eq("user_id", user_id).eq("game_type", game_slug).execute().data
         
         # ====================================================================
-        # SELECTION LEDGER DISCOVERY ENGINE (22-WEEK HISTORY RAIL)
+        # 📜 SELECTION LEDGER DISCOVERY ENGINE (22-WEEK HISTORY RAIL)
         # ====================================================================
-        st.write("### Your Season Selection History")
+        st.write("### 📜 Your Season Selection History")
         
-        # 1. Fetch active schedule records for the season to determine real-time card color shading
+        # 1. Fetch active schedule records to determine real-time card color shading
         sched_rows = supabase.table("nfl_schedule").select("week", "away_team", "home_team", "winner").execute().data
         
-        # Build an indexed game outcome lookup table: { week_num: { 'BUF': 'Correct', 'MIA': 'Incorrect' } }
+        # Build an indexed game outcome lookup table: { week_num: { 'BUF': 'Correct' } }
         history_outcome_lookup = {}
         for match in (sched_rows or []):
             w_num = match["week"]
             away = match["away_team"].upper()
             home = match["home_team"].upper()
-            loser_code = match.get("winner") # Remember: your 'winner' column houses the losing team abbreviation
+            loser_code = match.get("winner")
             
             if w_num not in history_outcome_lookup:
                 history_outcome_lookup[w_num] = {}
@@ -531,7 +531,7 @@ else:
                 p = picks_by_week_map.get(w, None)
                 
                 if not p:
-                    # Low-profile empty placeholder cell text string (Theme-Adaptive text color variable)
+                    # Low-profile empty placeholder cell text string
                     card_html = f"""
                     <div style="flex: 1; min-width: 45px; border: 1px dashed rgba(148, 163, 184, 0.4); padding: 6px 2px; border-radius: 4px; text-align: center; min-height: 65px; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0.4; font-family: sans-serif;">
                         <span style="font-size: 9px; color: var(--text-color); font-weight: bold; display: block;">Wk {w}</span>
@@ -543,8 +543,6 @@ else:
                     p_state = p.get("pick_state", "Pending")
                     clean_team_key = t_pick.replace("_SO", "").strip()
                     
-                    # 🚀 DYNAMIC COLOR HIGHLIGHT MATRIX
-                    # Uses text-color mapping variable so typography automatically turns white in dark mode layouts
                     if clean_team_key == "BYE":
                         card_bg = "background-color: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: var(--text-color);"
                     else:
@@ -556,32 +554,14 @@ else:
                         elif p_state == "Incorrect" or game_outcome == "Incorrect":
                             card_bg = "background-color: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: var(--text-color);"
                         else:
-                            # Default card states use theme colors for absolute native visibility
                             card_bg = "background-color: rgba(148, 163, 184, 0.05); border: 1px solid rgba(148, 163, 184, 0.3); color: var(--text-color);"
                     
-                    # Look up local vector graphics using uniform path structures
-                    # 🚀 THE BULLETPROOF FALLBACK EMBED ENGINE
-                    logo_html = ""
-                    try:
-                        file_name = "BYE.svg" if clean_team_key == "BYE" else f"{clean_team_key}.svg"
-                        
-                        base_dir = os.path.dirname(os.path.abspath(__file__))
-                        absolute_logo_path = os.path.join(base_dir, "static", file_name)
-                        
-                        if os.path.exists(absolute_logo_path):
-                            with open(absolute_logo_path, "rb") as f:
-                                encoded = base64.b64encode(f.read()).decode("utf-8")
-                            # Explicitly force inline height parameters to ensure browser compliance
-                            logo_html = f'<img src="data:image/svg+xml;base64,{encoded}" style="width:20px; height:13px; object-fit:contain; display:inline-block;" />'
-                        else:
-                            # 📝 SMART FALLBACK LABEL: If the SVG file is missing on the server, display text!
-                            logo_html = f'<span style="font-size: 8px; color: gray; font-weight: bold; text-transform: uppercase;">📄 {clean_team_key}</span>'
-                    except Exception:
-                        logo_html = f'<span style="font-size: 8px; color: gray; font-weight: bold;">📄 {clean_team_key}</span>'
+                    # 🚀 THE CROSS-PAGE SYNCHRONIZED FIX:
+                    # Invokes your functioning base64 loader tool directly inside the HTML card loop string compilation pass!
+                    logo_html = get_base64_logo_html(t_pick)
                         
                     has_so_star = "🎯" if t_pick.endswith("_SO") else ""
                     
-                    # Construct individual card cell component text strings using secure inline templates
                     card_html = f"""
                     <div style="{card_bg} flex: 1; min-width: 45px; padding: 6px 2px; border-radius: 4px; text-align: center; min-height: 65px; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 1px 1px rgba(0,0,0,0.02); font-family: sans-serif;">
                         <span style="font-size: 9px; opacity: 0.7; font-weight: bold; display: block; color: inherit;">Wk {w}</span>
