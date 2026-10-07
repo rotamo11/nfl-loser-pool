@@ -36,50 +36,30 @@ with st.sidebar:
                 background-color: {sidebar_bg} !important;
             }}
             
-            /* 🚀 THE FIXED HIGH-CONTRAST TEXT MATRIX */
-            /* Force all text blocks, markdown structures, spans, paragraph tags, and native */
-            /* links inside the sidebar tree to remain solid, readable high-contrast white */
-            [data-testid="stSidebar"] .stText, 
-            [data-testid="stSidebar"] p, 
-            [data-testid="stSidebar"] h3, 
-            [data-testid="stSidebar"] label,
-            [data-testid="stSidebar"] span, 
-            [data-testid="stSidebar"] a,
-            [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
-            [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] span,
-            [data-testid="stSidebar"] [data-testid="stPageLink-Link"] p,
-            [data-testid="stSidebar"] [data-testid="stPageLink-Link"] span {{
+            /* 🚀 THE CRITICAL ROOT FORCE LOCK (Fixes Light Mode Nav Text) */
+            /* Forces EVERY single element inside the sidebar to draw text in white */
+            [data-testid="stSidebar"] *, 
+            [data-testid="stSidebar"] a *, 
+            [data-testid="stSidebar"] button *,
+            [data-testid="stSidebar"] div *, 
+            [data-testid="stSidebar"] span * {{
                 color: #ffffff !important;
-                opacity: 1.0 !important;
                 -webkit-text-fill-color: #ffffff !important;
-                text-decoration: none !important;
+                opacity: 1.0 !important;
             }}
             
-            /* 🚀 THE FIXED LIGHT MODE BUTTON OVERRIDE */
-            /* Targets Streamlit's native PageLink components directly to overwrite Light Mode themes */
-            [data-testid="stSidebar"] [data-testid="stPageLink-Link"] {{
-                color: #ffffff !important;
-                background-color: rgba(255, 255, 255, 0.05) !important;
-                border: 1px solid rgba(255, 255, 255, 0.1) !important;
-            }}
-            
-            /* Add high-visibility hover states for light mode contrast padding */
-            [data-testid="stSidebar"] [data-testid="stPageLink-Link"]:hover {{
-                background-color: rgba(255, 255, 255, 0.15) !important;
-                border-radius: 4px;
-                border: 1px solid rgba(255, 255, 255, 0.25) !important;
-            }}
-            
-            /* Ensure form expansion headers and labels don't wash out */
-            [data-testid="stSidebar"] .st-emotion-cache-1f3w060,
-            [data-testid="stSidebar"] .stElementContainer {{
-                color: #ffffff !important;
-            }}
-            
-            /* Maintain high contrast for dark text input fields inside selectboxes */
+            /* 🚀 EXCEPTION: Protect selectbox input text so it stays dark and readable */
+            [data-testid="stSidebar"] div[data-baseweb="select"] *,
+            [data-testid="stSidebar"] div[data-baseweb="select"] span,
             [data-testid="stSidebar"] div[data-baseweb="select"] div {{
                 color: #1e293b !important;
                 -webkit-text-fill-color: #1e293b !important;
+            }}
+            
+            /* Add high-visibility hover states for navigation links */
+            [data-testid="stSidebar"] [data-testid="stPageLink-Link"]:hover {{
+                background-color: rgba(255, 255, 255, 0.15) !important;
+                border-radius: 4px;
             }}
         </style>
         """,
