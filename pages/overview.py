@@ -167,7 +167,9 @@ with st.sidebar:
     # Self-Service Profile Management Drawer nested inside the left rail navigation
     if st.session_state.get("user"):
         try:
-            user_id = st.session_state.user.id
+            # THE FIXED VERSION: Extracts the ID safely only if a user is logged in
+            current_user = st.session_state.get("user")
+            user_id = current_user.id if current_user else None
             u_prof = supabase.table("users").select("*").eq("id", user_id).single().execute().data
             if u_prof:
                 st.markdown("<hr style='margin:15px 0 10px 0; border:0; border-top:1px solid rgba(255,255,255,0.15);'/>", unsafe_allow_html=True)
