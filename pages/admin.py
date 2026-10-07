@@ -4,6 +4,7 @@ import csv
 import io
 import uuid
 import datetime
+import base64
 from supabase import create_client, Client
 
 # --- SETUP MANDATORY FIRST DIRECTIVE PASS ---
@@ -328,13 +329,11 @@ with tab_scores:
                 
                 # Secure High-Resolution Base64 Vector Embed Image String Generator Pass
                 try:
-                    import base64
                     with open(f"static/{away}.svg", "rb") as f: encoded_away = base64.b64encode(f.read()).decode("utf-8")
                     away_logo = f'<img src="data:image/svg+xml;base64,{encoded_away}" width="28" height="18" style="object-fit:contain; vertical-align:middle; margin-right:6px;"/>'
                 except Exception: away_logo = ""
                     
                 try:
-                    import base64
                     with open(f"static/{home}.svg", "rb") as f: encoded_home = base64.b64encode(f.read()).decode("utf-8")
                     home_logo = f'<img src="data:image/svg+xml;base64,{encoded_home}" width="28" height="18" style="object-fit:contain; vertical-align:middle; margin-right:6px;"/>'
                 except Exception: home_logo = ""
