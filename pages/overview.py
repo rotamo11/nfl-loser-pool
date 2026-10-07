@@ -244,7 +244,9 @@ with header_col2:
 
 st.markdown("---")
 
-user_id = st.session_state.user.id
+# THE FIXED VERSION: Extracts the ID safely only if a user is logged in
+current_user = st.session_state.get("user")
+user_id = current_user.id if current_user else None
 reg_profile = supabase.table("tournament_registrations").select("*").eq("user_id", user_id).eq("game_type", game_slug).execute().data
 
 # THE ENROLLMENT GATEWAY LOCK: Check if registration exists and if enrollment flag is active
