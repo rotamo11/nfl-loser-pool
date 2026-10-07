@@ -71,7 +71,7 @@ with st.sidebar:
             [data-testid="stSidebar"] button,
             [data-testid="stSidebar"] button p,
             [data-testid="stSidebar"] button span {{
-                color: var(--text-color) !important;
+                color: #1e293b !important;
                 -webkit-text-fill-color: var(--text-color) !important;
             }}
             
