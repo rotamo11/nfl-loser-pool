@@ -14,7 +14,7 @@ st.set_page_config(layout="wide")
 URL, KEY = st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(URL, KEY)
 
-# INITIALIZER SAFEGUARD FIX:      --------------------------------------   IS THIS NEEDED???   -------------------------------------------
+# INITIALIZER SAFEGUARD FIX:
 # Prevents st.session_state KeyError crashes if users bookmark or deep-link directly to subpages
 if "user" not in st.session_state:
     st.session_state.user = None
@@ -22,9 +22,6 @@ if "selected_teams" not in st.session_state:
     st.session_state.selected_teams = []
 if "force_password_change" not in st.session_state:
     st.session_state.force_password_change = False
-
-URL, KEY = st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"]
-supabase: Client = create_client(URL, KEY)
 
 # --- AUTOMATIC TIMELINE CALCULATOR ENGINE ---
 SEASON_START_WEDNESDAY = datetime.datetime(2026, 9, 9, 0, 0, 0)
