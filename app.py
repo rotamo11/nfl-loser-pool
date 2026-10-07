@@ -31,16 +31,29 @@ with st.sidebar:
     st.markdown(
         f"""
         <style>
-            /* Dynamic sidebar color assignment */
+            /* Dynamic sidebar container color assignment */
             [data-testid="stSidebar"] {{
                 background-color: {sidebar_bg} !important;
             }}
-            /* Overwrite sidebar text to remain clean white across modes */
+            
+            /* THE FIXED LINK ENFORCER MATRIX */
+            /* Forces all typography, links, page navigation buttons, and text labels */
+            /* inside the left rail rail to stay high-contrast crisp white across ALL modes */
             [data-testid="stSidebar"] .stText, [data-testid="stSidebar"] p, 
-            [data-testid="stSidebar"] h3, [data-testid="stSidebar"] label {{
+            [data-testid="stSidebar"] h3, [data-testid="stSidebar"] label,
+            [data-testid="stSidebar"] span, [data-testid="stSidebar"] a,
+            [data-testid="stSidebar"] [data-testid="stPageLink-Link"] p {{
                 color: #ffffff !important;
+                opacity: 1.0 !important;
             }}
-            /* Force dropdown selection text contrast values */
+            
+            /* Safe low-profile background tint when hovering over links in light/dark mode */
+            [data-testid="stSidebar"] [data-testid="stPageLink-Link"]:hover {{
+                background-color: rgba(255, 255, 255, 0.12) !important;
+                border-radius: 4px;
+            }}
+            
+            /* Force dropdown selection target text contrast fields to remain slate gray */
             [data-testid="stSidebar"] div[data-baseweb="select"] div {{
                 color: #1e293b !important;
             }}
