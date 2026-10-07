@@ -289,7 +289,7 @@ else:
     st.markdown("---")
 
 # ====================================================================
-# 🛡️ GLOBAL ACCESSIBILITY & SECURITY PRIVACY GATES RECKONER
+# GLOBAL ACCESSIBILITY & SECURITY PRIVACY GATES RECKONER
 # ====================================================================
 current_user_logged_in = st.session_state.get("user")
 current_user_uid = current_user_logged_in.id if current_user_logged_in else None
@@ -297,7 +297,7 @@ current_user_uid = current_user_logged_in.id if current_user_logged_in else None
 # Check if the current user has finalized a team choice OR deployed a BYE option
 user_has_finalized_this_week = False
 if current_user_uid:
-    # 🚀 THE FIX: Pull any pick for this week that is finalized (team picks and BYE entries)
+    # THE FIX: Pull any pick for this week that is finalized (team picks and BYE entries)
     user_pick_record = supabase.table("user_picks").select("team_picked").eq("user_id", current_user_uid).eq("game_type", game_slug).eq("week", SELECTED_WEEK).eq("pick_state", "Finalized").execute().data
     if user_pick_record:
         user_has_finalized_this_week = True
@@ -309,12 +309,12 @@ is_past_week_locked = SELECTED_WEEK < CALCULATED_CURRENT_WEEK
 reveal_picks_condition = is_past_week_locked or user_has_finalized_this_week # or is_logged_in_admin
 
 # ==========================================
-# 📊 SEGMENT A: WEEKLY PICK DISTRIBUTION LIST
+# SEGMENT A: WEEKLY PICK DISTRIBUTION LIST
 # ==========================================
-st.write(f"### 📊 Weekly Selection Distribution — {get_week_label(SELECTED_WEEK)}")
+st.write(f"### Weekly Selection Distribution — {get_week_label(SELECTED_WEEK)}")
 
 if not reveal_picks_condition:
-    st.warning("🔒 **Selection Distribution Hidden.** You must finalize your own selections for this week under the **Picks** tab before opponents' collective choices are revealed.")
+    st.warning("**Selection Distribution Hidden.** You must finalize your own selections for this week under the **Picks** tab before opponents' collective choices are revealed.")
 else:
     all_selections = supabase.table("user_picks").select("team_picked").eq("game_type", game_slug).eq("week", SELECTED_WEEK).execute().data
     schedule_map = supabase.table("nfl_schedule").select("away_team", "home_team", "winner").eq("week", SELECTED_WEEK).execute().data
@@ -357,9 +357,9 @@ else:
 st.markdown("---")
 
 # ==========================================
-# 🏆 SEGMENT B: COMPLETE LEAGUE STANDINGS MATRIX
+# SEGMENT B: COMPLETE LEAGUE STANDINGS MATRIX
 # ==========================================
-st.write("### 🏆 Live Championship Standings Grid")
+st.write("### Live Championship Standings Grid")
 
 users_list = supabase.table("users").select("id", "username").order("username").execute().data
 registrations = supabase.table("tournament_registrations").select("*").eq("game_type", game_slug).eq("is_enrolled", True).execute().data
@@ -373,7 +373,7 @@ else:
     for p in all_historical_picks:
         picks_by_user.setdefault(p["user_id"], {})[p["week"]] = p
         
-    # 🚀 EXTRA OPTIMIZATION FIX: Gather ALL of the current user's finalized choices in a local cache array.
+    # EXTRA OPTIMIZATION FIX: Gather ALL of the current user's finalized choices in a local cache array.
     # This completely eliminates 1,500+ repeating database queries!
     current_user_finalized_weeks = set()
     if current_user_uid:
@@ -400,7 +400,7 @@ else:
             return
             
         players_group_count = len(players_group)
-        st.markdown(f"#### 🏅 {bracket_title}: {players_group_count} Players")
+        st.markdown(f"#### {bracket_title}: {players_group_count} Players")
         header_row = "| Player | " + " | ".join(f"Wk {w}" for w in visible_weeks) + " |"
         divider_row = "| :--- | " + " | ".join(" :---: " for _ in visible_weeks) + " |"
         table_markdown_lines = [header_row, divider_row]
@@ -421,7 +421,7 @@ else:
                     
                     is_current_loop_week_locked = w_num < CALCULATED_CURRENT_WEEK
                     
-                    # 🚀 READ FROM LOCAL CACHE: Lightning-fast check with zero network overhead
+                    # READ FROM LOCAL CACHE: Lightning-fast check with zero network overhead
                     user_has_finalized_for_loop_week = w_num in current_user_finalized_weeks
                     
                     is_own_profile_row = (u_id == current_user_uid)
