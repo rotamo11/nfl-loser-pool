@@ -31,23 +31,70 @@ with st.sidebar:
     st.markdown(
         f"""
         <style>
-            /* Dynamic sidebar color assignment */
+            /* 1. Dynamic sidebar container color assignment */
             [data-testid="stSidebar"] {{
                 background-color: {sidebar_bg} !important;
             }}
-            /* Overwrite sidebar text to remain clean white across modes */
-            [data-testid="stSidebar"] .stText, [data-testid="stSidebar"] p, 
-            [data-testid="stSidebar"] h3, [data-testid="stSidebar"] label {{
+            
+            /* 🚀 2. UNIFIED FIXED DARK-MODE SIDEBAR TYPOGRAPHY MATRIX */
+            /* Forces all labels, headers, expander headers, text blocks, and */
+            /* structural paragraph tags inside the sidebar to stay clean, high-contrast white */
+            [data-testid="stSidebar"] p,
+            [data-testid="stSidebar"] h3,
+            [data-testid="stSidebar"] label,
+            [data-testid="stSidebar"] span,
+            [data-testid="stSidebar"] .st-emotion-cache-1f3w060,
+            [data-testid="stSidebar"] summary {{
                 color: #ffffff !important;
+                -webkit-text-fill-color: #ffffff !important;
+                opacity: 1.0 !important;
             }}
-            /* Force dropdown selection text contrast values */
+            
+            /* 🚀 3. TEXT INPUT FIELDS CONTRAST LOCK */
+            /* Forces text boxes (Usernames, Emails, Passwords) to maintain dark-mode formatting */
+            [data-testid="stSidebar"] input {{
+                color: #ffffff !important;
+                -webkit-text-fill-color: #ffffff !important;
+                background-color: #0f172a !important; /* Deep Slate background */
+                border: 1px solid rgba(255, 255, 255, 0.2) !important;
+                border-radius: 4px !important;
+            }}
+            
+            /* 🚀 4. EXPLICIT BUTTON CONTRAST LOCK (Log Out, Save Profile, Commit Change) */
+            /* Overwrites Streamlit light theme buttons with elegant, high-contrast slate-grey buttons */
+            [data-testid="stSidebar"] button,
+            [data-testid="stSidebar"] button p,
+            [data-testid="stSidebar"] button span,
+            [data-testid="stSidebar"] [data-testid="baseButton-secondary"] {{
+                color: #ffffff !important;
+                -webkit-text-fill-color: #ffffff !important;
+                background-color: #334155 !important; /* Crisp charcoal slate-grey button background */
+                border: 1px solid rgba(255, 255, 255, 0.15) !important;
+                border-radius: 4px !important;
+            }}
+            
+            /* High-visibility hover highlight states for the action buttons */
+            [data-testid="stSidebar"] button:hover {{
+                background-color: #475569 !important; /* Lighter charcoal on hover */
+                border: 1px solid rgba(255, 255, 255, 0.3) !important;
+            }}
+            
+            /* Dropdown selection target text contrast fields */
             [data-testid="stSidebar"] div[data-baseweb="select"] div {{
                 color: #1e293b !important;
+                -webkit-text-fill-color: #1e293b !important;
+            }}
+            
+            /* Navigation links hover state */
+            [data-testid="stSidebar"] [data-testid="stPageLink-Link"]:hover {{
+                background-color: rgba(255, 255, 255, 0.15) !important;
+                border-radius: 4px;
             }}
         </style>
         """,
         unsafe_allow_html=True
     )
+
 
     # --- AUTOMATIC SEASON TIMELINE RECKONER ---
     # Week 1 Wednesday anchor timestamp (September 9, 2026 at 00:00:00)
