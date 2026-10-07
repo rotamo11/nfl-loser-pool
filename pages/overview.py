@@ -242,30 +242,6 @@ with header_col2:
 
 st.markdown("---")
 
-# ====================================================================
-# GLOBAL ACCESSIBILITY & SECURITY PRIVACY GATES RECKONER
-# ====================================================================
-current_user_logged_in = st.session_state.get("user")
-
-# THE FIX: Use an explicit conditional step to extract ID only if an active user object exists
-if current_user_logged_in is not None and hasattr(current_user_logged_in, 'id'):
-    current_user_uid = current_user_logged_in.id
-else:
-    current_user_uid = None
-
-# Check if the current user has finalized a pick for the active selected week
-user_has_finalized_this_week = False
-if current_user_uid:
-    user_pick_record = supabase.table("user_picks").select("id").eq("user_id", current_user_uid).eq("game_type", game_slug).eq("week", SELECTED_WEEK).eq("pick_state", "Finalized").execute().data
-    if user_pick_record:
-        user_has_finalized_this_week = True
-
-# Calculate if the target week's locks have passed chronologically
-is_past_week_locked = SELECTED_WEEK < CALCULATED_CURRENT_WEEK
-
-# Absolute override criteria: Unlocked if it is an old week, if the user committed, or if admin
-reveal_picks_condition = is_past_week_locked or user_has_finalized_this_week # or is_logged_in_admin
-
 user_id = st.session_state.user.id
 reg_profile = supabase.table("tournament_registrations").select("*").eq("user_id", user_id).eq("game_type", game_slug).execute().data
 
@@ -311,6 +287,30 @@ else:
     )
 
     st.markdown("---")
+
+# ====================================================================
+# GLOBAL ACCESSIBILITY & SECURITY PRIVACY GATES RECKONER
+# ====================================================================
+current_user_logged_in = st.session_state.get("user")
+
+# THE FIX: Use an explicit conditional step to extract ID only if an active user object exists
+if current_user_logged_in is not None and hasattr(current_user_logged_in, 'id'):
+    current_user_uid = current_user_logged_in.id
+else:
+    current_user_uid = None
+
+# Check if the current user has finalized a pick for the active selected week
+user_has_finalized_this_week = False
+if current_user_uid:
+    user_pick_record = supabase.table("user_picks").select("id").eq("user_id", current_user_uid).eq("game_type", game_slug).eq("week", SELECTED_WEEK).eq("pick_state", "Finalized").execute().data
+    if user_pick_record:
+        user_has_finalized_this_week = True
+
+# Calculate if the target week's locks have passed chronologically
+is_past_week_locked = SELECTED_WEEK < CALCULATED_CURRENT_WEEK
+
+# Absolute override criteria: Unlocked if it is an old week, if the user committed, or if admin
+reveal_picks_condition = is_past_week_locked or user_has_finalized_this_week # or is_logged_in_admin
 
 # ==========================================
 # SEGMENT A: WEEKLY PICK DISTRIBUTION LIST
