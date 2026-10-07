@@ -345,7 +345,7 @@ with tab_scores:
     sched_meta = supabase.table("nfl_schedule").select("second_chance_start").limit(1).execute().data
     sc_start = sched_meta[0]["second_chance_start"] if sched_meta else 6
     
-    st.markdown("### Configure Post-Season / 2nd Chance Parameters")
+    st.markdown("#### Configure Post-Season / 2nd Chance Parameters")
     new_sc_week = st.number_input("Set 2nd Chance Launch Target (NFL Week Number):", min_value=1, max_value=17, value=sc_start)
     if st.button("Update 2nd Chance Kickoff Line", width='stretch'):
         supabase.table("nfl_schedule").update({"second_chance_start": new_sc_week}).neq("week", 99).execute()
@@ -359,8 +359,8 @@ with tab_scores:
     if not schedule_res: 
         st.info("No games matched for this week segment parameters.")
     else:
-        st.markdown(f"### Record Matchup Outcomes — {get_week_label(SELECTED_WEEK)}")
-        st.info("Select the LOSER for your active matchups (or TIE), designate any shutouts, and then Calculate & Update Weekly Standings.")
+        st.markdown(f"#### Record Matchup Outcomes — {get_week_label(SELECTED_WEEK)}")
+        st.info("Select the LOSER or TIE for your active matchups, designate any shutouts, and then Calculate & Update Weekly Standings.")
         
         # THE UNIFIED WRAPPER FORM: Groups all matchup items into a single submit button pass
         with st.form("global_weekly_scoring_form"):
@@ -428,7 +428,7 @@ with tab_scores:
             if submit_all_scores:
                 with st.spinner("Processing selections and synchronizing pool brackets..."):
                     
-                    # 🚀 STEP 1: AUTOMATICALLY MARK ALL DRAFTED BYES AS CORRECT FOR THIS WEEK
+                    # STEP 1: AUTOMATICALLY MARK ALL DRAFTED BYES AS CORRECT FOR THIS WEEK
                     # This ensures players who use a bye option never register an accidental incorrect state
                     supabase.table("user_picks").update({"pick_state": "Correct"}).eq("game_type", game_slug).eq("week", SELECTED_WEEK).eq("team_picked", "BYE").execute()
                     
@@ -470,7 +470,7 @@ with tab_scores:
                         new_bracket = "Loser Bracket" if wrong_count == 0 else "Winner Bracket" if wrong_count == 1 else "Eliminated"
                         supabase.table("tournament_registrations").update({"bracket_status": new_bracket}).eq("user_id", u_id).eq("game_type", game_slug).execute()
                         
-                    st.success("🎉 Standings updated and fully synchronized successfully!")
+                    st.success("Standings updated and fully synchronized successfully!")
                     st.rerun()
 
 # ==========================================
@@ -483,7 +483,7 @@ with tab_users:
     
     col_l, col_r = st.columns(2)
     with col_l:
-        st.markdown(f"### 📋 Current Roster Sheets ({game_mode} Status View)")
+        st.markdown(f"#### 📋 Current Roster Sheets ({game_mode} Status View)")
         for u in all_users:
             rg = regs_map.get(u["id"])
             badge = "🚫 [Not Enrolled]" if not rg or not rg.get("is_enrolled") else "💲 [Paid]" if rg.get("is_paid") else "❌ [UNPAID]"
@@ -494,12 +494,12 @@ with tab_users:
                 st.rerun()
                 
     with col_r:
-        st.markdown("### 🖋️ Profile Profile Editor Sheet")
+        st.markdown("#### 🖋️ Profile Profile Editor Sheet")
         selected_user = st.session_state.get("selected_mgmt_user")
         if not selected_user: 
             st.info("Select a competitor from the left list to modify parameters.")
         else:
-            # 🚀 FIX: Securely pulls separate registration tracking details for both pools
+            # FIX: Securely pulls separate registration tracking details for both pools
             main_reg_data = supabase.table("tournament_registrations").select("*").eq("user_id", selected_user["id"]).eq("game_type", "Main").execute().data
             sec_reg_data = supabase.table("tournament_registrations").select("*").eq("user_id", selected_user["id"]).eq("game_type", "2nd_Chance").execute().data
             
@@ -519,11 +519,11 @@ with tab_users:
                 edit_notes = st.text_area("User Profile Account Notes Ledger", value=selected_user.get("notes") or "")
                 
                 st.markdown("---")
-                st.markdown("#### 🏆 Main Pool Track Access Settings")
+                st.markdown("##### Main Pool Access Settings")
                 m_en = st.checkbox("Enrolled in Main Pool", value=mr.get("is_enrolled", False))
                 m_pd = st.checkbox("Main Pool Paid", value=mr.get("is_paid", False))
                 
-                st.markdown("#### 🍩 2nd Chance Pool Track Access Settings")
+                st.markdown("##### 2nd Chance Pool Access Settings")
                 s_en = st.checkbox("Enrolled in 2nd Chance Pool", value=sr_lock.get("is_enrolled", False))
                 s_pd = st.checkbox("2nd Chance Pool Paid", value=sr_lock.get("is_paid", False))
                 
@@ -551,9 +551,9 @@ with tab_users:
                             if auth_response.status_code in [200, 201]:
                                 supabase.table("users").update({"first_login_complete": False}).eq("id", selected_user["id"]).execute()
                             else:
-                                st.error(f"⚠️ Auth Server rejected password update: {auth_response.text}")
+                                st.error(f"Auth Server rejected password update: {auth_response.text}")
                         except Exception as auth_ex:
-                            st.error(f"⚠️ Identity Server Communication Failure: {str(auth_ex)}")
+                            st.error(f"Identity Server Communication Failure: {str(auth_ex)}")
 
                         
                     supabase.table("tournament_registrations").upsert({"user_id": selected_user["id"], "game_type": "Main", "is_enrolled": m_en, "is_paid": m_pd}, on_conflict="user_id,game_type").execute()
@@ -564,7 +564,7 @@ with tab_users:
                     st.rerun()
 
 # ==========================================
-# 📂 TAB 3: APPLICATIONS & CSV UTILITIES
+# TAB 3: APPLICATIONS & CSV UTILITIES
 # ==========================================
 with tab_csv:
     st.subheader("👥 Live Joining Applications Queue")
@@ -578,9 +578,9 @@ with tab_csv:
                 c_inf, c_acc, c_rej = st.columns([4, 1, 1])
                 with c_inf:
                     st.markdown(
-                        f"""👤 **{req['username']}** ({req['first_name']} {req['last_name']}) <br>
-                        🎯 Route Target: **{req['target_game']} Pool** <br>
-                        📞 Contact: `{req['email']}` | `{req['cell_phone']}`""", 
+                        f""" **{req['username']}** ({req['first_name']} {req['last_name']}) <br>
+                        Route Target: **{req['target_game']} Pool** <br>
+                        Contact: `{req['email']}` | `{req['cell_phone']}`""", 
                         unsafe_allow_html=True
                     )
                 with c_acc:
@@ -596,7 +596,7 @@ with tab_csv:
                                 "first_login_complete": False
                             }).execute()
                             
-                            # 🚀 AUTOMATED FORCED BYE INJECTION ENFORCEMENT ENGINE
+                            # AUTOMATED FORCED BYE INJECTION ENFORCEMENT ENGINE
                             for track in ["Main", "2nd_Chance"]:
                                 is_target = (track == req["target_game"])
                                 
@@ -629,15 +629,15 @@ with tab_csv:
                             st.error(f"Failed to onboard applicant: {str(e)}")
                             
                 with c_rej:
-                    if st.button("Purge ❌", key=f"rej_{req['id']}", width='stretch'):
+                    if st.button("Purge", key=f"rej_{req['id']}", width='stretch'):
                         supabase.table("join_requests").update({"status": "Rejected"}).eq("id", req["id"]).execute()
                         st.rerun()
 
     st.markdown("<hr style='margin:30px 0;'/>", unsafe_allow_html=True)
-    st.subheader("📊 Legacy CSV Ingestion Utilities")
+    st.subheader("Legacy CSV Ingestion Utilities")
 
     # --- BULK SCHEDULE IMPORT ENGINE ---
-    st.markdown("### 🏈 Bulk Import NFL Master Schedule")
+    st.markdown("#### Bulk Import NFL Master Schedule")
     schedule_file = st.file_uploader("Choose nfl_schedule.csv File", type="csv", key="sched_upload")
     if schedule_file is not None:
         if st.button("🚀 Execute Schedule Database Overwrite", width='stretch'):
@@ -664,10 +664,10 @@ with tab_csv:
     st.markdown("---")
 
     # --- BULK USER IMPORT ENGINE (Fixed Secure Auth Mapping) ---
-    st.markdown("### 👥 Bulk Import League Players")
+    st.markdown("#### Bulk Import League Players")
     users_file = st.file_uploader("Choose league_users.csv File", type="csv", key="users_upload")
     if users_file is not None:
-        if st.button("🚀 Execute Bulk Roster Onboarding", width='stretch'):
+        if st.button("Execute Bulk Roster Onboarding", width='stretch'):
             try:
                 input_data = users_file.getvalue().decode("utf-8")
                 reader = csv.DictReader(io.StringIO(input_data))
@@ -683,7 +683,7 @@ with tab_csv:
                     # Fallback to a default temporary password if left blank in the spreadsheet
                     temp_pw = row["temporary_password"].strip() if "temporary_password" in row and row["temporary_password"] else "Welcome2026!"
                     
-                    # 1. 🚀 GENERATE CORE SECURE ACCOUNT INSIDE SUPABASE AUTH ENGINE
+                    # 1. GENERATE CORE SECURE ACCOUNT INSIDE SUPABASE AUTH ENGINE
                     # This registers their password safely so they can log in instantly
                     try:
                         auth_user = supabase.auth.admin.create_user({
@@ -730,13 +730,13 @@ with tab_csv:
         st.markdown("<hr style='margin:25px 0;'/>", unsafe_allow_html=True)
 
     # --- BULK HISTORICAL PICKS IMPORT ENGINE ---
-    st.markdown("### 📜 Bulk Import Historical Player Picks (Weeks 1-4+)")
+    st.markdown("#### Bulk Import Historical Player Picks (Weeks 1-4+)")
     picks_file = st.file_uploader("Choose historical_picks.csv File", type="csv", key="picks_upload")
     
     if picks_file is not None:
-        st.warning("⚠️ Processing this file will overwrite existing selection rows for the specified weeks.")
+        st.warning("Processing this file will overwrite existing selection rows for the specified weeks.")
         
-        if st.button("🚀 Execute Historical Picks Ingestion", width='stretch'):
+        if st.button("Execute Historical Picks Ingestion", width='stretch'):
             try:
                 input_data = picks_file.getvalue().decode("utf-8")
                 reader = csv.DictReader(io.StringIO(input_data))
@@ -761,7 +761,7 @@ with tab_csv:
                     elif "Super" in raw_week: wk_idx = 22
                     else: wk_idx = int(raw_week)
                     
-                    # 2. 🔍 USER LOOKUP PASS: Match username + email to find the exact database ID
+                    # 2. USER LOOKUP PASS: Match username + email to find the exact database ID
                     user_lookup = supabase.table("users").select("id").eq("username", clean_user).eq("email", clean_email).execute().data
                     
                     if not user_lookup:
@@ -770,7 +770,7 @@ with tab_csv:
                         
                     target_uid = user_lookup[0]["id"] if isinstance(user_lookup, list) else user_lookup["id"]
                     
-                    # 3. 💾 UPSERT ENTRY: Write clean records directly to your global pool tracking tables
+                    # 3. UPSERT ENTRY: Write clean records directly to your global pool tracking tables
                     # Generates a distinct conflict key constraint loop for user+game_track+week values
                     supabase.table("user_picks").upsert({
                         "user_id": target_uid,
@@ -789,8 +789,8 @@ with tab_csv:
                     imported_picks_count += 1
                     
                 if missing_users_cache:
-                    st.error(f"⚠️ Skipped rows for unrecognized accounts: {', '.join(missing_users_cache)}")
-                    st.info("💡 Ensure usernames and emails exactly match your active roster list before re-uploading.")
+                    st.error(f"Skipped rows for unrecognized accounts: {', '.join(missing_users_cache)}")
+                    st.info("Ensure usernames and emails exactly match your active roster list before re-uploading.")
                     
                 st.success(f"Successfully loaded and locked {imported_picks_count} historical selections into the {game_mode} ledger!")
                 st.rerun()
