@@ -69,7 +69,6 @@ with st.sidebar:
                 color: #ffffff !important;
                 -webkit-text-fill-color: #ffffff !important;
                 background-color: #334155 !important; /* Crisp charcoal slate-grey button background */
-                border-radius: 4px !important;
             }}
             
             /* High-visibility hover highlight states for the action buttons */
