@@ -38,7 +38,7 @@ with st.sidebar:
             /* Overwrite sidebar text to remain clean white across modes */
             [data-testid="stSidebar"] .stText, [data-testid="stSidebar"] p, 
             [data-testid="stSidebar"] h3, [data-testid="stSidebar"] label {{
-                color: #ffffff !important;
+                color: var(--text-color) !important;
             }}
             /* Force dropdown selection text contrast values */
             [data-testid="stSidebar"] div[data-baseweb="select"] div {{
