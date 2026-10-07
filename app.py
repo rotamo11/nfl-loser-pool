@@ -36,7 +36,7 @@ with st.sidebar:
                 background-color: {sidebar_bg} !important;
             }}
             
-            /* 🚀 2. UNIFIED FIXED DARK-MODE SIDEBAR TYPOGRAPHY MATRIX */
+            /* 2. UNIFIED FIXED DARK-MODE SIDEBAR TYPOGRAPHY MATRIX */
             /* Forces all labels, headers, expander headers, text blocks, and */
             /* structural paragraph tags inside the sidebar to stay clean, high-contrast white */
             [data-testid="stSidebar"] p,
@@ -50,7 +50,7 @@ with st.sidebar:
                 opacity: 1.0 !important;
             }}
             
-            /* 🚀 3. TEXT INPUT FIELDS CONTRAST LOCK */
+            /* 3. TEXT INPUT FIELDS CONTRAST LOCK */
             /* Forces text boxes (Usernames, Emails, Passwords) to maintain dark-mode formatting */
             [data-testid="stSidebar"] input {{
                 color: #ffffff !important;
@@ -60,7 +60,7 @@ with st.sidebar:
                 border-radius: 4px !important;
             }}
             
-            /* 🚀 4. EXPLICIT BUTTON CONTRAST LOCK (Log Out, Save Profile, Commit Change) */
+            /* 4. EXPLICIT BUTTON CONTRAST LOCK (Log Out, Save Profile, Commit Change) */
             /* Overwrites Streamlit light theme buttons with elegant, high-contrast slate-grey buttons */
             [data-testid="stSidebar"] button,
             [data-testid="stSidebar"] button p,
@@ -69,7 +69,6 @@ with st.sidebar:
                 color: #ffffff !important;
                 -webkit-text-fill-color: #ffffff !important;
                 background-color: #334155 !important; /* Crisp charcoal slate-grey button background */
-                border: 1px solid rgba(255, 255, 255, 0.15) !important;
                 border-radius: 4px !important;
             }}
             
