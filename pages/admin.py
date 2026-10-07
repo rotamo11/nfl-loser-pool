@@ -394,7 +394,7 @@ with tab_scores:
                 # Render Your Original Matchup Header Row
                 st.markdown(
                     f'<div style="display:flex; align-items:center; gap:4px; padding-top:10px; font-family:sans-serif; color:var(--text-color); font-size:14px; margin-bottom:4px;">'
-                    f'{away_logo} <span style="color:gray; font-size:12px; margin:0 4px;">@</span> {home_logo}'
+                    f' {away_logo} <span style="color:gray; font-size:12px; margin:0 4px;">@</span> {home_logo}'
                     f'</div>', 
                     unsafe_allow_html=True
                 )
