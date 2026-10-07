@@ -31,35 +31,18 @@ with st.sidebar:
     st.markdown(
         f"""
         <style>
-            /* Dynamic sidebar container color assignment */
+            /* Dynamic sidebar color assignment */
             [data-testid="stSidebar"] {{
                 background-color: {sidebar_bg} !important;
             }}
-            
-            /* 🚀 THE CRITICAL ROOT FORCE LOCK (Fixes Light Mode Nav Text) */
-            /* Forces EVERY single element inside the sidebar to draw text in white */
-            [data-testid="stSidebar"] *, 
-            [data-testid="stSidebar"] a *, 
-            [data-testid="stSidebar"] button *,
-            [data-testid="stSidebar"] div *, 
-            [data-testid="stSidebar"] span * {{
+            /* Overwrite sidebar text to remain clean white across modes */
+            [data-testid="stSidebar"] .stText, [data-testid="stSidebar"] p, 
+            [data-testid="stSidebar"] h3, [data-testid="stSidebar"] label {{
                 color: #ffffff !important;
-                -webkit-text-fill-color: #ffffff !important;
-                opacity: 1.0 !important;
             }}
-            
-            /* 🚀 EXCEPTION: Protect selectbox input text so it stays dark and readable */
-            [data-testid="stSidebar"] div[data-baseweb="select"] *,
-            [data-testid="stSidebar"] div[data-baseweb="select"] span,
+            /* Force dropdown selection text contrast values */
             [data-testid="stSidebar"] div[data-baseweb="select"] div {{
                 color: #1e293b !important;
-                -webkit-text-fill-color: #1e293b !important;
-            }}
-            
-            /* Add high-visibility hover states for navigation links */
-            [data-testid="stSidebar"] [data-testid="stPageLink-Link"]:hover {{
-                background-color: rgba(255, 255, 255, 0.15) !important;
-                border-radius: 4px;
             }}
         </style>
         """,
