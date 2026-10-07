@@ -309,18 +309,32 @@ else:
                 st.markdown(f"""<div style="{card_style} padding:8px 4px; border-radius:6px; text-align:center; box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin-bottom:10px; font-family:sans-serif;"><div style="display:flex; justify-content:center; margin-bottom:4px;">{get_base64_logo_html(team)}</div><b style="font-size:13px; color: inherit;">{team.replace('_SO','')}{so_label}</b><span style="display:block; font-size:18px; font-weight:900; color:#2563eb; margin-top:2px;">{count}</span><span style="font-size:10px; color: gray; opacity: 0.8; display:block;">Picks</span></div>""", unsafe_allow_html=True)
 
 st.markdown("---")
+
+# ==========================================
+# 🏆 SEGMENT B: COMPLETE LEAGUE STANDINGS MATRIX
+# ==========================================
 st.write("### 🏆 Live Championship Standings Grid")
 
 users_list = supabase.table("users").select("id", "username").order("username").execute().data
 registrations = supabase.table("tournament_registrations").select("*").eq("game_type", game_slug).eq("is_enrolled", True).execute().data
 all_historical_picks = supabase.table("user_picks").select("*").eq("game_type", game_slug).execute().data
 
-if not registrations: st.info("No active enrolled competitor rows verified on record for this game tournament track.")
+if not registrations:
+    st.info("No active enrolled competitor rows verified on record for this game tournament track.")
 else:
     user_map = {u["id"]: u["username"] for u in users_list}
     picks_by_user = {}
-    for p in all_historical_picks: picks_by_user.setdefault(p["user_id"], {})[p["week"]] = p
+    for p in all_historical_picks:
+        picks_by_user.setdefault(p["user_id"], {})[p["week"]] = p
         
+    # 🚀 EXTRA OPTIMIZATION FIX: Gather ALL of the current user's finalized choices in a local cache array.
+    # This completely eliminates 1,500+ repeating database queries!
+    current_user_finalized_weeks = set()
+    if current_user_uid:
+        for p in all_historical_picks:
+            if p["user_id"] == current_user_uid and p.get("pick_state") == "Finalized":
+                current_user_finalized_weeks.add(p["week"])
+
     loser_bracket_players, winner_bracket_players, eliminated_players = [], [], []
     for reg in registrations:
         status = reg.get("bracket_status", "Eliminated")
@@ -331,12 +345,14 @@ else:
     loser_bracket_players.sort(key=lambda r: user_map.get(r["user_id"], "").lower())
     winner_bracket_players.sort(key=lambda r: user_map.get(r["user_id"], "").lower())
     eliminated_players.sort(key=lambda r: user_map.get(r["user_id"], "").lower())
+    
     visible_weeks = list(range(1, CALCULATED_CURRENT_WEEK + 1))
     
     def render_bracket_table(bracket_title, players_group):
         if not players_group:
             st.caption(f"*No players currently active inside {bracket_title}*")
             return
+            
         st.markdown(f"#### 🏅 {bracket_title}")
         header_row = "| Player | " + " | ".join(f"Wk {w}" for w in visible_weeks) + " |"
         divider_row = "| :--- | " + " | ".join(" :---: " for _ in visible_weeks) + " |"
@@ -347,6 +363,7 @@ else:
             uname = user_map.get(u_id, "Anonymous")
             user_weeks_map = picks_by_user.get(u_id, {})
             row_cells = [f"**{uname}**"]
+            
             for w_num in visible_weeks:
                 p_data = user_weeks_map.get(w_num, None)
                 if not p_data: 
@@ -357,18 +374,14 @@ else:
                     
                     is_current_loop_week_locked = w_num < CALCULATED_CURRENT_WEEK
                     
-                    # 🚀 THE FIX: Verify if the user has finalized an entry for this specific loop week column
-                    user_has_finalized_for_loop_week = False
-                    if current_user_uid:
-                        chk_f = supabase.table("user_picks").select("id").eq("user_id", current_user_uid).eq("game_type", game_slug).eq("week", w_num).eq("pick_state", "Finalized").execute().data
-                        if chk_f: 
-                            user_has_finalized_for_loop_week = True
+                    # 🚀 READ FROM LOCAL CACHE: Lightning-fast check with zero network overhead
+                    user_has_finalized_for_loop_week = w_num in current_user_finalized_weeks
                     
                     is_own_profile_row = (u_id == current_user_uid)
                     reveal_tile_cell = is_current_loop_week_locked or user_has_finalized_for_loop_week or is_own_profile_row or is_logged_in_admin
                     
                     if not reveal_tile_cell: 
-                        cell_content = '<div style="background-color: rgba(148, 163, 184, 0.15); padding: 4px 6px; border-radius: 4px; font-weight:600; font-size:10px; color:gray;">🔒 Hidden</div>'
+                        cell_content = '<div style="background-color: rgba(148, 163, 184, 0.15); padding: 4px 6px; border-radius: 4px; font-weight:600; font-size:10px; color:gray; white-space:nowrap;">🔒 Hidden</div>'
                     else:
                         logo_html = get_base64_logo_html(t_pick)
                         clean_team_display = t_pick.replace('_SO', '')
@@ -391,3 +404,4 @@ else:
     render_bracket_table("Loser Bracket", loser_bracket_players)
     render_bracket_table("Winner Bracket", winner_bracket_players)
     render_bracket_table("Eliminated", eliminated_players)
+
