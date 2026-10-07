@@ -684,59 +684,106 @@ else:
                     limit_reached = len(st.session_state.selected_teams) >= required_picks
                     col_a_logo, col_a_btn, col_vs, col_h_btn, col_h_logo = st.columns([0.6, 2.5, 0.4, 2.5, 0.6])
 
-                    # --- AWAY TEAM RENDERER ---
-                    with col_a_logo:
-                        try:
-                            import base64
-                            with open(f"static/{away}.svg", "rb") as f:
-                                encoded_away_logo = base64.b64encode(f.read()).decode("utf-8")
-                            away_logo_url = f"data:image/svg+xml;base64,{encoded_away_logo}"
-                            st.markdown(f'<div style="width:32px; height:24px; padding-top:6px; margin:0 auto; display:flex; align-items:center;"><img src="{away_logo_url}" width="32" height="24" style="object-fit:contain; display:block;"/></div>', unsafe_allow_html=True)
-                        except Exception: st.write("")
+                    # ====================================================================
+                    # 📱 2-COLUMN DESKTOP / 1-COLUMN MOBILE SMART GRID ARCHITECTURE
+                    # ====================================================================
+                    # Create two main structural columns for wide desktop monitors
+                    main_grid_col1, main_grid_col2 = st.columns(2)
+                    
+                    for idx, match in enumerate(schedule_res):
+                        m_id = match["id"]
+                        away, home = match["away_team"].upper(), match["home_team"].upper()
                         
-                    with col_a_btn:
-                        dis_away = away_is_used or (limit_reached and not is_sel_away)
+                        # Extract current player selection state indicators
+                        is_sel_away = away in st.session_state.selected_teams or f"{away}_SO" in st.session_state.selected_teams
+                        is_sel_home = home in st.session_state.selected_teams or f"{home}_SO" in st.session_state.selected_teams
+                        away_is_used = away in used_teams
+                        home_is_used = home in used_teams
                         
-                        # DYNAMIC LABEL GENERATION: Extract custom playoff or regular week title tags 
-                        if away_is_used:
-                            used_wk_title = get_week_label(used_teams[away]).replace("Week ", "Wk ")
-                            btn_label_away = f"{away} (Used {used_wk_title})"
-                        else:
-                            btn_label_away = f"{away}"
-                            
-                        if st.button(btn_label_away, key=f"btn_a_{m_id}", disabled=dis_away, type="primary" if is_sel_away else "secondary", width='stretch'):
-                            if is_sel_away: st.session_state.selected_teams.remove(away)
-                            else: st.session_state.selected_teams.append(away)
-                            st.rerun()
-
-                    # --- MIDPOINT VS DIVIDER ---
-                    with col_vs:
-                        st.markdown("<center style='color:#64748b; font-size:12px; font-weight:bold; padding-top:8px;'>@</center>", unsafe_allow_html=True)
-
-                    # --- HOME TEAM RENDERER ---
-                    with col_h_btn:
-                        dis_home = home_is_used or (limit_reached and not is_sel_home)
+                        # Choose the active desktop grid column lane based on the match loop index
+                        active_lane = main_grid_col1 if idx % 2 == 0 else main_grid_col2
                         
-                        # DYNAMIC LABEL GENERATION: Extract matching label text for home team columns
-                        if home_is_used:
-                            used_wk_title = get_week_label(used_teams[home]).replace("Week ", "Wk ")
-                            btn_label_home = f"{home} (Used {used_wk_title})"
-                        else:
-                            btn_label_home = f"{home}"
-                            
-                        if st.button(btn_label_home, key=f"btn_h_{m_id}", disabled=dis_home, type="primary" if is_sel_home else "secondary", width='stretch'):
-                            if is_sel_home: st.session_state.selected_teams.remove(home)
-                            else: st.session_state.selected_teams.append(home)
-                            st.rerun()
-
-                    with col_h_logo:
-                        try:
-                            import base64
-                            with open(f"static/{home}.svg", "rb") as f:
-                                encoded_home_logo = base64.b64encode(f.read()).decode("utf-8")
-                            home_logo_url = f"data:image/svg+xml;base64,{encoded_home_logo}"
-                            st.markdown(f'<div style="width:32px; height:24px; padding-top:6px; margin:0 auto; display:flex; align-items:center;"><img src="{home_logo_url}" width="32" height="24" style="object-fit:contain; display:block;"/></div>', unsafe_allow_html=True)
-                        except Exception: st.write("")
+                        with active_lane:
+                            with st.container(border=True):
+                                # 🚀 THE MOBIL-FIRST HORIZONTAL ANCHOR FILTER
+                                # Locks your elements perfectly side-by-side so they NEVER wrap on tight viewports
+                                col_a_logo, col_a_btn, col_vs, col_h_btn, col_h_logo = st.columns([1.2, 3.5, 0.6, 3.5, 1.2])
+                                
+                                # --- AWAY TEAM RENDERER ---
+                                with col_a_logo:
+                                    try:
+                                        import base64
+                                        with open(f"static/{away}.svg", "rb") as f:
+                                            encoded_away_logo = base64.b64encode(f.read()).decode("utf-8")
+                                        away_logo_url = f"data:image/svg+xml;base64,{encoded_away_logo}"
+                                        st.markdown(f'<div style="width:32px; height:24px; padding-top:6px; margin:0 auto; display:flex; align-items:center;"><img src="{away_logo_url}" width="32" height="24" style="object-fit:contain; display:block;"/></div>', unsafe_allow_html=True)
+                                    except Exception: st.write("")
+                                    
+                                with col_a_btn:
+                                    dis_away = away_is_used or (limit_reached and not is_sel_away)
+                                    if away_is_used:
+                                        used_wk_title = get_week_label(used_teams[away]).replace("Week ", "Wk ")
+                                        btn_label_away = f"{away} ({used_wk_title})"
+                                    else:
+                                        btn_label_away = f"{away}"
+                                        
+                                    if st.button(btn_label_away, key=f"btn_a_{m_id}", disabled=dis_away, type="primary" if is_sel_away else "secondary", width='stretch'):
+                                        if is_sel_away: 
+                                            if away in st.session_state.selected_teams: st.session_state.selected_teams.remove(away)
+                                            if f"{away}_SO" in st.session_state.selected_teams: st.session_state.selected_teams.remove(f"{away}_SO")
+                                        else: st.session_state.selected_teams.append(away)
+                                        st.rerun()
+            
+                                # --- MIDPOINT VS DIVIDER ---
+                                with col_vs:
+                                    st.markdown("<center style='color:#64748b; font-size:12px; font-weight:bold; padding-top:8px;'>@</center>", unsafe_allow_html=True)
+            
+                                # --- HOME TEAM RENDERER ---
+                                with col_h_btn:
+                                    dis_home = home_is_used or (limit_reached and not is_sel_home)
+                                    if home_is_used:
+                                        used_wk_title = get_week_label(used_teams[home]).replace("Week ", "Wk ")
+                                        btn_label_home = f"{home} ({used_wk_title})"
+                                    else:
+                                        btn_label_home = f"{home}"
+                                        
+                                    if st.button(btn_label_home, key=f"btn_h_{m_id}", disabled=dis_home, type="primary" if is_sel_home else "secondary", width='stretch'):
+                                        if is_sel_home: 
+                                            if home in st.session_state.selected_teams: st.session_state.selected_teams.remove(home)
+                                            if f"{home}_SO" in st.session_state.selected_teams: st.session_state.selected_teams.remove(f"{home}_SO")
+                                        else: st.session_state.selected_teams.append(home)
+                                        st.rerun()
+            
+                                with col_h_logo:
+                                    try:
+                                        import base64
+                                        with open(f"static/{home}.svg", "rb") as f:
+                                            encoded_home_logo = base64.b64encode(f.read()).decode("utf-8")
+                                        home_logo_url = f"data:image/svg+xml;base64,{encoded_home_logo}"
+                                        st.markdown(f'<div style="width:32px; height:24px; padding-top:6px; margin:0 auto; display:flex; align-items:center;"><img src="{home_logo_url}" width="32" height="24" style="object-fit:contain; display:block;"/></div>', unsafe_allow_html=True)
+                                    except Exception: st.write("")
+            
+                                # --- 🎯 INTEGRATED SHUTOUT TRACKER DECK ---
+                                # If either opponent is clicked, slide open a tight, low-profile sub-row
+                                if is_sel_away or is_sel_home:
+                                    active_team = away if is_sel_away else home
+                                    so_token = f"{active_team}_SO"
+                                    is_currently_shutout = so_token in st.session_state.selected_teams
+                                    
+                                    st.markdown("<div style='margin:4px 0;'></div>", unsafe_allow_html=True)
+                                    c_so_lbl, c_so_chk = st.columns([8, 2])
+                                    with c_so_lbl:
+                                        st.caption(f"🎯 Track **{active_team}** for a complete Shutout Bonus?")
+                                    with c_so_chk:
+                                        so_trigger = st.checkbox("🎯", value=is_currently_shutout, key=f"so_chkbx_{m_id}", label_visibility="collapsed")
+                                        if so_trigger != is_currently_shutout:
+                                            if so_trigger:
+                                                if active_team in st.session_state.selected_teams: st.session_state.selected_teams.remove(active_team)
+                                                st.session_state.selected_teams.append(so_token)
+                                            else:
+                                                if so_token in st.session_state.selected_teams: st.session_state.selected_teams.remove(so_token)
+                                                st.session_state.selected_teams.append(active_team)
+                                            st.rerun()
 
                     # ======================================================================
                     # Dynamic Flex-Game Kickoff String Renderer - Handles Blank Timestamps
