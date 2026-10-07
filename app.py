@@ -428,24 +428,20 @@ elif not st.session_state.user:
     # ==========================================
     elif st.session_state.auth_mode == "Reset":
         st.subheader("Request Secure Password Reset Link")
-        st.write("Because multiple league players can share an email address, enter both your Username and Email to identify your account.")
-        
-        reset_username_input = st.text_input("Your Unique Username Code Token:")
         reset_email_input = st.text_input("Your Registered Email Address:")
         
         if st.button("Send Reset Email link", width='stretch'):
-            clean_user = reset_username_input.strip()
             clean_email = reset_email_input.strip()
             
-            if not clean_user or not clean_email:
-                st.error("Both Username and Email Address fields are mandatory.")
+            if not  clean_email:
+                st.error("Email Address field is mandatory.")
             else:
                 with st.spinner("Verifying identity records..."):
                     # DOUBLE LOCK PRE-CHECK: Match BOTH columns simultaneously to locate the exact player ID
-                    account_match = supabase.table("users").select("id, email").eq("username", clean_user).eq("email", clean_email).execute().data
+                    account_match = supabase.table("users").select("id, email").eq("email", clean_email).execute().data
                     
                     if not account_match:
-                        st.error("Account Verification Failed. No player record matches that specific combination of Username and Email.")
+                        st.error("Account Verification Failed. No player record matches that specific Email.")
                     else:
                         try:
                             # Pull the targeted email stream parameter
@@ -456,7 +452,7 @@ elif not st.session_state.user:
                                 target_record["email"],
                                 {"redirect_to": "https://streamlit.app"}
                             )
-                            st.success("Reset link sent! Check your email inbox and spam folders to re-establish your login access keys.")
+                            st.success("Reset link sent! Check your email inbox and spam folders to re-establish your access.")
                         except Exception as e:
                             st.error(f"Mailing server error: {str(e)}")
 else:        
