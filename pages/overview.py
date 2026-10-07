@@ -18,7 +18,6 @@ supabase: Client = create_client(URL, KEY)
 # Prevents st.session_state KeyError crashes if users bookmark or deep-link directly to subpages
 if "user" not in st.session_state:
     st.session_state.user = None
-    st.session_state.user.id = None
 if "selected_teams" not in st.session_state:
     st.session_state.selected_teams = []
 if "force_password_change" not in st.session_state:
@@ -293,20 +292,24 @@ else:
 # GLOBAL ACCESSIBILITY & SECURITY PRIVACY GATES RECKONER
 # ====================================================================
 current_user_logged_in = st.session_state.get("user")
-current_user_uid = current_user_logged_in.id if current_user_logged_in else None
 
-# Check if the current user has finalized a team choice OR deployed a BYE option
+# THE FIX: Use an explicit conditional step to extract ID only if an active user object exists
+if current_user_logged_in is not None and hasattr(current_user_logged_in, 'id'):
+    current_user_uid = current_user_logged_in.id
+else:
+    current_user_uid = None
+
+# Check if the current user has finalized a pick for the active selected week
 user_has_finalized_this_week = False
 if current_user_uid:
-    # THE FIX: Pull any pick for this week that is finalized (team picks and BYE entries)
-    user_pick_record = supabase.table("user_picks").select("team_picked").eq("user_id", current_user_uid).eq("game_type", game_slug).eq("week", SELECTED_WEEK).eq("pick_state", "Finalized").execute().data
+    user_pick_record = supabase.table("user_picks").select("id").eq("user_id", current_user_uid).eq("game_type", game_slug).eq("week", SELECTED_WEEK).eq("pick_state", "Finalized").execute().data
     if user_pick_record:
         user_has_finalized_this_week = True
 
 # Calculate if the target week's locks have passed chronologically
 is_past_week_locked = SELECTED_WEEK < CALCULATED_CURRENT_WEEK
 
-# Absolute override criteria: Unlocked if it is an old week, or if the user already committed their choice
+# Absolute override criteria: Unlocked if it is an old week, if the user committed, or if admin
 reveal_picks_condition = is_past_week_locked or user_has_finalized_this_week # or is_logged_in_admin
 
 # ==========================================
