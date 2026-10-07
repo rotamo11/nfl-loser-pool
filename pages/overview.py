@@ -356,11 +356,14 @@ else:
                     p_state = p_data.get("pick_state", "Pending")
                     
                     is_current_loop_week_locked = w_num < CALCULATED_CURRENT_WEEK
+                    
+                    # 🚀 THE FIX: Verify if the user has finalized an entry for this specific loop week column
                     user_has_finalized_for_loop_week = False
                     if current_user_uid:
                         chk_f = supabase.table("user_picks").select("id").eq("user_id", current_user_uid).eq("game_type", game_slug).eq("week", w_num).eq("pick_state", "Finalized").execute().data
-                        if chk_f: user_has_finalized_for_loop_week = True
-                        
+                        if chk_f: 
+                            user_has_finalized_for_loop_week = True
+                    
                     is_own_profile_row = (u_id == current_user_uid)
                     reveal_tile_cell = is_current_loop_week_locked or user_has_finalized_for_loop_week or is_own_profile_row or is_logged_in_admin
                     
