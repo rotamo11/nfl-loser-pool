@@ -340,7 +340,7 @@ reveal_picks_condition = is_past_week_locked or user_has_finalized_this_week # o
 st.write(f"### Weekly Selection Distribution — {get_week_label(SELECTED_WEEK)}")
 
 if not reveal_picks_condition:
-    st.warning("**Selection Distribution Hidden.** You must be logged in and have finalized your own selection(s) for this week under the **Picks** tab before picks are revealed for other players.")
+    st.warning("**Selection Distribution Hidden:** You must be logged in with your own selection(s) finalized for this week under **Picks** before picks are revealed for other players.")
 else:
     all_selections = supabase.table("user_picks").select("team_picked").eq("game_type", game_slug).eq("week", SELECTED_WEEK).execute().data
     schedule_map = supabase.table("nfl_schedule").select("away_team", "home_team", "winner").eq("week", SELECTED_WEEK).execute().data
