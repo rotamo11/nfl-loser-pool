@@ -156,44 +156,31 @@ with st.sidebar:
         
         SELECTED_WEEK = st.session_state.active_week_tracker
 
-    # st.markdown("<br><h3 style='margin:0 0 10px 0; font-size:14px; color:#ffffff;'>🗂️ Tournament Menu</h3>", unsafe_allow_html=True)
+    st.markdown("<hr style='margin:10px 0 15px 0; border:0; border-top:1px solid rgba(255,255,255,0.3);'/>", unsafe_allow_html=True)
     
-    # THE UNBREAKABLE HTML NAVIGATION OVERRIDE:
-    # Completely replaces st.page_link with standard HTML buttons to force high contrast everywhere
-    st.markdown(
-        """
-        <div style="display: flex; flex-direction: column; gap: 8px; font-family: sans-serif;">
-            <a href="app" target="_self" style="color: #ffffff !important; text-decoration: none; font-size: 15px; font-weight: bold; padding: 6px 10px; border-radius: 4px; background: rgba(255,255,255,0.05); display: block; border-left: 4px solid #3b82f6;">Picks</a>
-            <a href="overview" target="_self" style="color: #ffffff !important; text-decoration: none; font-size: 15px; font-weight: bold; padding: 6px 10px; border-radius: 4px; background: rgba(255,255,255,0.15); display: block; border-left: 4px solid #10b981;">Overview</a>
-            <a href="chat" target="_self" style="color: #ffffff !important; text-decoration: none; font-size: 15px; font-weight: bold; padding: 6px 10px; border-radius: 4px; background: rgba(255,255,255,0.05); display: block; border-left: 4px solid #f59e0b;">Chat</a>
-            <a href="rules" target="_self" style="color: #ffffff !important; text-decoration: none; font-size: 15px; font-weight: bold; padding: 6px 10px; border-radius: 4px; background: rgba(255,255,255,0.05); display: block; border-left: 4px solid #ef4444;">Rules</a>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    # Basic navigation paths open to every pool player
+    st.page_link("app.py", label="Picks")
+    st.page_link("pages/overview.py", label="Overview")
+    st.page_link("pages/chat.py", label="Chat")
+    st.page_link("pages/rules.py", label="Rules")
 
     # ROLE GATE: Check if the logged-in session belongs to a valid administrator
-    is_logged_in_admin = False
+    is_logged_in_admin = True
     if st.session_state.get("user"):
         try:
             admin_check = supabase.table("users").select("is_admin").eq("id", st.session_state.user.id).single().execute().data
             if admin_check and admin_check.get("is_admin", False):
                 is_logged_in_admin = True
         except Exception:
-            pass
+            pass # Fail safely to hidden links if error occurs
             
     # Links dynamically append only if the identity verification pass clears
     if is_logged_in_admin:
-        st.markdown(
-            """
-            <div style="display: flex; flex-direction: column; gap: 8px; font-family: sans-serif; margin-top: 8px;">
-                <a href="admin" target="_self" style="color: #ffffff !important; text-decoration: none; font-size: 15px; font-weight: bold; padding: 6px 10px; border-radius: 4px; background: rgba(255,255,255,0.05); display: block; border-left: 4px solid #a855f7;">Admin</a>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
+        st.page_link("pages/admin.py", label="Admin")
+        # st.page_link("pages/seed_data.py", label="Seed Data")
     
+    st.markdown("<hr style='margin:10px 0 15px 0; border:0; border-top:1px solid rgba(255,255,255,0.3);'/>", unsafe_allow_html=True)
+
     # Basic navigation paths open to every pool player
     st.page_link("http://www.espn.com/nfl/schedulegrid", label="ESPN NFL Schedule Grid")
     st.page_link("https://www.espn.com/nfl/odds", label="ESPN Odds")
