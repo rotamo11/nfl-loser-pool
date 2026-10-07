@@ -383,7 +383,6 @@ else:
             st.caption(f"*No players currently active inside {bracket_title}*")
             return
             
-        players_group_count = len(players_group)
         st.markdown(f"#### 🏅 {bracket_title}: {players_group_count} Players")
         header_row = "| Player | " + " | ".join(f"Wk {w}" for w in visible_weeks) + " |"
         divider_row = "| :--- | " + " | ".join(" :---: " for _ in visible_weeks) + " |"
