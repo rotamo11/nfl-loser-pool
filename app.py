@@ -484,13 +484,15 @@ else:
         # Render the responsive Flexbox status baseline bar using the Username Code Token
         st.markdown(
             f"""
-            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 15px; font-family: sans-serif; font-size: 14px; font-weight: 500; color: var(--text-color); opacity: 0.85;">
-                <div><h3>Status for <b>{username_token}</b>: {player_status}</h3></div>
-                <div style="text-align: right;"><h3>Remaining Active Players: <b>{remaining_count}</b></h3></div>
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 10px; font-family: sans-serif; font-size: 12px; font-weight: 500; color: var(--text-color); opacity: 0.85;">
+                <div><h4>Status for <b>{username_token}</b>: {player_status}</h4></div>
+                <div style="text-align: right;"><h4>Remaining Active Players: <b>{remaining_count}</b></h4></div>
             </div>
             """,
             unsafe_allow_html=True
         )
+
+        st.markdown("---")
 
         # --- RECOVER USER COMPREHENSIVE SELECTION RECORDS ---
         all_picks_res = supabase.table("user_picks").select("*").eq("user_id", user_id).eq("game_type", game_slug).execute().data
