@@ -230,7 +230,7 @@ with st.sidebar:
                                     except Exception as pw_err:
                                         st.sidebar.error(f"Failed to update password: {str(pw_err)}")
                 # Logout button appears only when logged in
-                if st.button("Log Out", key="sidebar_logout_btn"): #, width='stretch'):
+                if st.button("Log Out", key="sidebar_logout_btn", width='stretch'):
                     st.session_state.user = None
                     st.session_state.selected_teams = []
                     st.session_state.force_password_change = False
