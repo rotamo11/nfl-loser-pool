@@ -684,65 +684,65 @@ else:
                     limit_reached = len(st.session_state.selected_teams) >= required_picks
                     col_a_logo, col_a_btn, col_vs, col_h_btn, col_h_logo = st.columns([0.6, 2.5, 0.4, 2.5, 0.6])
 
-                # ====================================================================
-                # 📱 MOBILE-FIRST HIGH-DENSITY HORIZONTAL MATCHUP ROW
-                # ====================================================================
-                # Base64 Vector Embed Generation Passes
-                try:
-                    import base64
-                    with open(f"static/{away}.svg", "rb") as f: encoded_away = base64.b64encode(f.read()).decode("utf-8")
-                    away_logo_html = f'<img src="data:image/svg+xml;base64,{encoded_away}" width="20" height="13" style="object-fit:contain; vertical-align:middle; margin-right:4px;"/>'
-                except Exception: away_logo_html = ""
-                    
-                try:
-                    import base64
-                    with open(f"static/{home}.svg", "rb") as f: encoded_home = base64.b64encode(f.read()).decode("utf-8")
-                    home_logo_html = f'<img src="data:image/svg+xml;base64,{encoded_home}" width="20" height="13" style="object-fit:contain; vertical-align:middle; margin-right:4px;"/>'
-                except Exception: home_logo_html = ""
-
-                # 🚀 THE FIX: Enforce clean 3-column rows that never wrap on mobile screens
-                c_away, c_center, c_home = st.columns([4.5, 1, 4.5])
-                
-                with c_away:
-                    # Renders away logo and button text inline
-                    away_label = f"{away} (Away)"
-                    away_is_selected = (f"{away}" in st.session_state.selected_teams or f"{away}_SO" in st.session_state.selected_teams)
-                    
-                    # Generates a tight button with full width stretch behavior
-                    if st.button(f"{away}", key=f"btn_away_{m_id}", width='stretch', type="primary" if away_is_selected else "secondary"):
-                        toggle_team_pick(away, game_slug, SELECTED_WEEK)
-                        st.rerun()
+                    # ====================================================================
+                    # 📱 MOBILE-FIRST HIGH-DENSITY HORIZONTAL MATCHUP ROW
+                    # ====================================================================
+                    # Base64 Vector Embed Generation Passes
+                    try:
+                        import base64
+                        with open(f"static/{away}.svg", "rb") as f: encoded_away = base64.b64encode(f.read()).decode("utf-8")
+                        away_logo_html = f'<img src="data:image/svg+xml;base64,{encoded_away}" width="20" height="13" style="object-fit:contain; vertical-align:middle; margin-right:4px;"/>'
+                    except Exception: away_logo_html = ""
                         
-                with c_center:
-                    # Minimal "@" separator stays perfectly centered vertically between action buttons
-                    st.html('<div style="text-align:center; padding-top:6px; color:gray; font-weight:bold; font-size:13px;">@</div>')
+                    try:
+                        import base64
+                        with open(f"static/{home}.svg", "rb") as f: encoded_home = base64.b64encode(f.read()).decode("utf-8")
+                        home_logo_html = f'<img src="data:image/svg+xml;base64,{encoded_home}" width="20" height="13" style="object-fit:contain; vertical-align:middle; margin-right:4px;"/>'
+                    except Exception: home_logo_html = ""
+    
+                    # 🚀 THE FIX: Enforce clean 3-column rows that never wrap on mobile screens
+                    c_away, c_center, c_home = st.columns([4.5, 1, 4.5])
                     
-                with c_home:
-                    # Renders home logo and button text inline
-                    home_is_selected = (f"{home}" in st.session_state.selected_teams or f"{home}_SO" in st.session_state.selected_teams)
-                    
-                    if st.button(f"{home}", key=f"btn_home_{m_id}", width='stretch', type="primary" if home_is_selected else "secondary"):
-                        toggle_team_pick(home, game_slug, SELECTED_WEEK)
-                        st.rerun()
-
-                # --- SHUTOUT TARGET UTILITY ROW ---
-                # Places a tight sub-row beneath the main buttons for bonus point tracking
-                if away_is_selected or home_is_selected:
-                    active_selected_team = away if away_is_selected else home
-                    so_key = f"{active_selected_team}_SO"
-                    is_currently_so = so_key in st.session_state.selected_teams
-                    
-                    # Checkbox with label visibility collapsed to save real estate
-                    so_col1, so_col2 = st.columns([7, 3])
-                    with so_col1:
-                        st.caption(f"🎯 Activate Shutout Bonus Tracker for **{active_selected_team}**?")
-                    with so_col2:
-                        so_toggle = st.checkbox("🎯 SO", value=is_currently_so, key=f"so_chk_p_{m_id}", label_visibility="collapsed")
-                        if so_toggle != is_currently_so:
-                            toggle_shutout_modifier(active_selected_team, so_toggle)
+                    with c_away:
+                        # Renders away logo and button text inline
+                        away_label = f"{away} (Away)"
+                        away_is_selected = (f"{away}" in st.session_state.selected_teams or f"{away}_SO" in st.session_state.selected_teams)
+                        
+                        # Generates a tight button with full width stretch behavior
+                        if st.button(f"{away}", key=f"btn_away_{m_id}", width='stretch', type="primary" if away_is_selected else "secondary"):
+                            toggle_team_pick(away, game_slug, SELECTED_WEEK)
                             st.rerun()
                             
-                st.markdown("<div style='margin-bottom:8px; border-bottom:1px solid rgba(148,163,184,0.1);'></div>", unsafe_allow_html=True)
+                    with c_center:
+                        # Minimal "@" separator stays perfectly centered vertically between action buttons
+                        st.html('<div style="text-align:center; padding-top:6px; color:gray; font-weight:bold; font-size:13px;">@</div>')
+                        
+                    with c_home:
+                        # Renders home logo and button text inline
+                        home_is_selected = (f"{home}" in st.session_state.selected_teams or f"{home}_SO" in st.session_state.selected_teams)
+                        
+                        if st.button(f"{home}", key=f"btn_home_{m_id}", width='stretch', type="primary" if home_is_selected else "secondary"):
+                            toggle_team_pick(home, game_slug, SELECTED_WEEK)
+                            st.rerun()
+    
+                    # --- SHUTOUT TARGET UTILITY ROW ---
+                    # Places a tight sub-row beneath the main buttons for bonus point tracking
+                    if away_is_selected or home_is_selected:
+                        active_selected_team = away if away_is_selected else home
+                        so_key = f"{active_selected_team}_SO"
+                        is_currently_so = so_key in st.session_state.selected_teams
+                        
+                        # Checkbox with label visibility collapsed to save real estate
+                        so_col1, so_col2 = st.columns([7, 3])
+                        with so_col1:
+                            st.caption(f"🎯 Activate Shutout Bonus Tracker for **{active_selected_team}**?")
+                        with so_col2:
+                            so_toggle = st.checkbox("🎯 SO", value=is_currently_so, key=f"so_chk_p_{m_id}", label_visibility="collapsed")
+                            if so_toggle != is_currently_so:
+                                toggle_shutout_modifier(active_selected_team, so_toggle)
+                                st.rerun()
+                                
+                    st.markdown("<div style='margin-bottom:8px; border-bottom:1px solid rgba(148,163,184,0.1);'></div>", unsafe_allow_html=True)
 
                     # ======================================================================
                     # Dynamic Flex-Game Kickoff String Renderer - Handles Blank Timestamps
