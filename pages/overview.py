@@ -242,6 +242,36 @@ with header_col2:
 
 st.markdown("---")
 
+# Extract row references safely out of the array format
+active_profile = reg_profile[0] if isinstance(reg_profile, list) else reg_profile
+player_status = active_profile["bracket_status"]
+
+# PAYMENT NOTICE: If enrolled but unpaid, render a gentle reminder banner without locking the form
+if not active_profile.get("is_paid", False):
+    st.warning("**Payment Reminder:** Our ledger shows your entry fee for this pool track is currently outstanding. Please settle up with the Commissioner as soon as possible by sending $25 to @Robert-Moore-65 on Venmo or rotamo@yahoo.com on PayPal.")
+
+# Recover user info from Supabase
+user_profile_res = supabase.table("users").select("*").eq("id", user_id).single().execute().data
+user_profile = user_profile_res if user_profile_res else {}
+username_token = user_profile.get("username", "Anonymous Player")
+
+# Dynamic Roster Counter
+all_regs = supabase.table("tournament_registrations").select("bracket_status").eq("game_type", game_slug).eq("is_enrolled", True).execute().data
+remaining_count = sum(1 for r in all_regs if r["bracket_status"] != "Eliminated")
+
+# Render the responsive Flexbox status baseline bar using the Username Code Token
+st.markdown(
+    f"""
+    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; font-family: sans-serif; font-size: 14px; font-weight: 500; color: var(--text-color); opacity: 0.85;">
+        <div>Status for <b>{username_token}</b>: {player_status}</div>
+        <div style="text-align: right;">Remaining Active Players: <b>{remaining_count}</b></div>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+st.markdown("---")
+
 # ====================================================================
 # 🛡️ GLOBAL ACCESSIBILITY & SECURITY PRIVACY GATES RECKONER
 # ====================================================================
@@ -353,7 +383,8 @@ else:
             st.caption(f"*No players currently active inside {bracket_title}*")
             return
             
-        st.markdown(f"#### 🏅 {bracket_title}")
+        players_group_count = len(players_group)
+        st.markdown(f"#### 🏅 {bracket_title}: {players_group_count} Players")
         header_row = "| Player | " + " | ".join(f"Wk {w}" for w in visible_weeks) + " |"
         divider_row = "| :--- | " + " | ".join(" :---: " for _ in visible_weeks) + " |"
         table_markdown_lines = [header_row, divider_row]
