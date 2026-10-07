@@ -1,11 +1,11 @@
 import streamlit as st
+from supabase import create_client, Client
 import os
 import csv
 import io
 import uuid
 import datetime
 import base64
-from supabase import create_client, Client
 
 # --- SETUP MANDATORY FIRST DIRECTIVE PASS ---
 st.set_page_config(layout="wide")
