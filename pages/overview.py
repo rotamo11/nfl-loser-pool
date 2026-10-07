@@ -378,7 +378,7 @@ else:
                     user_has_finalized_for_loop_week = w_num in current_user_finalized_weeks
                     
                     is_own_profile_row = (u_id == current_user_uid)
-                    reveal_tile_cell = is_current_loop_week_locked or user_has_finalized_for_loop_week or is_own_profile_row or is_logged_in_admin
+                    reveal_tile_cell = is_current_loop_week_locked or user_has_finalized_for_loop_week or is_own_profile_row # or is_logged_in_admin
                     
                     if not reveal_tile_cell: 
                         cell_content = '<div style="background-color: rgba(148, 163, 184, 0.15); padding: 4px 6px; border-radius: 4px; font-weight:600; font-size:10px; color:gray; white-space:nowrap;">🔒 Hidden</div>'
