@@ -36,26 +36,38 @@ with st.sidebar:
                 background-color: {sidebar_bg} !important;
             }}
             
-            /* THE FIXED LINK ENFORCER MATRIX */
-            /* Forces all typography, links, page navigation buttons, and text labels */
-            /* inside the left rail rail to stay high-contrast crisp white across ALL modes */
-            [data-testid="stSidebar"] .stText, [data-testid="stSidebar"] p, 
-            [data-testid="stSidebar"] h3, [data-testid="stSidebar"] label,
-            [data-testid="stSidebar"] span, [data-testid="stSidebar"] a,
-            [data-testid="stSidebar"] [data-testid="stPageLink-Link"] p {{
+            /* 🚀 THE BULLETPROOF LINK OVERRIDE MATRIX */
+            /* Force all text blocks, markdown structures, spans, and paragraph tags */
+            /* inside the sidebar tree to remain solid, readable high-contrast white */
+            [data-testid="stSidebar"] .stText, 
+            [data-testid="stSidebar"] p, 
+            [data-testid="stSidebar"] h3, 
+            [data-testid="stSidebar"] label,
+            [data-testid="stSidebar"] span, 
+            [data-testid="stSidebar"] a,
+            [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
+            [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] span {{
                 color: #ffffff !important;
                 opacity: 1.0 !important;
+                -webkit-text-fill-color: #ffffff !important;
             }}
             
-            /* Safe low-profile background tint when hovering over links in light/dark mode */
+            /* Add high-visibility hover states for light mode contrast padding */
             [data-testid="stSidebar"] [data-testid="stPageLink-Link"]:hover {{
-                background-color: rgba(255, 255, 255, 0.12) !important;
+                background-color: rgba(255, 255, 255, 0.15) !important;
                 border-radius: 4px;
             }}
             
-            /* Force dropdown selection target text contrast fields to remain slate gray */
+            /* Ensure form expansion headers and labels don't wash out */
+            [data-testid="stSidebar"] .st-emotion-cache-1f3w060,
+            [data-testid="stSidebar"] .stElementContainer {{
+                color: #ffffff !important;
+            }}
+            
+            /* Maintain high contrast for dark text input fields inside selectboxes */
             [data-testid="stSidebar"] div[data-baseweb="select"] div {{
                 color: #1e293b !important;
+                -webkit-text-fill-color: #1e293b !important;
             }}
         </style>
         """,
