@@ -3,13 +3,21 @@ from supabase import create_client, Client
 import os
 import datetime
 import time
+import uuid
+import base64
 
+# --- SETUP MANDATORY FIRST DIRECTIVE PASS ---
 st.set_page_config(layout="wide")
-
-# --- DATABASE SETUP ---
-URL = st.secrets["SUPABASE_URL"]
-KEY = st.secrets["SUPABASE_KEY"]
+URL, KEY = st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(URL, KEY)
+
+# --- AUTOMATIC TIMELINE CALCULATOR ENGINE ---
+SEASON_START_WEDNESDAY = datetime.datetime(2026, 9, 9, 0, 0, 0)
+now = datetime.datetime.now()
+CALCULATED_CURRENT_WEEK = 1 if now < SEASON_START_WEDNESDAY else min(22, ((now - SEASON_START_WEDNESDAY).days // 7) + 1)
+
+def get_week_label(w_idx):
+    return {19: "Wildcard", 20: "Divisional", 21: "Conference", 22: "Super Bowl"}.get(w_idx, f"Week {w_idx}")
 
 # --- CUSTOM SIDEBAR CONFIGURATION ---
 with st.sidebar:
@@ -69,7 +77,7 @@ with st.sidebar:
     # Helper function to generate clean base64 image strings safely across Chrome/Firefox
     def get_base64_logo_html(team_code):
         try:
-            # 🚀 Strip out both _SO suffix strings AND whitespace before checking file paths
+            # Strip out both _SO suffix strings AND whitespace before checking file paths
             t_clean = team_code.replace("_SO", "").strip().upper()
             
             # Diverts routing to look up BYE.svg asset if player utilized their bye slot option
@@ -82,7 +90,7 @@ with st.sidebar:
         except Exception: 
             pass
         return ""
-        
+
     # --- SIDEBAR INTERFACE ENHANCEMENT ---
     with st.sidebar:
         week_options = []
@@ -144,7 +152,7 @@ with st.sidebar:
     # Links dynamically append only if the identity verification pass clears
     if is_logged_in_admin:
         st.page_link("pages/admin.py", label="Admin")
-        st.page_link("pages/seed_data.py", label="Seed Data")
+        # st.page_link("pages/seed_data.py", label="Seed Data")
     
     st.markdown("<hr style='margin:10px 0 15px 0; border:0; border-top:1px solid rgba(255,255,255,0.3);'/>", unsafe_allow_html=True)
     
@@ -188,22 +196,20 @@ with st.sidebar:
                                     }).eq("id", user_id).execute()
                                     st.toast("Profile Saved!")
                                     st.rerun()
-                # --- ACCORDION CONTAINER 2: SECURE PASSWORD MODIFICATION ---
-                with st.expander("🔒 Change Account Password"):
                     with st.form("sidebar_password_form", clear_on_submit=True):
                         sb_new_pw = st.text_input("New Secure Password:", type="password", key="sb_pwd1")
                         sb_conf_pw = st.text_input("Confirm New Password:", type="password", key="sb_pwd2")
                         
-                        if st.form_submit_button("Commit Password Change 🔐", width='stretch'):
+                        if st.form_submit_button("Commit Password Change", width='stretch'):
                             clean_sb_pw = sb_new_pw.strip()
                             if len(clean_sb_pw) < 6:
-                                st.sidebar.error("❌ Password must be at least 6 characters long.")
+                                st.sidebar.error("Password must be at least 6 characters long.")
                             elif clean_sb_pw != sb_conf_pw.strip():
-                                        st.sidebar.error("❌ Passwords do not match.")
+                                        st.sidebar.error("Passwords do not match.")
                             else:
                                 with st.spinner("Updating encryption vaults..."):
                                     try:
-                                        # 🚀 SECURE REST ENFORCER: Bypasses browser cache token lookups entirely
+                                        # SECURE REST ENFORCER: Bypasses browser cache token lookups entirely
                                         # This forces the change through using your master administrative service role key!
                                         auth_endpoint = f"{URL}/auth/v1/admin/users/{user_id}"
                                         auth_headers = {
@@ -220,9 +226,15 @@ with st.sidebar:
                                             st.sidebar.success("Password updated successfully!")
                                             st.toast("Security encryption synchronized!")
                                         else:
-                                            st.sidebar.error(f"❌ Server Rejected Update: {auth_response.text}")
+                                            st.sidebar.error(f"Server Rejected Update: {auth_response.text}")
                                     except Exception as pw_err:
                                         st.sidebar.error(f"Failed to update password: {str(pw_err)}")
+                # Logout button appears only when logged in
+                if st.button("Log Out", key="sidebar_logout_btn"): #, width='stretch'):
+                    st.session_state.user = None
+                    st.session_state.selected_teams = []
+                    st.session_state.force_password_change = False
+                    st.rerun()
         except Exception:
             pass
 
@@ -284,7 +296,7 @@ if 'force_password_change' not in st.session_state:
     st.session_state.force_password_change = False
 
 if st.session_state.force_password_change:
-    st.subheader("🔒 Update Your Temporary Password")
+    st.subheader("Update Your Temporary Password")
     new_pw = st.text_input("New Permanent Password", type="password")
     confirm_pw = st.text_input("Confirm Permanent Password", type="password")
     
@@ -415,25 +427,25 @@ elif not st.session_state.user:
     # CHANNEL 3: DOUBLE-VERIFIED PASSWORD RESET
     # ==========================================
     elif st.session_state.auth_mode == "Reset":
-        st.subheader("🔄 Request Secure Password Reset Link")
+        st.subheader("Request Secure Password Reset Link")
         st.write("Because multiple league players can share an email address, enter both your Username and Email to identify your account.")
         
         reset_username_input = st.text_input("Your Unique Username Code Token:")
         reset_email_input = st.text_input("Your Registered Email Address:")
         
-        if st.button("Send Magic Reset Email link ✉️", width='stretch'):
+        if st.button("Send Reset Email link", width='stretch'):
             clean_user = reset_username_input.strip()
             clean_email = reset_email_input.strip()
             
             if not clean_user or not clean_email:
-                st.error("❌ Both Username and Email Address fields are mandatory.")
+                st.error("Both Username and Email Address fields are mandatory.")
             else:
                 with st.spinner("Verifying identity records..."):
-                    # 🚀 DOUBLE LOCK PRE-CHECK: Match BOTH columns simultaneously to locate the exact player ID
+                    # DOUBLE LOCK PRE-CHECK: Match BOTH columns simultaneously to locate the exact player ID
                     account_match = supabase.table("users").select("id, email").eq("username", clean_user).eq("email", clean_email).execute().data
                     
                     if not account_match:
-                        st.error("❌ Account Verification Failed. No player record matches that specific combination of Username and Email.")
+                        st.error("Account Verification Failed. No player record matches that specific combination of Username and Email.")
                     else:
                         try:
                             # Pull the targeted email stream parameter
@@ -444,7 +456,7 @@ elif not st.session_state.user:
                                 target_record["email"],
                                 {"redirect_to": "https://streamlit.app"}
                             )
-                            st.success("✉️ Magic Reset link fired! Check your email inbox and spam folders to re-establish your login access keys.")
+                            st.success("Reset link sent! Check your email inbox and spam folders to re-establish your login access keys.")
                         except Exception as e:
                             st.error(f"Mailing server error: {str(e)}")
 else:        
@@ -498,7 +510,7 @@ else:
         all_picks_res = supabase.table("user_picks").select("*").eq("user_id", user_id).eq("game_type", game_slug).execute().data
         
         # ====================================================================
-        # 📜 SELECTION LEDGER DISCOVERY ENGINE (22-WEEK HISTORY RAIL)
+        # SELECTION LEDGER DISCOVERY ENGINE (22-WEEK HISTORY RAIL)
         # ====================================================================
         st.write("#### Your Season Selection History")
         
@@ -558,8 +570,6 @@ else:
                         else:
                             card_bg = "background-color: rgba(148, 163, 184, 0.05); border: 1px solid rgba(148, 163, 184, 0.3); color: var(--text-color);"
                     
-                    # 🚀 THE CROSS-PAGE SYNCHRONIZED FIX:
-                    # Invokes your functioning base64 loader tool directly inside the HTML card loop string compilation pass!
                     # 🚀 THE UNBREAKABLE INLINE FIXED EMBED ENGINE:
                     # Bypasses all cross-page function references to decode files directly inline
                     logo_html = ""
