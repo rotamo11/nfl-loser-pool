@@ -179,6 +179,39 @@ with st.sidebar:
                                     }).eq("id", user_id).execute()
                                     st.toast("Profile Saved!")
                                     st.rerun()
+                    with st.form("sidebar_password_form", clear_on_submit=True):
+                        sb_new_pw = st.text_input("New Secure Password:", type="password", key="sb_pwd1")
+                        sb_conf_pw = st.text_input("Confirm New Password:", type="password", key="sb_pwd2")
+                        
+                        if st.form_submit_button("Commit Password Change 🔐", width='stretch'):
+                            clean_sb_pw = sb_new_pw.strip()
+                            if len(clean_sb_pw) < 6:
+                                st.sidebar.error("❌ Password must be at least 6 characters long.")
+                            elif clean_sb_pw != sb_conf_pw.strip():
+                                        st.sidebar.error("❌ Passwords do not match.")
+                            else:
+                                with st.spinner("Updating encryption vaults..."):
+                                    try:
+                                        # 🚀 SECURE REST ENFORCER: Bypasses browser cache token lookups entirely
+                                        # This forces the change through using your master administrative service role key!
+                                        auth_endpoint = f"{URL}/auth/v1/admin/users/{user_id}"
+                                        auth_headers = {
+                                            "Authorization": f"Bearer {KEY}",
+                                            "apikey": KEY,
+                                            "Content-Type": "application/json"
+                                        }
+                                        auth_payload = {"password": clean_sb_pw}
+                                        
+                                        import requests
+                                        auth_response = requests.put(auth_endpoint, json=auth_payload, headers=auth_headers)
+                                        
+                                        if auth_response.status_code in [200, 201]:
+                                            st.sidebar.success("Password updated successfully!")
+                                            st.toast("Security encryption synchronized!")
+                                        else:
+                                            st.sidebar.error(f"❌ Server Rejected Update: {auth_response.text}")
+                                    except Exception as pw_err:
+                                        st.sidebar.error(f"Failed to update password: {str(pw_err)}")
                 # Logout button appears only when logged in
                 if st.button("Log Out", key="sidebar_logout_btn"): #, width='stretch'):
                     st.session_state.user = None
