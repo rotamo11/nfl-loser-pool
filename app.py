@@ -654,7 +654,7 @@ else:
             # Determine conversational playoff labels or standard week integers
             team_word = "team" if SELECTED_WEEK <= 14 else "teams"
             required_picks = 1 if SELECTED_WEEK <= 14 else 2 if SELECTED_WEEK <= 18 else 99
-            st.write(f"Select **{required_picks}** {team_word} to lose your matchups below:")
+            st.write(f"Select **{required_picks}** {team_word} to lose from the matchups below:")
 
             matchups = supabase.table("nfl_schedule").select("*").eq("week", SELECTED_WEEK).execute().data
 
