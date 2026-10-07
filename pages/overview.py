@@ -18,6 +18,7 @@ supabase: Client = create_client(URL, KEY)
 # Prevents st.session_state KeyError crashes if users bookmark or deep-link directly to subpages
 if "user" not in st.session_state:
     st.session_state.user = None
+    st.session_state.user.id = None
 if "selected_teams" not in st.session_state:
     st.session_state.selected_teams = []
 if "force_password_change" not in st.session_state:
