@@ -14,7 +14,7 @@ st.set_page_config(layout="wide")
 URL, KEY = st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(URL, KEY)
 
-# INITIALIZER SAFEGUARD FIX: 
+# INITIALIZER SAFEGUARD FIX:      --------------------------------------   IS THIS NEEDED???   -------------------------------------------
 # Prevents st.session_state KeyError crashes if users bookmark or deep-link directly to subpages
 if "user" not in st.session_state:
     st.session_state.user = None
@@ -282,7 +282,10 @@ else:
             t = s["team_picked"].upper()
             counts[t] = counts.get(t, 0) + 1
             
-        sorted_distribution = sorted(counts.items(), key=lambda item: (0, 0, "") if item == "BYE" else (1, -item, item))
+        sorted_distribution = sorted(
+            counts.items(), 
+            key=lambda item: (0, 0, "") if item[0] == "BYE" else (1, -item[1], item[0])
+        )
         dist_cols = st.columns(min(len(sorted_distribution), 10))
         for idx, (team, count) in enumerate(sorted_distribution):
             with dist_cols[idx % 10]:
