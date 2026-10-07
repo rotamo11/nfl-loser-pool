@@ -31,18 +31,60 @@ with st.sidebar:
     st.markdown(
         f"""
         <style>
-            /* Dynamic sidebar color assignment */
+            /* Dynamic sidebar container color assignment */
             [data-testid="stSidebar"] {{
                 background-color: {sidebar_bg} !important;
             }}
-            /* Overwrite sidebar text to remain clean white across modes */
-            [data-testid="stSidebar"] .stText, [data-testid="stSidebar"] p, 
-            [data-testid="stSidebar"] h3, [data-testid="stSidebar"] label {{
+            
+            /* 🚀 1. TARGET ONLY UPPER SIDEBAR NAVIGATION LINK BUTTONS */
+            /* This ensures your navigation links stay crisp white across both modes */
+            [data-testid="stSidebar"] [data-testid="stPageLink-Link"] p,
+            [data-testid="stSidebar"] [data-testid="stPageLink-Link"] span,
+            [data-testid="stSidebar"] h3 {{
                 color: #ffffff !important;
+                opacity: 1.0 !important;
+                -webkit-text-fill-color: #ffffff !important;
             }}
-            /* Force dropdown selection text contrast values */
+            
+            /* 🚀 2. FIXED EXPANDER & ACCOUNT SETTINGS PROFILE WRAPPERS */
+            /* Automatically forces text inside the forms, expanders, input boxes, */
+            /* and action buttons to use theme-adaptive styling rules natively */
+            [data-testid="stSidebar"] .stExpander,
+            [data-testid="stSidebar"] form,
+            [data-testid="stSidebar"] form p,
+            [data-testid="stSidebar"] form label,
+            [data-testid="stSidebar"] form span {{
+                color: var(--text-color) !important;
+                -webkit-text-fill-color: var(--text-color) !important;
+            }}
+            
+            /* 🚀 3. INPUT TEXT FIELDS BOX CONTRAST FIX */
+            /* Guarantees typed usernames, emails, and passwords stay readable slate gray */
+            [data-testid="stSidebar"] input {{
+                color: #1e293b !important;
+                -webkit-text-fill-color: #1e293b !important;
+                background-color: #ffffff !important;
+            }}
+            
+            /* 🚀 4. EXPLICIT BUTTON CONTRAST OVERRIDE */
+            /* Forces the Log Out, Save Profile, and Commit Change buttons to adopt theme styling */
+            [data-testid="stSidebar"] button,
+            [data-testid="stSidebar"] button p,
+            [data-testid="stSidebar"] button span {{
+                color: var(--text-color) !important;
+                -webkit-text-fill-color: var(--text-color) !important;
+            }}
+            
+            /* Dropdown selection target text contrast fields */
             [data-testid="stSidebar"] div[data-baseweb="select"] div {{
                 color: #1e293b !important;
+                -webkit-text-fill-color: #1e293b !important;
+            }}
+            
+            /* Navigation links hover state */
+            [data-testid="stSidebar"] [data-testid="stPageLink-Link"]:hover {{
+                background-color: rgba(255, 255, 255, 0.15) !important;
+                border-radius: 4px;
             }}
         </style>
         """,
