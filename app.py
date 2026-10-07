@@ -500,7 +500,7 @@ else:
         # ====================================================================
         # 📜 SELECTION LEDGER DISCOVERY ENGINE (22-WEEK HISTORY RAIL)
         # ====================================================================
-        st.write("## Your Season Selection History")
+        st.write("#### Your Season Selection History")
         
         # 1. Fetch active schedule records to determine real-time card color shading
         sched_rows = supabase.table("nfl_schedule").select("week", "away_team", "home_team", "winner").execute().data
