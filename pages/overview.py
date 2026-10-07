@@ -247,28 +247,46 @@ st.markdown("---")
 # THE FIXED VERSION: Extracts the ID safely only if a user is logged in
 current_user = st.session_state.get("user")
 user_id = current_user.id if current_user else None
-reg_profile = supabase.table("tournament_registrations").select("*").eq("user_id", user_id).eq("game_type", game_slug).execute().data
 
-# THE ENROLLMENT GATEWAY LOCK: Check if registration exists and if enrollment flag is active
-if not reg_profile:
+# ====================================================================
+# THE FIX: GATED ENROLLMENT LOOKUP PASS (Guest Fallback Resilient)
+# ====================================================================
+reg_profile = None
+
+# Only query tournament registrations if we have a valid, logged-in user session ID
+if user_id:
+    try:
+        reg_profile = supabase.table("tournament_registrations").select("*").eq("user_id", user_id).eq("game_type", game_slug).execute().data
+    except Exception:
+        reg_profile = None
+
+# --- EVALUATE ACCESS RULES ---
+if user_id and not reg_profile:
     st.error(f"**Access Locked.** You are not registered for the {game_mode} game.")
     st.info("Please contact the League Commissioner to initialize your account profile: nfl.loser.pool@gmail.com")
+    st.stop()
 
-elif isinstance(reg_profile, list) and len(reg_profile) > 0 and not reg_profile[0].get("is_enrolled", False):
-    st.error(f"**Not Enrolled.** Your profile is not currently enrolled in the **{game_mode}** game for the this season.")
+elif user_id and isinstance(reg_profile, list) and len(reg_profile) > 0 and not reg_profile[0].get("is_enrolled", False):
+    st.error(f"**Not Enrolled.** Your profile is not currently enrolled in the **{game_mode}** game for this season.")
     st.info("*Note: If you have already paid or submitted entry data to the Commissioner, access will open automatically once your enrollment status is enabled.*")
+    st.stop()
     
-elif isinstance(reg_profile, list) and len(reg_profile) > 0 and reg_profile[0].get("bracket_status") == "Eliminated":
-    st.error(f"**Eliminated.** You have been eliminated from the {game_mode} game. Selection access is locked, but you can still view the Overview page.")
-    
+elif user_id and isinstance(reg_profile, list) and len(reg_profile) > 0 and reg_profile[0].get("bracket_status") == "Eliminated":
+    # Optional notification flag, but do not stop execution since eliminated players can still view standings!
+    st.toast("Viewing scoreboard as an eliminated participant.")
+
+# Safe extraction of individual player status metadata
+if user_id and reg_profile and len(reg_profile) > 0:
+    active_profile = reg_profile[0]
+    player_status = active_profile.get("bracket_status", "Active")
+    is_paid_status = active_profile.get("is_paid", False)
 else:
-    # Extract row references safely out of the array format
-    active_profile = reg_profile[0] if isinstance(reg_profile, list) else reg_profile
-    player_status = active_profile["bracket_status"]
-    
-    # PAYMENT NOTICE: If enrolled but unpaid, render a gentle reminder banner without locking the form
-    if not active_profile.get("is_paid", False):
-        st.warning("**Payment Reminder:** Our ledger shows your entry fee for this pool track is currently outstanding. Please settle up with the Commissioner as soon as possible by sending $25 to @Robert-Moore-65 on Venmo or rotamo@yahoo.com on PayPal.")
+    player_status = "Public Viewer"
+    is_paid_status = True
+
+# PAYMENT REMINDER: Only fire if a logged-in user is genuinely unpaid
+if user_id and not is_paid_status:
+    st.warning("**Payment Reminder:** Our ledger shows your entry fee for this pool track is currently outstanding. Please settle up with the Commissioner as soon as possible by sending $25 to @Robert-Moore-65 on Venmo.")
 
     # Recover user info from Supabase
     user_profile_res = supabase.table("users").select("*").eq("id", user_id).single().execute().data
