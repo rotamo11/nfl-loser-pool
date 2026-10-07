@@ -36,9 +36,9 @@ with st.sidebar:
                 background-color: {sidebar_bg} !important;
             }}
             
-            /* THE BULLETPROOF LINK OVERRIDE MATRIX */
-            /* Force all text blocks, markdown structures, spans, and paragraph tags */
-            /* inside the sidebar tree to remain solid, readable high-contrast white */
+            /* 🚀 THE FIXED HIGH-CONTRAST TEXT MATRIX */
+            /* Force all text blocks, markdown structures, spans, paragraph tags, and native */
+            /* links inside the sidebar tree to remain solid, readable high-contrast white */
             [data-testid="stSidebar"] .stText, 
             [data-testid="stSidebar"] p, 
             [data-testid="stSidebar"] h3, 
@@ -46,16 +46,28 @@ with st.sidebar:
             [data-testid="stSidebar"] span, 
             [data-testid="stSidebar"] a,
             [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
-            [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] span {{
+            [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] span,
+            [data-testid="stSidebar"] [data-testid="stPageLink-Link"] p,
+            [data-testid="stSidebar"] [data-testid="stPageLink-Link"] span {{
                 color: #ffffff !important;
                 opacity: 1.0 !important;
                 -webkit-text-fill-color: #ffffff !important;
+                text-decoration: none !important;
+            }}
+            
+            /* 🚀 THE FIXED LIGHT MODE BUTTON OVERRIDE */
+            /* Targets Streamlit's native PageLink components directly to overwrite Light Mode themes */
+            [data-testid="stSidebar"] [data-testid="stPageLink-Link"] {{
+                color: #ffffff !important;
+                background-color: rgba(255, 255, 255, 0.05) !important;
+                border: 1px solid rgba(255, 255, 255, 0.1) !important;
             }}
             
             /* Add high-visibility hover states for light mode contrast padding */
             [data-testid="stSidebar"] [data-testid="stPageLink-Link"]:hover {{
                 background-color: rgba(255, 255, 255, 0.15) !important;
                 border-radius: 4px;
+                border: 1px solid rgba(255, 255, 255, 0.25) !important;
             }}
             
             /* Ensure form expansion headers and labels don't wash out */
