@@ -152,7 +152,7 @@ with st.sidebar:
     # Links dynamically append only if the identity verification pass clears
     if is_logged_in_admin:
         st.page_link("pages/admin.py", label="Admin")
-        st.page_link("pages/seed_data.py", label="Seed Data")
+        # st.page_link("pages/seed_data.py", label="Seed Data")
     
     st.markdown("<hr style='margin:10px 0 15px 0; border:0; border-top:1px solid rgba(255,255,255,0.3);'/>", unsafe_allow_html=True)
     
@@ -288,52 +288,6 @@ with header_col2:
     )
 
 st.markdown("---")
-
-user_id = st.session_state.user.id
-reg_profile = supabase.table("tournament_registrations").select("*").eq("user_id", user_id).eq("game_type", game_slug).execute().data
-
-# THE ENROLLMENT GATEWAY LOCK: Check if registration exists and if enrollment flag is active
-if not reg_profile:
-    st.error(f"**Access Locked.** You are not registered for the {game_mode} game.")
-    st.info("Please contact the League Commissioner to initialize your account profile: nfl.loser.pool@gmail.com")
-
-elif isinstance(reg_profile, list) and len(reg_profile) > 0 and not reg_profile[0].get("is_enrolled", False):
-    st.error(f"**Not Enrolled.** Your profile is not currently enrolled in the **{game_mode}** game for the this season.")
-    st.info("*Note: If you have already paid or submitted entry data to the Commissioner, access will open automatically once your enrollment status is enabled.*")
-    
-elif isinstance(reg_profile, list) and len(reg_profile) > 0 and reg_profile[0].get("bracket_status") == "Eliminated":
-    st.error(f"**Eliminated.** You have been eliminated from the {game_mode} game. Selection access is locked, but you can still view the Overview page.")
-    
-else:
-    # Extract row references safely out of the array format
-    active_profile = reg_profile[0] if isinstance(reg_profile, list) else reg_profile
-    player_status = active_profile["bracket_status"]
-    
-    # PAYMENT NOTICE: If enrolled but unpaid, render a gentle reminder banner without locking the form
-    if not active_profile.get("is_paid", False):
-        st.warning("**Payment Reminder:** Our ledger shows your entry fee for this pool track is currently outstanding. Please settle up with the Commissioner as soon as possible by sending $25 to @Robert-Moore-65 on Venmo or rotamo@yahoo.com on PayPal.")
-
-    # Recover user info from Supabase
-    user_profile_res = supabase.table("users").select("*").eq("id", user_id).single().execute().data
-    user_profile = user_profile_res if user_profile_res else {}
-    username_token = user_profile.get("username", "Anonymous Player")
-    
-    # Dynamic Roster Counter
-    all_regs = supabase.table("tournament_registrations").select("bracket_status").eq("game_type", game_slug).eq("is_enrolled", True).execute().data
-    remaining_count = sum(1 for r in all_regs if r["bracket_status"] != "Eliminated")
-    
-    # Render the responsive Flexbox status baseline bar using the Username Code Token
-    st.markdown(
-        f"""
-        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; font-family: sans-serif; font-size: 14px; font-weight: 500; color:#3b82f6;">
-            <div>Status for <b>{username_token}</b>: {player_status}</div>
-            <div style="text-align: right;">Remaining Active Players: <b>{remaining_count}</b></div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    st.markdown("---")
 
 tab_scores, tab_users, tab_csv = st.tabs(["Game & Score Processing", "League Roster Management", "Applications Queue & CSV Utilities"])
 
