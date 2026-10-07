@@ -1,16 +1,24 @@
 import streamlit as st
-from supabase import create_client, Client
+import os
+import csv
+import io
+import uuid
 import datetime
 import base64
-import os
+from supabase import create_client, Client
 
-# --- ST.SET_PAGE_CONFIG MUST BE THE ABSOLUTE FIRST DIRECTIVE ---
+# --- SETUP MANDATORY FIRST DIRECTIVE PASS ---
 st.set_page_config(layout="wide")
-
-# --- DATABASE SETUP ---
-URL = st.secrets["SUPABASE_URL"]
-KEY = st.secrets["SUPABASE_KEY"]
+URL, KEY = st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(URL, KEY)
+
+# --- AUTOMATIC TIMELINE CALCULATOR ENGINE ---
+SEASON_START_WEDNESDAY = datetime.datetime(2026, 9, 9, 0, 0, 0)
+now = datetime.datetime.now()
+CALCULATED_CURRENT_WEEK = 1 if now < SEASON_START_WEDNESDAY else min(22, ((now - SEASON_START_WEDNESDAY).days // 7) + 1)
+
+def get_week_label(w_idx):
+    return {19: "Wildcard", 20: "Divisional", 21: "Conference", 22: "Super Bowl"}.get(w_idx, f"Week {w_idx}")
 
 # --- CUSTOM SIDEBAR CONFIGURATION ---
 with st.sidebar:
@@ -70,7 +78,7 @@ with st.sidebar:
     # Helper function to generate clean base64 image strings safely across Chrome/Firefox
     def get_base64_logo_html(team_code):
         try:
-            # 🚀 Strip out both _SO suffix strings AND whitespace before checking file paths
+            # Strip out both _SO suffix strings AND whitespace before checking file paths
             t_clean = team_code.replace("_SO", "").strip().upper()
             
             # Diverts routing to look up BYE.svg asset if player utilized their bye slot option
@@ -145,7 +153,7 @@ with st.sidebar:
     # Links dynamically append only if the identity verification pass clears
     if is_logged_in_admin:
         st.page_link("pages/admin.py", label="Admin")
-        st.page_link("pages/seed_data.py", label="Seed Data")
+        # st.page_link("pages/seed_data.py", label="Seed Data")
     
     st.markdown("<hr style='margin:10px 0 15px 0; border:0; border-top:1px solid rgba(255,255,255,0.3);'/>", unsafe_allow_html=True)
     
@@ -189,22 +197,20 @@ with st.sidebar:
                                     }).eq("id", user_id).execute()
                                     st.toast("Profile Saved!")
                                     st.rerun()
-                # --- ACCORDION CONTAINER 2: SECURE PASSWORD MODIFICATION ---
-                with st.expander("🔒 Change Account Password"):
                     with st.form("sidebar_password_form", clear_on_submit=True):
                         sb_new_pw = st.text_input("New Secure Password:", type="password", key="sb_pwd1")
                         sb_conf_pw = st.text_input("Confirm New Password:", type="password", key="sb_pwd2")
                         
-                        if st.form_submit_button("Commit Password Change 🔐", width='stretch'):
+                        if st.form_submit_button("Commit Password Change", width='stretch'):
                             clean_sb_pw = sb_new_pw.strip()
                             if len(clean_sb_pw) < 6:
-                                st.sidebar.error("❌ Password must be at least 6 characters long.")
+                                st.sidebar.error("Password must be at least 6 characters long.")
                             elif clean_sb_pw != sb_conf_pw.strip():
-                                        st.sidebar.error("❌ Passwords do not match.")
+                                        st.sidebar.error("Passwords do not match.")
                             else:
                                 with st.spinner("Updating encryption vaults..."):
                                     try:
-                                        # 🚀 SECURE REST ENFORCER: Bypasses browser cache token lookups entirely
+                                        # SECURE REST ENFORCER: Bypasses browser cache token lookups entirely
                                         # This forces the change through using your master administrative service role key!
                                         auth_endpoint = f"{URL}/auth/v1/admin/users/{user_id}"
                                         auth_headers = {
@@ -221,9 +227,15 @@ with st.sidebar:
                                             st.sidebar.success("Password updated successfully!")
                                             st.toast("Security encryption synchronized!")
                                         else:
-                                            st.sidebar.error(f"❌ Server Rejected Update: {auth_response.text}")
+                                            st.sidebar.error(f"Server Rejected Update: {auth_response.text}")
                                     except Exception as pw_err:
                                         st.sidebar.error(f"Failed to update password: {str(pw_err)}")
+                # Logout button appears only when logged in
+                if st.button("Log Out", key="sidebar_logout_btn"): #, width='stretch'):
+                    st.session_state.user = None
+                    st.session_state.selected_teams = []
+                    st.session_state.force_password_change = False
+                    st.rerun()
         except Exception:
             pass
 
@@ -277,6 +289,52 @@ with header_col2:
     )
 
 st.markdown("---")
+
+user_id = st.session_state.user.id
+reg_profile = supabase.table("tournament_registrations").select("*").eq("user_id", user_id).eq("game_type", game_slug).execute().data
+
+# THE ENROLLMENT GATEWAY LOCK: Check if registration exists and if enrollment flag is active
+if not reg_profile:
+    st.error(f"**Access Locked.** You are not registered for the {game_mode} game.")
+    st.info("Please contact the League Commissioner to initialize your account profile: nfl.loser.pool@gmail.com")
+
+elif isinstance(reg_profile, list) and len(reg_profile) > 0 and not reg_profile[0].get("is_enrolled", False):
+    st.error(f"**Not Enrolled.** Your profile is not currently enrolled in the **{game_mode}** game for the this season.")
+    st.info("*Note: If you have already paid or submitted entry data to the Commissioner, access will open automatically once your enrollment status is enabled.*")
+    
+elif isinstance(reg_profile, list) and len(reg_profile) > 0 and reg_profile[0].get("bracket_status") == "Eliminated":
+    st.error(f"**Eliminated.** You have been eliminated from the {game_mode} game. Selection access is locked, but you can still view the Overview page.")
+    
+else:
+    # Extract row references safely out of the array format
+    active_profile = reg_profile[0] if isinstance(reg_profile, list) else reg_profile
+    player_status = active_profile["bracket_status"]
+    
+    # PAYMENT NOTICE: If enrolled but unpaid, render a gentle reminder banner without locking the form
+    if not active_profile.get("is_paid", False):
+        st.warning("**Payment Reminder:** Our ledger shows your entry fee for this pool track is currently outstanding. Please settle up with the Commissioner as soon as possible by sending $25 to @Robert-Moore-65 on Venmo or rotamo@yahoo.com on PayPal.")
+
+    # Recover user info from Supabase
+    user_profile_res = supabase.table("users").select("*").eq("id", user_id).single().execute().data
+    user_profile = user_profile_res if user_profile_res else {}
+    username_token = user_profile.get("username", "Anonymous Player")
+    
+    # Dynamic Roster Counter
+    all_regs = supabase.table("tournament_registrations").select("bracket_status").eq("game_type", game_slug).eq("is_enrolled", True).execute().data
+    remaining_count = sum(1 for r in all_regs if r["bracket_status"] != "Eliminated")
+    
+    # Render the responsive Flexbox status baseline bar using the Username Code Token
+    st.markdown(
+        f"""
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; font-family: sans-serif; font-size: 14px; font-weight: 500; color:#3b82f6;">
+            <div>Status for <b>{username_token}</b>: {player_status}</div>
+            <div style="text-align: right;">Remaining Active Players: <b>{remaining_count}</b></div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.markdown("---")
 
 # --- USER SELECTION AUTHENTICATION & OVERRIDES GATES ---
 if 'user' not in st.session_state:
