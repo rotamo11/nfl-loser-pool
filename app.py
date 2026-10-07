@@ -484,7 +484,7 @@ else:
         # Render the responsive Flexbox status baseline bar using the Username Code Token
         st.markdown(
             f"""
-            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 10px; font-family: sans-serif; font-size: 12px; font-weight: 500; color: var(--text-color); opacity: 0.85;">
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; font-family: sans-serif; font-size: 12px; font-weight: 500; color: var(--text-color); opacity: 0.85;">
                 <div><h4>Status for <b>{username_token}</b>: {player_status}</h4></div>
                 <div style="text-align: right;"><h4>Remaining Active Players: <b>{remaining_count}</b></h4></div>
             </div>
