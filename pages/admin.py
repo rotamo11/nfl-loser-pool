@@ -426,8 +426,78 @@ with tab_scores:
                     st.success("Standings updated and fully synchronized successfully!")
                     st.rerun()
 
+# ====================================================================
+# TAB 2: SYSTEM LOCKS & MAINTENANCE CONTROL
+# ====================================================================
+with tab_locks:
+    st.markdown("### Auto-Fallback & Weekly Deadline Lock Engine")
+    st.caption("Fires the Sunday Noon lock protocol: Promotes 'Confirmed' entries to 'Finalized'. If a player misses the deadline, they receive a BYE if available. Otherwise, you choose their penalty team below.")
+
+    active_players = supabase.table("tournament_registrations").select("user_id, byes_used").eq("game_type", game_slug).eq("is_enrolled", True).execute().data
+    weekly_logged_picks = supabase.table("user_picks").select("user_id").eq("game_type", game_slug).eq("week", SELECTED_WEEK).execute().data
+    users_with_picks = {p["user_id"] for p in (weekly_logged_picks or [])}
+    late_players_queue = [p for p in (active_players or []) if p["user_id"] not in users_with_picks]
+
+    if not late_players_queue:
+        st.success("✅ **Roster Fully Verified:** All active players have successfully submitted or locked selections for this week!")
+        if st.button("🔒 Lock & Promote Confirmed Choices to Finalized", type="primary", key="lock_only_btn", width='stretch'):
+            supabase.table("user_picks").update({"pick_state": "Finalized"}).eq("game_type", game_slug).eq("week", SELECTED_WEEK).eq("pick_state", "Confirmed").execute()
+            st.success("All Confirmed choices hardlocked to Finalized!")
+            st.rerun()
+    else:
+        st.warning(f"⚠️ **Attention Required:** Found **{len(late_players_queue)}** player(s) missing choices for this week.")
+        users_meta = supabase.table("users").select("id", "username").execute().data
+        username_lookup = {u["id"]: u["username"] for u in (users_meta or [])}
+
+        recommended_penalty_team = "KC"
+        try:
+            fpi_res = requests.get("https://espn.com", timeout=4)
+            if fpi_res.status_code == 200:
+                raw_items = fpi_res.json().get("items", [])
+                if raw_items: 
+                    recommended_penalty_team = raw_items[0]["team"]["abbreviation"].upper()
+        except Exception: pass
+        #FPI as of 10/8/26 (Week 5)
+        nfl_franchises = ["SF", "JAX", "LAR", "KC", "SEA", "BUF", "DAL", "CHI", "CIN", "DET", "DEN", "NE", "HOU", "MIN", "LAC", "IND", "CAR", "GB", "LV", "BAL", "ATL", "PHI", "PIT", "NO", "WAS", "NYJ", "CLE", "TEN", "ARI", "TB", "NYG", "MIA"]
+        if recommended_penalty_team in nfl_franchises: nfl_franchises.remove(recommended_penalty_team)
+        nfl_franchises.insert(0, recommended_penalty_team)
+
+        with st.form("auto_fallback_enforcer_form"):
+            st.markdown("#### 🛠️ Assign Manual Overrides for Late Players")
+            manual_override_selections = {}
+            
+            for player in late_players_queue:
+                u_id = player["user_id"]
+                p_username = username_lookup.get(u_id, f"User {u_id[:8]}")
+                byes_spent = player.get("byes_used", 0)
+                
+                c_pinfo, c_paction = st.columns(2)
+                with c_pinfo:
+                    if byes_spent == 0: st.markdown(f"👤 **{p_username}** &bull; Unused BYE Available &rarr; *Auto-assigned a BYE*")
+                    else: st.markdown(f"👤 **{p_username}** &bull; ❌ *BYE Used!* Choose manual penalty team:")
+                with c_paction:
+                    if byes_spent == 0: st.caption("🔒 Auto-BYE Active")
+                    else: manual_override_selections[u_id] = st.selectbox(f"Penalty for {p_username}", options=nfl_franchises, key=f"mf_{u_id}", label_visibility="collapsed")
+            
+            if st.form_submit_button("🔒 Execute Sunday Noon Lock & Auto-Fallback Protocol", width='stretch'):
+                supabase.table("user_picks").update({"pick_state": "Finalized"}).eq("game_type", game_slug).eq("week", SELECTED_WEEK).eq("pick_state", "Confirmed").execute()
+                p_byes, p_overrides = 0, 0
+                
+                for player in late_players_queue:
+                    u_id = player["user_id"]
+                    if player.get("byes_used", 0) == 0:
+                        supabase.table("user_picks").insert({"user_id": u_id, "game_type": game_slug, "week": SELECTED_WEEK, "team_picked": "BYE", "pick_state": "Finalized"}).execute()
+                        supabase.table("tournament_registrations").update({"byes_used": 1}).eq("user_id", u_id).eq("game_type", game_slug).execute()
+                        p_byes += 1
+                    else:
+                        chosen_team = manual_override_selections.get(u_id, recommended_penalty_team)
+                        supabase.table("user_picks").insert({"user_id": u_id, "game_type": game_slug, "week": SELECTED_WEEK, "team_picked": chosen_team, "pick_state": "Finalized"}).execute()
+                        p_overrides += 1
+                st.success(f"Enforced! Processed {p_byes} BYEs and {p_overrides} custom penalty picks.")
+                st.rerun()
+
 # ==========================================
-# 👥 TAB 2: ROSTER & PROFILE MANAGEMENT
+# TAB 3: ROSTER & PROFILE MANAGEMENT
 # ==========================================
 with tab_users:
     all_users = supabase.table("users").select("*").order("username").execute().data
@@ -517,7 +587,7 @@ with tab_users:
                     st.rerun()
 
 # ==========================================
-# TAB 3: APPLICATIONS & CSV UTILITIES
+# TAB 4: APPLICATIONS & CSV UTILITIES
 # ==========================================
 with tab_csv:
     st.subheader("👥 Live Joining Applications Queue")
