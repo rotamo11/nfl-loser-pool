@@ -175,6 +175,18 @@ with st.sidebar:
                         e_last = st.text_input("Last Name", value=u_prof.get("last_name") or "", key="sb_l")
                         e_mail = st.text_input("Email", value=u_prof.get("email") or "", key="sb_e")
                         e_cell = st.text_input("Cell Phone (123-456-7890)", value=u_prof.get("cell_phone") or "", key="sb_c")
+
+                        # THE NEW ALERTS SETTINGS SELECTION ROW:
+                        # Pull current settings from Supabase, defaulting Email to True if unassigned
+                        pref_email = u_prof.get("alert_email", True) if u_prof.get("alert_email") is not None else True
+                        pref_sms = u_prof.get("alert_sms", False)
+                        
+                        st.markdown("<p style='font-size:12px; margin-bottom:2px; font-weight:bold;'>Receive Missing Pick Alerts Via:</p>", unsafe_allow_html=True)
+                        c_chk_em, c_chk_sms = st.columns(2)
+                        with c_chk_em:
+                            opt_email = st.checkbox("Email", value=pref_email, key="sb_alert_em")
+                        with c_chk_sms:
+                            opt_sms = st.checkbox("SMS Text", value=pref_sms, key="sb_alert_sms")
                         
                         if st.form_submit_button("Save Profile Updates", width='stretch'):
                             if not e_user.strip() or not e_mail.strip():
