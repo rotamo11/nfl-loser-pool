@@ -449,7 +449,7 @@ with tab_locks:
         users_meta = supabase.table("users").select("id", "username").execute().data
         username_lookup = {u["id"]: u["username"] for u in (users_meta or [])}
 
-        recommended_penalty_team = "KC"
+        recommended_penalty_team = "SF"
         try:
             fpi_res = requests.get("https://espn.com", timeout=4)
             if fpi_res.status_code == 200:
