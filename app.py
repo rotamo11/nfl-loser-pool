@@ -35,6 +35,11 @@ with st.sidebar:
             [data-testid="stSidebar"] {{
                 background-color: {sidebar_bg} !important;
             }}
+            /* Overwrite sidebar text to remain clean white across modes */
+            [data-testid="stSidebar"] .stText, [data-testid="stSidebar"] p, 
+            [data-testid="stSidebar"] h3, [data-testid="stSidebar"] label {{
+                color: #1e293b !important;
+            }}
         </style>
         """,
         unsafe_allow_html=True
