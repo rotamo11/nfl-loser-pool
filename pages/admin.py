@@ -437,6 +437,51 @@ with tab_scores:
                         new_bracket = "Loser Bracket" if wrong_count == 0 else "Winner Bracket" if wrong_count == 1 else "Eliminated"
                         supabase.table("tournament_registrations").update({"bracket_status": new_bracket}).eq("user_id", u_id).eq("game_type", game_slug).execute()
                         
+                    # ====================================================================
+                    # POST-GAME SUMMARY DIGEST ENGINE (Tab 1 Calculation Insertion Pass)
+                    # ====================================================================
+                    # 1. Tally up wrong choices logged for this target week window
+                    current_week_picks = supabase.table("user_picks").select("user_id, pick_state").eq("game_type", game_slug).eq("week", SELECTED_WEEK).execute().data
+                    wrong_picks_count = sum(1 for p in current_week_picks if p.get("pick_state") == "Incorrect")
+                    
+                    # 2. Extract current bracket totals from active registrations rows
+                    updated_regs = supabase.table("tournament_registrations").select("user_id, bracket_status").eq("game_type", game_slug).eq("is_enrolled", True).execute().data
+                    
+                    loser_count = sum(1 for r in updated_regs if r["bracket_status"] == "Loser Bracket")
+                    winner_count = sum(1 for r in updated_regs if r["bracket_status"] == "Winner Bracket")
+                    eliminated_count = sum(1 for r in updated_regs if r["bracket_status"] == "Eliminated")
+                    
+                    # 3. Pull previous week's statistics to find exactly how many players were eliminated *this week*
+                    # (A player is newly eliminated if they have >= 2 wrong picks, and their previous week count was < 2)
+                    newly_eliminated_count = 0
+                    for r in updated_regs:
+                        if r["bracket_status"] == "Eliminated":
+                            u_historical = supabase.table("user_picks").select("pick_state, week").eq("game_type", game_slug).eq("user_id", r["user_id"]).execute().data
+                            # Count losses up to the current week
+                            total_losses = sum(1 for h in u_historical if h["pick_state"] == "Incorrect" and h["week"] <= SELECTED_WEEK)
+                            last_week_losses = sum(1 for h in u_historical if h["pick_state"] == "Incorrect" and h["week"] < SELECTED_WEEK)
+                            if total_losses >= 2 and last_week_losses < 2:
+                                newly_eliminated_count += 1
+                                
+                    # 4. Generate high-visibility summary template output stream
+                    active_pool_remaining = loser_count + winner_count
+                    
+                    st.markdown("### Summary Report")
+                    summary_report_markdown = f"""
+                    > 🏁 **NFL Loser Pool — {get_week_label(SELECTED_WEEK)} Results**
+                    > * **Wrong Picks This Week:** {wrong_picks_count}
+                    > * **Players Eliminated This Week:** {newly_eliminated_count}
+                    > * **Active Pool Remaining:** {active_pool_remaining} Contenders
+                    >
+                    > **Current League Bracket Standings Breakdown:**
+                    > * **Loser Bracket (0 Losses):** {loser_count} Players
+                    > * **Winner Bracket (1 Loss):** {winner_count} Players
+                    > * **Total Eliminated (2+ Losses):** {eliminated_count} Players
+                    """
+                    # Write summary report right onto your admin dashboard dashboard console screen 
+                    st.markdown(summary_report_markdown)
+                    st.session_state.weekly_summary_report_cache = summary_report_markdown
+                    
                     st.success("Standings updated and fully synchronized successfully!")
                     st.rerun()
 
