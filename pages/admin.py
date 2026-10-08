@@ -445,11 +445,11 @@ with tab_locks:
             st.success("All Confirmed choices hardlocked to Finalized!")
             st.rerun()
     else:
-        st.warning(f"⚠️ **Attention Required:** Found **{len(late_players_queue)}** player(s) missing choices for this week.")
+        recommended_penalty_team = "SF"
+        st.warning(f"⚠️ **Attention Required:** Found **{len(late_players_queue)}** player(s) missing choices for this week. Current default pick if BYE is not available is **{recommended_penalty_team}**.")
         users_meta = supabase.table("users").select("id", "username").execute().data
         username_lookup = {u["id"]: u["username"] for u in (users_meta or [])}
 
-        recommended_penalty_team = "SF"
         try:
             fpi_res = requests.get("https://espn.com", timeout=4)
             if fpi_res.status_code == 200:
