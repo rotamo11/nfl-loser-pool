@@ -287,7 +287,7 @@ with header_col2:
         """
     )
 
-# st.markdown("---")
+st.markdown("---")
 
 # --- USER SELECTION AUTHENTICATION & OVERRIDES GATES ---
 if 'user' not in st.session_state:
@@ -334,7 +334,7 @@ elif not st.session_state.user:
             st.session_state.auth_mode = "Reset"
             st.rerun()
 
-    st.markdown("<br>", unsafe_allow_html=True)
+    # st.markdown("<br>", unsafe_allow_html=True)
 
     # ==========================================
     # CHANNEL 1: STANDARD ACCOUNT LOGIN PORTAL
