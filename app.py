@@ -185,7 +185,7 @@ with st.sidebar:
                         try: default_carrier_idx = carrier_options.index(current_db_carrier)
                         except ValueError: default_carrier_idx = 0
                             
-                        e_carrier = st.selectbox("Cellular Network Provider (For Free SMS Alerts):", options=carrier_options, index=default_carrier_idx, key="sb_carrier_select")
+                        e_carrier = st.selectbox("Provider (Required for SMS Alerts):", options=carrier_options, index=default_carrier_idx, key="sb_carrier_select")
                         
                         # 2. DYNAMIC ALERTS TIERS SETROWS
                         pref_email = u_prof.get("alert_email", True) if u_prof.get("alert_email") is not None else True
@@ -200,7 +200,7 @@ with st.sidebar:
                             if not e_user.strip() or not e_mail.strip():
                                 st.error("Required fields cannot be left blank.")
                             elif opt_sms and e_carrier == "Select Provider":
-                                st.error("**Action Required:** You must select a Cellular Network Provider to enable free SMS text alerts.")
+                                st.error("**Action Required:** You must select a Cellular Network Provider to enable SMS text alerts.")
                             else:
                                 supabase.table("users").update({
                                     "username": e_user.strip(), "first_name": e_first.strip(), "last_name": e_last.strip(),
