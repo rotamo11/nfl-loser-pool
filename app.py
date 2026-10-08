@@ -31,56 +31,59 @@ with st.sidebar:
     st.markdown(
         f"""
         <style>
-            /* 1. Dynamic sidebar container color assignment */
+            /* Dynamic sidebar color assignment */
             [data-testid="stSidebar"] {{
                 background-color: {sidebar_bg} !important;
             }}
+            /* Overwrite sidebar text to remain clean white across modes */
+            [data-testid="stSidebar"] .stText, [data-testid="stSidebar"] p, 
+            [data-testid="stSidebar"] h3, [data-testid="stSidebar"] label {{
+                color: #ffffff !important;
+            }}
+            /* Force dropdown selection text contrast values */
+            [data-testid="stSidebar"] div[data-baseweb="select"] div {{
+                color: #1e293b !important;
+            }}
             
-            /* 🚀 2. UNIFIED EXPANDER CONTRAST LOCK */
-            /* Forces the Account Settings expander frame to match dark mode styling */
+            /* 🚀 THE FIXED SPECIFIC INNER EXPANDER LOCK */
+            /* Locks the Account Settings container node layout to match Dark Mode */
             [data-testid="stSidebar"] [data-testid="stExpander"] {{
-                background-color: rgba(15, 23, 42, 0.3) !important; /* Semi-transparent dark slate */
+                background-color: rgba(15, 23, 42, 0.25) !important;
                 border: 1px solid rgba(255, 255, 255, 0.15) !important;
                 border-radius: 6px !important;
             }}
-            [data-testid="stSidebar"] [data-testid="stExpander"] summary,
-            [data-testid="stSidebar"] [data-testid="stExpander"] label,
-            [data-testid="stSidebar"] [data-testid="stExpander"] p,
-            [data-testid="stSidebar"] [data-testid="stExpander"] span {{
+            [data-testid="stSidebar"] [data-testid="stExpander"] * {{
                 color: #ffffff !important;
-                -webkit-text-fill-color: #ffffff !important;
             }}
-            
-            /* 🚀 3. FIXED DARK-MODE INPUT FIELDS */
-            /* Guarantees text fields inside the expander look identical across both modes */
-            [data-testid="stSidebar"] input {{
+            [data-testid="stSidebar"] [data-testid="stExpander"] input {{
                 color: #ffffff !important;
                 -webkit-text-fill-color: #ffffff !important;
-                background-color: #0f172a !important; /* Solid dark slate input box */
+                background-color: #0f172a !important;
                 border: 1px solid rgba(255, 255, 255, 0.2) !important;
-                border-radius: 4px !important;
             }}
             
-            /* 🚀 4. HARDCODED GREY BUTTON MATRIX */
-            /* Forces Save Profile, Commit Change, and Log Out buttons to stay slate-grey */
-            [data-testid="stSidebar"] [data-testid="baseButton-secondary"],
-            [data-testid="stSidebar"] button {{
+            /* 🚀 THE TARGETED 3-BUTTON DARK-MODE GREY ENFORCER */
+            /* Isolates form submission buttons and your explicit log-out action block */
+            [data-testid="stSidebar"] [data-testid="stForm"] button,
+            [data-testid="stSidebar"] [data-key="sidebar_logout_btn"] button,
+            [data-testid="stSidebar"] [data-testid="stForm"] button p,
+            [data-testid="stSidebar"] [data-key="sidebar_logout_btn"] button p,
+            [data-testid="stSidebar"] [data-testid="stForm"] button span,
+            [data-testid="stSidebar"] [data-key="sidebar_logout_btn"] button span {{
                 color: #ffffff !important;
                 -webkit-text-fill-color: #ffffff !important;
-                background-color: #334155 !important; /* Fixed dark-mode slate grey button */
+                background-color: #334155 !important; /* Fixed dark-mode slate grey */
                 border: 1px solid rgba(255, 255, 255, 0.15) !important;
                 border-radius: 4px !important;
             }}
-            
-            /* High-visibility hover transitions for the grey buttons */
-            [data-testid="stSidebar"] [data-testid="baseButton-secondary"]:hover,
-            [data-testid="stSidebar"] button:hover {{
-                background-color: #475569 !important; /* Lighter charcoal on hover */
+            [data-testid="stSidebar"] [data-testid="stForm"] button:hover,
+            [data-testid="stSidebar"] [data-key="sidebar_logout_btn"] button:hover {{
+                background-color: #475569 !important;
                 border: 1px solid rgba(255, 255, 255, 0.3) !important;
             }}
             
-            /* Keep dropdown text visible when selecting carriers */
-            [data-testid="stSidebar"] div[data-baseweb="select"] div {{
+            /* Re-protect selectbox typography contrast layers within the expander */
+            [data-testid="stSidebar"] [data-testid="stExpander"] div[data-baseweb="select"] * {{
                 color: #1e293b !important;
                 -webkit-text-fill-color: #1e293b !important;
             }}
