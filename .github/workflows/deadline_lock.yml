@@ -1,0 +1,29 @@
+# .github/workflows/deadline_lock.yml
+name: Weekly NFL Loser Pool Deadline Enforcer
+
+on:
+  schedule:
+    # ⏱️ 12:30 PM Eastern Time converts to 16:30 UTC during Daylight Saving Time (EDT)
+    - cron: '30 16 * * 0'
+  workflow_dispatch: # Allows you to manually trigger it from GitHub anytime if needed
+
+jobs:
+  enforce-locks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository Code
+        uses: actions/checkout@v4
+
+      - name: Initialize Python Environment
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Network Dependencies
+        run: pip install supabase requests
+
+      - name: Execute Lock & Fallback Script Engine
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: python lock_deadline.py
