@@ -28,6 +28,18 @@ with st.sidebar:
     # 2. Dynamic Theme Profile Mapping
     sidebar_bg = "#1d3d70" if game_slug == "Main" else "#974706"
 
+    st.markdown(
+        f"""
+        <style>
+            /* Dynamic sidebar color assignment */
+            [data-testid="stSidebar"] {{
+                background-color: {sidebar_bg} !important;
+            }}
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
     # --- AUTOMATIC SEASON TIMELINE RECKONER ---
     # Week 1 Wednesday anchor timestamp (September 9, 2026 at 00:00:00)
     SEASON_START_WEDNESDAY = datetime.datetime(2026, 9, 9, 0, 0, 0)
