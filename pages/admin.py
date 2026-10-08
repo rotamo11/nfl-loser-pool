@@ -170,45 +170,47 @@ with st.sidebar:
             u_prof = supabase.table("users").select("*").eq("id", user_id).single().execute().data
             if u_prof:
                 st.markdown("<hr style='margin:15px 0 10px 0; border:0; border-top:1px solid rgba(255,255,255,0.15);'/>", unsafe_allow_html=True)
-                with st.expander("⚙️ Account Settings"):
+                with st.expander("Account Settings"):
                     with st.form("sidebar_profile_form"):
                         e_user = st.text_input("Username", value=u_prof.get("username") or "", key="sb_u")
                         e_first = st.text_input("First Name", value=u_prof.get("first_name") or "", key="sb_f")
                         e_last = st.text_input("Last Name", value=u_prof.get("last_name") or "", key="sb_l")
-                        e_mail = st.text_input("Email", value=u_prof.get("email") or "", key="sb_e")
-                        e_cell = st.text_input("Cell Phone (123-456-7890)", value=u_prof.get("cell_phone") or "", key="sb_c")
-
-                        # THE NEW ALERTS SETTINGS SELECTION ROW:
-                        # Pull current settings from Supabase, defaulting Email to True if unassigned
+                        e_mail = st.text_input("Email Address", value=u_prof.get("email") or "", key="sb_e")
+                        e_cell = st.text_input("Cell Phone Number", value=u_prof.get("cell_phone") or "", key="sb_c")
+                        
+                        # 1. NEW CELL CARRIER CARRIER GATEWAY SELECTOR
+                        # Tracks the exact telecom provider network strings needed for free text routing
+                        carrier_options = ["Select Provider", "Verizon", "AT&T", "T-Mobile", "Sprint"]
+                        current_db_carrier = u_prof.get("cell_carrier") or "Select Provider"
+                        
+                        try: default_carrier_idx = carrier_options.index(current_db_carrier)
+                        except ValueError: default_carrier_idx = 0
+                            
+                        e_carrier = st.selectbox("Cellular Network Provider (For Free SMS Alerts):", options=carrier_options, index=default_carrier_idx, key="sb_carrier_select")
+                        
+                        # 2. DYNAMIC ALERTS TIERS SETROWS
                         pref_email = u_prof.get("alert_email", True) if u_prof.get("alert_email") is not None else True
                         pref_sms = u_prof.get("alert_sms", False)
                         
                         st.markdown("<p style='font-size:12px; margin-bottom:2px; font-weight:bold;'>Receive Missing Pick Alerts Via:</p>", unsafe_allow_html=True)
                         c_chk_em, c_chk_sms = st.columns(2)
-                        with c_chk_em:
-                            opt_email = st.checkbox("Email", value=pref_email, key="sb_alert_em")
-                        with c_chk_sms:
-                            opt_sms = st.checkbox("SMS Text", value=pref_sms, key="sb_alert_sms")
+                        with c_chk_em: opt_email = st.checkbox("Email", value=pref_email, key="sb_alert_em")
+                        with c_chk_sms: opt_sms = st.checkbox("SMS Text", value=pref_sms, key="sb_alert_sms")
                         
                         if st.form_submit_button("Save Profile Updates", width='stretch'):
                             if not e_user.strip() or not e_mail.strip():
-                                st.error("Fields cannot be left blank.")
+                                st.error("Required fields cannot be left blank.")
+                            elif opt_sms and e_carrier == "Select Provider":
+                                st.error("**Action Required:** You must select a Cellular Network Provider to enable free SMS text alerts.")
                             else:
-                                # Pre-empt duplicate token crashes
-                                collision = False
-                                if e_user.strip() != u_prof.get("username"):
-                                    chk = supabase.table("users").select("id").eq("username", e_user.strip()).execute().data
-                                    if chk: collision = True
-                                    
-                                if collision:
-                                    st.error("Username {e_user.strip()} already claimed. Please try again.")
-                                else:
-                                    supabase.table("users").update({
-                                        "username": e_user.strip(), "first_name": e_first.strip(),
-                                        "last_name": e_last.strip(), "email": e_mail.strip(), "cell_phone": e_cell.strip()
-                                    }).eq("id", user_id).execute()
-                                    st.toast("Profile Saved!")
-                                    st.rerun()
+                                supabase.table("users").update({
+                                    "username": e_user.strip(), "first_name": e_first.strip(), "last_name": e_last.strip(),
+                                    "email": e_mail.strip(), "cell_phone": e_cell.strip(),
+                                    "cell_carrier": None if e_carrier == "Select Provider" else e_carrier,
+                                    "alert_email": opt_email, "alert_sms": opt_sms
+                                }).eq("id", user_id).execute()
+                                st.toast("Preferences Synchronized!")
+                                st.rerun()
                     with st.form("sidebar_password_form", clear_on_submit=True):
                         sb_new_pw = st.text_input("New Secure Password:", type="password", key="sb_pwd1")
                         sb_conf_pw = st.text_input("Confirm New Password:", type="password", key="sb_pwd2")
