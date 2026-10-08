@@ -27,66 +27,6 @@ with st.sidebar:
 
     # 2. Dynamic Theme Profile Mapping
     sidebar_bg = "#1d3d70" if game_slug == "Main" else "#974706"
-    
-    st.markdown(
-        f"""
-        <style>
-            /* Dynamic sidebar container background color assignment */
-            [data-testid="stSidebar"] {{
-                background-color: {sidebar_bg} !important;
-            }}
-            
-            /* 🚀 THE FIXED UNIFORM SIDEBAR OVERRIDE */
-            /* Forces EVERY piece of text, header, label, and form element inside the */
-            /* sidebar tree to lock onto solid white, matching dark mode exactly */
-            [data-testid="stSidebar"] *, 
-            [data-testid="stSidebar"] p, 
-            [data-testid="stSidebar"] h3, 
-            [data-testid="stSidebar"] label,
-            [data-testid="stSidebar"] span,
-            [data-testid="stSidebar"] summary {{
-                color: #ffffff !important;
-                -webkit-text-fill-color: #ffffff !important;
-                opacity: 1.0 !important;
-            }}
-            
-            /* 🚀 HARDCODED UNIFORM BUTTONS */
-            /* Forces all action buttons (Save Updates, Commit Change, Log Out) to */
-            /* look identical across both modes using standard dark-mode slate grey */
-            [data-testid="stSidebar"] button,
-            [data-testid="stSidebar"] button p,
-            [data-testid="stSidebar"] button span,
-            [data-testid="stSidebar"] [data-testid="baseButton-secondary"] {{
-                color: #ffffff !important;
-                -webkit-text-fill-color: #ffffff !important;
-                background-color: #334155 !important;
-                border: 1px solid rgba(255, 255, 255, 0.2) !important;
-                border-radius: 4px !important;
-            }}
-            [data-testid="stSidebar"] button:hover {{
-                background-color: #475569 !important;
-            }}
-            
-            /* 🚀 FIXED UNIFORM INPUT FIELDS */
-            /* Forces input boxes (Usernames, Emails, Passwords) to use dark-mode slate */
-            [data-testid="stSidebar"] input {{
-                color: #ffffff !important;
-                -webkit-text-fill-color: #ffffff !important;
-                background-color: #0f172a !important;
-                border: 1px solid rgba(255, 255, 255, 0.2) !important;
-            }}
-            
-            /* 🚀 EXPLICIT CONTRAST EXCEPTION FOR EXPANDED SELECTBOX DROPDOWNS */
-            /* Ensures dropdown menu selection options remain dark and readable */
-            [data-testid="stSidebar"] div[data-baseweb="select"] div,
-            [data-testid="stSidebar"] ul[role="listbox"] * {{
-                color: #1e293b !important;
-                -webkit-text-fill-color: #1e293b !important;
-            }}
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
 
     # --- AUTOMATIC SEASON TIMELINE RECKONER ---
     # Week 1 Wednesday anchor timestamp (September 9, 2026 at 00:00:00)
