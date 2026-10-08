@@ -290,7 +290,7 @@ with header_col2:
 
 st.markdown("---")
 
-tab_scores, tab_users, tab_csv = st.tabs(["Game & Score Processing", "League Roster Management", "Applications Queue & CSV Utilities"])
+tab_scores, tab_locks, tab_users, tab_csv = st.tabs(["Game & Score Processing", "System Locks & Maintenance Control", "League Roster Management", "Applications Queue & CSV Utilities"])
 
 # ==========================================
 # TAB 1: GAME & SCORE PROCESSING
