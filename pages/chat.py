@@ -144,13 +144,13 @@ with st.sidebar:
     st.markdown("<hr style='margin:10px 0 15px 0; border:0; border-top:1px solid rgba(255,255,255,0.3);'/>", unsafe_allow_html=True)
     
     # Basic navigation paths open to every pool player
-    st.page_link("app.py", label="Picks")
+    st.page_link("app.py", label="Picks / Login")
     st.page_link("pages/overview.py", label="Overview")
     st.page_link("pages/chat.py", label="Chat")
     st.page_link("pages/rules.py", label="Rules")
 
     # ROLE GATE: Check if the logged-in session belongs to a valid administrator
-    is_logged_in_admin = True
+    is_logged_in_admin = False
     if st.session_state.get("user"):
         try:
             admin_check = supabase.table("users").select("is_admin").eq("id", st.session_state.user.id).single().execute().data
