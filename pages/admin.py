@@ -433,7 +433,7 @@ with tab_locks:
     st.markdown("### Auto-Fallback & Weekly Deadline Lock Engine")
     st.caption("Fires the Sunday Noon lock protocol: Promotes 'Confirmed' entries to 'Finalized'. If a player misses the deadline, they receive a BYE if available. Otherwise, you choose their penalty team below.")
 
-    active_players = supabase.table("tournament_registrations").select("user_id, byes_used").eq("game_type", game_slug).eq("is_enrolled", True).ne("bracket_status","Eliminated").execute().data
+    active_players = supabase.table("tournament_registrations").select("user_id, byes_used").eq("game_type", game_slug).eq("is_enrolled", True).neq("bracket_status","Eliminated").execute().data
     weekly_logged_picks = supabase.table("user_picks").select("user_id").eq("game_type", game_slug).eq("week", SELECTED_WEEK).execute().data
     users_with_picks = {p["user_id"] for p in (weekly_logged_picks or [])}
     late_players_queue = [p for p in (active_players or []) if p["user_id"] not in users_with_picks]
