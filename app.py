@@ -31,59 +31,55 @@ with st.sidebar:
     st.markdown(
         f"""
         <style>
-            /* Dynamic sidebar color assignment */
+            /* Dynamic sidebar container background color assignment */
             [data-testid="stSidebar"] {{
                 background-color: {sidebar_bg} !important;
             }}
-            /* Overwrite sidebar text to remain clean white across modes */
-            [data-testid="stSidebar"] .stText, [data-testid="stSidebar"] p, 
-            [data-testid="stSidebar"] h3, [data-testid="stSidebar"] label {{
+            
+            /* 🚀 THE FIXED UNIFORM SIDEBAR OVERRIDE */
+            /* Forces EVERY piece of text, header, label, and form element inside the */
+            /* sidebar tree to lock onto solid white, matching dark mode exactly */
+            [data-testid="stSidebar"] *, 
+            [data-testid="stSidebar"] p, 
+            [data-testid="stSidebar"] h3, 
+            [data-testid="stSidebar"] label,
+            [data-testid="stSidebar"] span,
+            [data-testid="stSidebar"] summary {{
                 color: #ffffff !important;
-            }}
-            /* Force dropdown selection text contrast values */
-            [data-testid="stSidebar"] div[data-baseweb="select"] div {{
-                color: #1e293b !important;
+                -webkit-text-fill-color: #ffffff !important;
+                opacity: 1.0 !important;
             }}
             
-            /* 🚀 THE FIXED SPECIFIC INNER EXPANDER LOCK */
-            /* Locks the Account Settings container node layout to match Dark Mode */
-            [data-testid="stSidebar"] [data-testid="stExpander"] {{
-                background-color: rgba(15, 23, 42, 0.25) !important;
-                border: 1px solid rgba(255, 255, 255, 0.15) !important;
-                border-radius: 6px !important;
-            }}
-            [data-testid="stSidebar"] [data-testid="stExpander"] * {{
+            /* 🚀 HARDCODED UNIFORM BUTTONS */
+            /* Forces all action buttons (Save Updates, Commit Change, Log Out) to */
+            /* look identical across both modes using standard dark-mode slate grey */
+            [data-testid="stSidebar"] button,
+            [data-testid="stSidebar"] button p,
+            [data-testid="stSidebar"] button span,
+            [data-testid="stSidebar"] [data-testid="baseButton-secondary"] {{
                 color: #ffffff !important;
+                -webkit-text-fill-color: #ffffff !important;
+                background-color: #334155 !important;
+                border: 1px solid rgba(255, 255, 255, 0.2) !important;
+                border-radius: 4px !important;
             }}
-            [data-testid="stSidebar"] [data-testid="stExpander"] input {{
+            [data-testid="stSidebar"] button:hover {{
+                background-color: #475569 !important;
+            }}
+            
+            /* 🚀 FIXED UNIFORM INPUT FIELDS */
+            /* Forces input boxes (Usernames, Emails, Passwords) to use dark-mode slate */
+            [data-testid="stSidebar"] input {{
                 color: #ffffff !important;
                 -webkit-text-fill-color: #ffffff !important;
                 background-color: #0f172a !important;
                 border: 1px solid rgba(255, 255, 255, 0.2) !important;
             }}
             
-            /* 🚀 THE TARGETED 3-BUTTON DARK-MODE GREY ENFORCER */
-            /* Isolates form submission buttons and your explicit log-out action block */
-            [data-testid="stSidebar"] [data-testid="stForm"] button,
-            [data-testid="stSidebar"] [data-key="sidebar_logout_btn"] button,
-            [data-testid="stSidebar"] [data-testid="stForm"] button p,
-            [data-testid="stSidebar"] [data-key="sidebar_logout_btn"] button p,
-            [data-testid="stSidebar"] [data-testid="stForm"] button span,
-            [data-testid="stSidebar"] [data-key="sidebar_logout_btn"] button span {{
-                color: #ffffff !important;
-                -webkit-text-fill-color: #ffffff !important;
-                background-color: #334155 !important; /* Fixed dark-mode slate grey */
-                border: 1px solid rgba(255, 255, 255, 0.15) !important;
-                border-radius: 4px !important;
-            }}
-            [data-testid="stSidebar"] [data-testid="stForm"] button:hover,
-            [data-testid="stSidebar"] [data-key="sidebar_logout_btn"] button:hover {{
-                background-color: #475569 !important;
-                border: 1px solid rgba(255, 255, 255, 0.3) !important;
-            }}
-            
-            /* Re-protect selectbox typography contrast layers within the expander */
-            [data-testid="stSidebar"] [data-testid="stExpander"] div[data-baseweb="select"] * {{
+            /* 🚀 EXPLICIT CONTRAST EXCEPTION FOR EXPANDED SELECTBOX DROPDOWNS */
+            /* Ensures dropdown menu selection options remain dark and readable */
+            [data-testid="stSidebar"] div[data-baseweb="select"] div,
+            [data-testid="stSidebar"] ul[role="listbox"] * {{
                 color: #1e293b !important;
                 -webkit-text-fill-color: #1e293b !important;
             }}
