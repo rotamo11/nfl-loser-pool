@@ -512,7 +512,7 @@ with tab_users:
             badge = "🚫 [Not Enrolled]" if not rg or not rg.get("is_enrolled") else "💲 [Paid]" if rg.get("is_paid") else "❌ [UNPAID]"
             admin_label = " ⭐ [ADMIN]" if u.get("is_admin", False) else ""
             
-            if st.button(f"{u['username']} ({u.get('first_name','') or ''}) {admin_label} {badge}", key=f"u_{u['id']}", width='stretch'):
+            if st.button(f"{u['username']} ({u.get('first_name','') or ''} {u.get('last_name','') or ''}) {admin_label} {badge}", key=f"u_{u['id']}", width='stretch'):
                 st.session_state.selected_mgmt_user = u
                 st.rerun()
                 
