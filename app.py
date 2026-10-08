@@ -185,7 +185,7 @@ with st.sidebar:
                         try: default_carrier_idx = carrier_options.index(current_db_carrier)
                         except ValueError: default_carrier_idx = 0
                             
-                        e_carrier = st.selectbox("Provider (Required for SMS Alerts):", options=carrier_options, index=default_carrier_idx, key="sb_carrier_select")
+                        e_carrier = st.selectbox("Provider (Required for SMS):", options=carrier_options, index=default_carrier_idx, key="sb_carrier_select")
                         
                         # 2. DYNAMIC ALERTS TIERS SETROWS
                         pref_email = u_prof.get("alert_email", True) if u_prof.get("alert_email") is not None else True
