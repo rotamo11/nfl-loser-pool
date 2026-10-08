@@ -31,18 +31,58 @@ with st.sidebar:
     st.markdown(
         f"""
         <style>
-            /* Dynamic sidebar color assignment */
+            /* 1. Dynamic sidebar container color assignment */
             [data-testid="stSidebar"] {{
                 background-color: {sidebar_bg} !important;
             }}
-            /* Overwrite sidebar text to remain clean white across modes */
-            [data-testid="stSidebar"] .stText, [data-testid="stSidebar"] p, 
-            [data-testid="stSidebar"] h3, [data-testid="stSidebar"] label {{
-                color: #ffffff !important;
+            
+            /* 🚀 2. UNIFIED EXPANDER CONTRAST LOCK */
+            /* Forces the Account Settings expander frame to match dark mode styling */
+            [data-testid="stSidebar"] [data-testid="stExpander"] {{
+                background-color: rgba(15, 23, 42, 0.3) !important; /* Semi-transparent dark slate */
+                border: 1px solid rgba(255, 255, 255, 0.15) !important;
+                border-radius: 6px !important;
             }}
-            /* Force dropdown selection text contrast values */
+            [data-testid="stSidebar"] [data-testid="stExpander"] summary,
+            [data-testid="stSidebar"] [data-testid="stExpander"] label,
+            [data-testid="stSidebar"] [data-testid="stExpander"] p,
+            [data-testid="stSidebar"] [data-testid="stExpander"] span {{
+                color: #ffffff !important;
+                -webkit-text-fill-color: #ffffff !important;
+            }}
+            
+            /* 🚀 3. FIXED DARK-MODE INPUT FIELDS */
+            /* Guarantees text fields inside the expander look identical across both modes */
+            [data-testid="stSidebar"] input {{
+                color: #ffffff !important;
+                -webkit-text-fill-color: #ffffff !important;
+                background-color: #0f172a !important; /* Solid dark slate input box */
+                border: 1px solid rgba(255, 255, 255, 0.2) !important;
+                border-radius: 4px !important;
+            }}
+            
+            /* 🚀 4. HARDCODED GREY BUTTON MATRIX */
+            /* Forces Save Profile, Commit Change, and Log Out buttons to stay slate-grey */
+            [data-testid="stSidebar"] [data-testid="baseButton-secondary"],
+            [data-testid="stSidebar"] button {{
+                color: #ffffff !important;
+                -webkit-text-fill-color: #ffffff !important;
+                background-color: #334155 !important; /* Fixed dark-mode slate grey button */
+                border: 1px solid rgba(255, 255, 255, 0.15) !important;
+                border-radius: 4px !important;
+            }}
+            
+            /* High-visibility hover transitions for the grey buttons */
+            [data-testid="stSidebar"] [data-testid="baseButton-secondary"]:hover,
+            [data-testid="stSidebar"] button:hover {{
+                background-color: #475569 !important; /* Lighter charcoal on hover */
+                border: 1px solid rgba(255, 255, 255, 0.3) !important;
+            }}
+            
+            /* Keep dropdown text visible when selecting carriers */
             [data-testid="stSidebar"] div[data-baseweb="select"] div {{
                 color: #1e293b !important;
+                -webkit-text-fill-color: #1e293b !important;
             }}
         </style>
         """,
