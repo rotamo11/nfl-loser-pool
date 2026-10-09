@@ -593,11 +593,11 @@ else:
             with dist_cols[idx % 10]:
                 so_label = " 🎯" if team.endswith("_SO") else ""
                 clean_team_key = team.replace("_SO", "").strip()
-                if clean_team_key == "BYE": card_style = "background-color: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: var(--text-color);"
+                if clean_team_key == "BYE": card_style = "background-color: rgba(95, 175, 95, 0.25); border: 1px solid #008000; color: var(--text-color);"
                 else:
                     game_state = outcome_lookup.get(clean_team_key, "Pending")
-                    if game_state == "Correct": card_style = "background-color: rgba(16, 185, 129, 0.15); border: 1px solid #10b981 ; color: var(--text-color);"
-                    elif game_state == "Incorrect": card_style = "background-color: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: var(--text-color);"
+                    if game_state == "Correct": card_style = "background-color: rgba(95, 175, 95, 0.25); border: 1px solid #008000 ; color: var(--text-color);"
+                    elif game_state == "Incorrect": card_style = "background-color: rgba(204, 51, 51, 0.25); border: 1px solid #FF0000; color: var(--text-color);"
                     else: card_style = "background-color: transparent; border: 1px solid rgba(148, 163, 184, 0.3); color: var(--text-color);"
                 st.markdown(f"""<div style="{card_style} padding:8px 4px; border-radius:6px; text-align:center; box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin-bottom:10px; font-family:sans-serif;"><div style="display:flex; justify-content:center; margin-bottom:4px;">{get_base64_logo_html(team)}</div><b style="font-size:13px; color: inherit;">{team.replace('_SO','')}{so_label}</b><span style="display:block; font-size:18px; font-weight:900; color:#2563eb; margin-top:2px;">{count}</span></div>""", unsafe_allow_html=True)
 
@@ -649,7 +649,7 @@ else:
         players_group_count = len(players_group)
         st.markdown(f"#### {bracket_title}: {players_group_count} Players")
         
-        # 🚀 1. INJECT FIXED TOOLTIP LAYOUT RULES
+        # 1. INJECT FIXED TOOLTIP LAYOUT RULES
         st.html(
             """
             <style>
@@ -717,7 +717,7 @@ else:
                         if p_state == "Correct" or t_pick == "BYE": 
                             bg_style = "background-color: rgba(95, 175, 95, 0.25); border: 1px solid rgba(56, 118, 29, 0.8); padding: 4px 6px; border-radius: 4px; display: inline-flex; align-items: center; justify-content:center; gap: 2px; flex:1; max-width:65px;"
                         elif p_state == "Incorrect": 
-                            bg_style = "background-color: rgba(239, 68, 68, 0.25); border: 1px solid rgba(255, 0, 0, 0.8); padding: 4px 6px; border-radius: 4px; display: inline-flex; align-items: center; justify-content:center; gap: 2px; flex:1; max-width:65px;"
+                            bg_style = "background-color: rgba(204, 51, 51, 0.25); border: 1px solid rgba(255, 0, 0, 0.8); padding: 4px 6px; border-radius: 4px; display: inline-flex; align-items: center; justify-content:center; gap: 2px; flex:1; max-width:65px;"
                         else: 
                             bg_style = "display: inline-flex; align-items: center; justify-content:center; gap: 2px; color: var(--text-color); flex:1; max-width:65px;"
                             
