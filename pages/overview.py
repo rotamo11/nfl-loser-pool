@@ -590,7 +590,7 @@ else:
         )
         dist_cols = st.columns(min(len(sorted_distribution), 15))
         for idx, (team, count) in enumerate(sorted_distribution):
-            with dist_cols[idx % 10]:
+            with dist_cols[idx % 15]:
                 so_label = " 🎯" if team.endswith("_SO") else ""
                 clean_team_key = team.replace("_SO", "").strip()
                 if clean_team_key == "BYE": card_style = "background-color: rgba(95, 175, 95, 0.25); border: 1px solid #008000; color: var(--text-color);"
