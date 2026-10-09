@@ -256,51 +256,218 @@ with header_col2:
 
 st.markdown("---")
 
-user_id = st.session_state.user.id
-reg_profile = supabase.table("tournament_registrations").select("*").eq("user_id", user_id).eq("game_type", game_slug).execute().data
+# --- USER SELECTION AUTHENTICATION & OVERRIDES GATES ---
+if 'user' not in st.session_state:
+    st.session_state.user = None
+if 'force_password_change' not in st.session_state:
+    st.session_state.force_password_change = False
 
-# THE ENROLLMENT GATEWAY LOCK: Check if registration exists and if enrollment flag is active
-if not reg_profile:
-    st.error(f"**Access Locked.** You are not registered for the {game_mode} game.")
-    st.info("Please contact the League Commissioner to initialize your account profile: nfl.loser.pool@gmail.com")
+if st.session_state.force_password_change:
+    st.subheader("Update Your Temporary Password")
+    new_pw = st.text_input("New Permanent Password", type="password")
+    confirm_pw = st.text_input("Confirm Permanent Password", type="password")
+    
+    if st.button("Save & Update Password", width='stretch'):
+        if len(new_pw.strip()) < 6:
+            st.error("Password must be at least 6 characters long.")
+        elif new_pw != confirm_pw:
+            st.error("Passwords do not match. Please verify your typing entry.")
+        else:
+            try:
+                supabase.auth.update_user({"password": new_pw.strip()})
+                supabase.table("users").update({"first_login_complete": True}).eq("id", st.session_state.user.id).execute()
+                st.session_state.force_password_change = False
+                st.success("Password updated successfully! Welcome, you loser, you!")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Failed to update password: {str(e)}")
 
-elif isinstance(reg_profile, list) and len(reg_profile) > 0 and not reg_profile[0].get("is_enrolled", False):
-    st.error(f"**Not Enrolled.** Your profile is not currently enrolled in the **{game_mode}** game for the this season.")
-    st.info("*Note: If you have already paid or submitted entry data to the Commissioner, access will open automatically once your enrollment status is enabled.*")
-    
-elif isinstance(reg_profile, list) and len(reg_profile) > 0 and reg_profile[0].get("bracket_status") == "Eliminated":
-    st.error(f"**Eliminated.** You have been eliminated from the {game_mode} game. Selection access is locked, but you can still view the Overview page.")
-    
-else:
-    # Extract row references safely out of the array format
-    active_profile = reg_profile[0] if isinstance(reg_profile, list) else reg_profile
-    player_status = active_profile["bracket_status"]
-    
-    # PAYMENT NOTICE: If enrolled but unpaid, render a gentle reminder banner without locking the form
-    if not active_profile.get("is_paid", False):
-        st.warning("**Payment Reminder:** Our ledger shows your entry fee for this pool track is currently outstanding. Please settle up with the Commissioner as soon as possible by sending $25 to @Robert-Moore-65 on Venmo or rotamo@yahoo.com on PayPal.")
+elif not st.session_state.user:
+    # THREE-WAY DISCOVERY ROUTING SYSTEM MATRIX
+    if "auth_mode" not in st.session_state:
+        st.session_state.auth_mode = "Login"
+        
+    c_log, c_jn, c_rst = st.columns(3)
+    with c_log:
+        if st.button("Account Login", width='stretch', type="primary" if st.session_state.auth_mode == "Login" else "secondary"):
+            st.session_state.auth_mode = "Login"
+            st.rerun()
+    with c_jn:
+        if st.button("Join a Pool", width='stretch', type="primary" if st.session_state.auth_mode == "Join" else "secondary"):
+            st.session_state.auth_mode = "Join"
+            st.rerun()
+    with c_rst:
+        if st.button("Reset Password", width='stretch', type="primary" if st.session_state.auth_mode == "Reset" else "secondary"):
+            st.session_state.auth_mode = "Reset"
+            st.rerun()
 
-    # Recover user info from Supabase
-    user_profile_res = supabase.table("users").select("*").eq("id", user_id).single().execute().data
-    user_profile = user_profile_res if user_profile_res else {}
-    username_token = user_profile.get("username", "Anonymous Player")
-    
-    # Dynamic Roster Counter
-    all_regs = supabase.table("tournament_registrations").select("bracket_status").eq("game_type", game_slug).eq("is_enrolled", True).execute().data
-    remaining_count = sum(1 for r in all_regs if r["bracket_status"] != "Eliminated")
-    
-    # Render the responsive Flexbox status baseline bar using the Username Code Token
-    st.markdown(
-        f"""
-        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; font-family: sans-serif; font-size: 14px; font-weight: 500; color: var(--text-color); opacity: 0.85;">
-            <div><h4>Status for <b>{username_token}</b>: {player_status}</h4></div>
-            <div style="text-align: right;"><h4>Remaining Active Players: <b>{remaining_count}</b></h4></div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    # st.markdown("<br>", unsafe_allow_html=True)
 
-    st.markdown("---")
+    # ==========================================
+    # CHANNEL 1: STANDARD ACCOUNT LOGIN PORTAL
+    # ==========================================
+    if st.session_state.auth_mode == "Login":
+        st.subheader("Player Login")
+        url_params = st.query_params
+        #dev_pass_unlocked = url_params.get("dev", "").lower() == "true"
+        
+        testing_mode = False
+        #if dev_pass_unlocked:
+        testing_mode = st.checkbox("Enable Developer Masquerade Mode")
+        
+        if testing_mode: # and dev_pass_unlocked:
+            try:
+                users_list = supabase.table("users").select("id", "username").execute().data
+                if users_list:
+                    user_options = {u["username"]: u["id"] for u in users_list}
+                    selected_user_name = st.selectbox("Masquerade as Player:", list(user_options.keys()))
+                    if st.button("Masquerade Login", width='stretch'):
+                        class MockUser:
+                            def __init__(self, uid): self.id = uid
+                        st.session_state.user = MockUser(user_options[selected_user_name])
+                        st.session_state.force_password_change = False
+                        st.session_state.selected_teams = []
+                        st.success(f"Masquerading as {selected_user_name}!")
+                        st.rerun()
+            except Exception as e: st.error(f"Error: {str(e)}")
+        else:
+            email = st.text_input("Email Address")
+            password = st.text_input("Password", type="password")
+            if st.button("Log In", width='stretch'):
+                try:
+                    res = supabase.auth.sign_in_with_password({"email": email, "password": password})
+                    st.session_state.user = res.user
+                    profile_check = supabase.table("users").select("first_login_complete").eq("id", res.user.id).single().execute().data
+                    # Force password change if reset by admin or first login incomplete
+                    if not profile_check or not profile_check.get("first_login_complete", False):
+                        st.session_state.force_password_change = True
+                    st.session_state.selected_teams = []
+                    st.success("Authentication validated.")
+                    st.rerun()
+                except Exception: st.error("Authentication rejected. Check your credentials.")
+
+    # ==========================================
+    # CHANNEL 2: ELIGIBILITY-GATED JOIN REQUESTS
+    # ==========================================
+    elif st.session_state.auth_mode == "Join":
+        st.subheader("Request to Join")
+        
+        # Pull 2nd chance timeline setting from schedule logs
+        sched_meta = supabase.table("nfl_schedule").select("second_chance_start").limit(1).execute().data
+        sc_start = sched_meta[0]["second_chance_start"] if sched_meta else 6
+        
+        # Enforce timeline rules eligibility checkpoints
+        main_open = CALCULATED_CURRENT_WEEK <= 2
+        sec_open = CALCULATED_CURRENT_WEEK <= (sc_start + 1)
+        
+        if not main_open and not sec_open:
+            st.error("Enrollment Closed. Both the Main Game and 2nd Chance Game enrollment windows have expired for this year.")
+        else:
+            target_pool_track = "Main Game" if CALCULATED_CURRENT_WEEK <= 2 else "2nd_Chance"
+            st.info(f"Requests submitted right now will automatically route into the **{target_pool_track if target_pool_track=='Main Game' else '2nd Chance Game'}** based on the currently active enrollment window.")
+            
+            with st.form("join_request_form", clear_on_submit=True):
+                j_user = st.text_input("Choose unique Username *")
+                j_first = st.text_input("First Name")
+                j_last = st.text_input("Last Name")
+                j_mail = st.text_input("Email Address *")
+                j_cell = st.text_input("Cell Phone Number")
+                
+                if st.form_submit_button("Submit Request to Commissioner"):
+                    if not j_user.strip() or not j_mail.strip():
+                        st.error("Username and Email are mandatory fields.")
+                    else:
+                        try:
+                            # Pre-check collisions across active players
+                            collision = supabase.table("users").select("id").eq("username", j_user.strip()).execute().data
+                            if collision:
+                                st.error("That username code handle is already taken.")
+                            else:
+                                supabase.table("join_requests").insert({
+                                    "username": j_user.strip(), "first_name": j_first.strip(), "last_name": j_last.strip(),
+                                    "email": j_mail.strip(), "cell_phone": j_cell.strip(), "target_game": target_pool_track
+                                }).execute()
+                                st.success("Application submitted! Your profile is sitting in the Commissioner queue for enrollment confirmation.")
+                        except Exception as e: st.error(f"Submission Error: {str(e)}")
+
+    # ==========================================
+    # CHANNEL 3: DOUBLE-VERIFIED PASSWORD RESET
+    # ==========================================
+    elif st.session_state.auth_mode == "Reset":
+        st.subheader("Request Secure Password Reset Link")
+        reset_email_input = st.text_input("Your Registered Email Address:")
+        
+        if st.button("Send Reset Email link", width='stretch'):
+            clean_email = reset_email_input.strip()
+            
+            if not  clean_email:
+                st.error("Email Address field is mandatory.")
+            else:
+                with st.spinner("Verifying identity records..."):
+                    # DOUBLE LOCK PRE-CHECK: Match BOTH columns simultaneously to locate the exact player ID
+                    account_match = supabase.table("users").select("id, email").eq("email", clean_email).execute().data
+                    
+                    if not account_match:
+                        st.error("Account Verification Failed. No player record matches that specific Email.")
+                    else:
+                        try:
+                            # Pull the targeted email stream parameter
+                            target_record = account_match[0]
+                            
+                            # Fires standard authentication password reset link via Supabase mailing servers
+                            supabase.auth.reset_password_for_email(
+                                target_record["email"],
+                                {"redirect_to": "https://streamlit.app"}
+                            )
+                            st.success("Reset link sent! Check your email inbox and spam folders to re-establish your access.")
+                        except Exception as e:
+                            st.error(f"Mailing server error: {str(e)}")
+else:        
+    user_id = st.session_state.user.id
+    reg_profile = supabase.table("tournament_registrations").select("*").eq("user_id", user_id).eq("game_type", game_slug).execute().data
+    
+    # THE ENROLLMENT GATEWAY LOCK: Check if registration exists and if enrollment flag is active
+    if not reg_profile:
+        st.error(f"**Access Locked.** You are not registered for the {game_mode} game.")
+        st.info("Please contact the League Commissioner to initialize your account profile: nfl.loser.pool@gmail.com")
+    
+    elif isinstance(reg_profile, list) and len(reg_profile) > 0 and not reg_profile[0].get("is_enrolled", False):
+        st.error(f"**Not Enrolled.** Your profile is not currently enrolled in the **{game_mode}** game for the this season.")
+        st.info("*Note: If you have already paid or submitted entry data to the Commissioner, access will open automatically once your enrollment status is enabled.*")
+        
+    elif isinstance(reg_profile, list) and len(reg_profile) > 0 and reg_profile[0].get("bracket_status") == "Eliminated":
+        st.error(f"**Eliminated.** You have been eliminated from the {game_mode} game. Selection access is locked, but you can still view the Overview page.")
+        
+    else:
+        # Extract row references safely out of the array format
+        active_profile = reg_profile[0] if isinstance(reg_profile, list) else reg_profile
+        player_status = active_profile["bracket_status"]
+        
+        # PAYMENT NOTICE: If enrolled but unpaid, render a gentle reminder banner without locking the form
+        if not active_profile.get("is_paid", False):
+            st.warning("**Payment Reminder:** Our ledger shows your entry fee for this pool track is currently outstanding. Please settle up with the Commissioner as soon as possible by sending $25 to @Robert-Moore-65 on Venmo or rotamo@yahoo.com on PayPal.")
+
+        # Recover user info from Supabase
+        user_profile_res = supabase.table("users").select("*").eq("id", user_id).single().execute().data
+        user_profile = user_profile_res if user_profile_res else {}
+        username_token = user_profile.get("username", "Anonymous Player")
+        
+        # Dynamic Roster Counter
+        all_regs = supabase.table("tournament_registrations").select("bracket_status").eq("game_type", game_slug).eq("is_enrolled", True).execute().data
+        remaining_count = sum(1 for r in all_regs if r["bracket_status"] != "Eliminated")
+        
+        # Render the responsive Flexbox status baseline bar using the Username Code Token
+        st.markdown(
+            f"""
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; font-family: sans-serif; font-size: 14px; font-weight: 500; color: var(--text-color); opacity: 0.85;">
+                <div><h4>Status for <b>{username_token}</b>: {player_status}</h4></div>
+                <div style="text-align: right;"><h4>Remaining Active Players: <b>{remaining_count}</b></h4></div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        st.markdown("---")
 
 # THE FIXED VERSION: Extracts the ID safely only if a user is logged in
 current_user = st.session_state.get("user")
