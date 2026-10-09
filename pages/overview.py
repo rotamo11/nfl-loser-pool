@@ -656,7 +656,23 @@ else:
             u_id = reg["user_id"]
             uname = user_map.get(u_id, "Anonymous")
             user_weeks_map = picks_by_user.get(u_id, {})
-            row_cells = [f"**{uname}**"]
+            
+            # THE HOVER OVERLAY FEATURE: Pre-maps first and last names directly into an HTML tooltip title anchor!
+            # 1. Locate matching profile metadata fields out of your pre-loaded users master list
+            user_record = next((u for u in users_list if u["id"] == u_id), None)
+            
+            if user_record and (user_record.get("first_name") or user_record.get("last_name")):
+                first_name_str = user_record.get("first_name") or ""
+                last_name_str = user_record.get("last_name") or ""
+                full_display_name = f"{first_name_str} {last_name_str}".strip()
+                
+                # Injects standard browser native tooltip anchor string
+                player_cell_markup = f'{uname}</span>'
+            else:
+                # Safe fallback if player has not configured their first/last profile drawer cards yet
+                player_cell_markup = f'**{uname}**'
+                
+            row_cells = [player_cell_markup]
             
             for w_num in visible_weeks:
                 p_data = user_weeks_map.get(w_num, None)
