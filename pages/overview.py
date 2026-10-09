@@ -715,9 +715,9 @@ else:
                         if t_pick.endswith("_SO"): clean_team_display += "🎯"
                             
                         if p_state == "Correct" or t_pick == "BYE": 
-                            bg_style = "background-color: rgba(95, 175, 95, 0.25); border: 1px solid rgba(56, 118, 29, 0.8); padding: 4px 6px; border-radius: 4px; display: inline-flex; align-items: center; justify-content:center; gap: 2px; flex:1; max-width:55px;"
+                            bg_style = "background-color: rgba(95, 175, 95, 0.25); border: 1px solid rgba(56, 118, 29, 0.8); padding: 4px 6px; border-radius: 4px; display: inline-flex; align-items: center; justify-content:center; gap: 2px; flex:1; max-width:60px;"
                         elif p_state == "Incorrect": 
-                            bg_style = "background-color: rgba(239, 68, 68, 0.25); border: 1px solid rgba(255, 0, 0, 0.8); padding: 4px 6px; border-radius: 4px; display: inline-flex; align-items: center; justify-content:center; gap: 2px; flex:1; max-width:55px;"
+                            bg_style = "background-color: rgba(239, 68, 68, 0.25); border: 1px solid rgba(255, 0, 0, 0.8); padding: 4px 6px; border-radius: 4px; display: inline-flex; align-items: center; justify-content:center; gap: 2px; flex:1; max-width:60px;"
                         else: 
                             bg_style = "display: inline-flex; align-items: center; justify-content:center; gap: 2px; color: var(--text-color); flex:1; max-width:55px;"
                             
