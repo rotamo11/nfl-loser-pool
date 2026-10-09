@@ -206,7 +206,7 @@ with st.sidebar:
                                 st.toast("Preferences Synchronized!")
                                 st.rerun()
                     with st.form("sidebar_password_form", clear_on_submit=True):
-                        sb_new_pw = st.text_input("New Secure Password:", type="password", key="sb_pwd1")
+                        sb_new_pw = st.text_input("New Password:", type="password", key="sb_pwd1")
                         sb_conf_pw = st.text_input("Confirm New Password:", type="password", key="sb_pwd2")
                         
                         if st.form_submit_button("Commit Password Change", width='stretch'):
