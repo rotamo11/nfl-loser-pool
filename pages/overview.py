@@ -706,7 +706,7 @@ else:
             st.html(unified_row_container)
         st.markdown("<br>", unsafe_allow_html=True)
 
-    render_bracket_table("Loser Bracket", loser_bracket_players)
-    render_bracket_table("Winner Bracket", winner_bracket_players)
-    render_bracket_table("Eliminated", eliminated_players)
+    # render_bracket_table("Loser Bracket", loser_bracket_players)
+    # render_bracket_table("Winner Bracket", winner_bracket_players)
+    # render_bracket_table("Eliminated", eliminated_players)
 
