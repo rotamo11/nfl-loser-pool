@@ -692,7 +692,7 @@ else:
                     is_sel_home = home in st.session_state.selected_teams
                     
                     limit_reached = len(st.session_state.selected_teams) >= required_picks
-                    col_a_logo, col_a_btn, col_vs, col_h_btn, col_h_logo = st.columns([0.6, 2.5, 0.4, 2.5, 0.6])
+                    col_a_logo, col_a_btn, col_vs, col_h_btn, col_h_logo = st.columns([0.6, 0.5, 0.4, 0.5, 0.6])
 
                     # --- AWAY TEAM RENDERER ---
                     with col_a_logo:
@@ -713,20 +713,8 @@ else:
                             btn_label_away = f"{away} (Used {used_wk_title})"
                         else:
                             btn_label_away = f"{away}"
-
-                        st.markdown(
-                            """
-                            <style>
-                            div[data-testid="stButton"] > button {
-                                width: 100px;
-                                height: 50px;
-                            }
-                            </style>
-                            """,
-                            unsafe_allow_html=True,
-                        )
                             
-                        if st.button(btn_label_away, key=f"btn_a_{m_id}", disabled=dis_away, type="primary" if is_sel_away else "secondary"):
+                        if st.button(btn_label_away, key=f"btn_a_{m_id}", disabled=dis_away, type="primary" if is_sel_away else "secondary", width='stretch'):
                             if is_sel_away: st.session_state.selected_teams.remove(away)
                             else: st.session_state.selected_teams.append(away)
                             st.rerun()
@@ -746,7 +734,7 @@ else:
                         else:
                             btn_label_home = f"{home}"
                             
-                        if st.button(btn_label_home, key=f"btn_h_{m_id}", disabled=dis_home, type="primary" if is_sel_home else "secondary"):
+                        if st.button(btn_label_home, key=f"btn_h_{m_id}", disabled=dis_home, type="primary" if is_sel_home else "secondary", width='stretch'):
                             if is_sel_home: st.session_state.selected_teams.remove(home)
                             else: st.session_state.selected_teams.append(home)
                             st.rerun()
