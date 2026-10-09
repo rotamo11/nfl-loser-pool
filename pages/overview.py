@@ -730,7 +730,7 @@ else:
                 <div style="width: 150px; min-width: 120px; font-size: 14px; font-weight: bold; white-space: nowrap;">
                     <div class="tip-wrapper" style="color: var(--text-color);">
                         {uname}
-                        <div class="tip-card">👤 ID: {full_display_name}</div>
+                        <div class="tip-card">{full_display_name}</div>
                     </div>
                 </div>
                 <div style="display: flex; flex: 1; align-items: center; gap: 6px; overflow-x: auto;">
