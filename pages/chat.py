@@ -37,7 +37,7 @@ with st.sidebar:
 
     # 2. Dynamic Theme Profile Mapping
     sidebar_bg = "#1d3d70" if game_slug == "Main" else "#974706"
-    
+
     st.markdown(
         f"""
         <style>
@@ -48,11 +48,7 @@ with st.sidebar:
             /* Overwrite sidebar text to remain clean white across modes */
             [data-testid="stSidebar"] .stText, [data-testid="stSidebar"] p, 
             [data-testid="stSidebar"] h3, [data-testid="stSidebar"] label {{
-                color: #ffffff !important;
-            }}
-            /* Force dropdown selection text contrast values */
-            [data-testid="stSidebar"] div[data-baseweb="select"] div {{
-                color: #1e293b !important;
+                color: #999999 !important;
             }}
         </style>
         """,
