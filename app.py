@@ -714,7 +714,7 @@ else:
                         else:
                             btn_label_away = f"{away}"
                             
-                        if st.button(btn_label_away, key=f"btn_a_{m_id}", disabled=dis_away, type="primary" if is_sel_away else "secondary", width='stretch'):
+                        if st.button(btn_label_away, key=f"btn_a_{m_id}", disabled=dis_away, type="primary" if is_sel_away else "secondary"):
                             if is_sel_away: st.session_state.selected_teams.remove(away)
                             else: st.session_state.selected_teams.append(away)
                             st.rerun()
@@ -734,7 +734,7 @@ else:
                         else:
                             btn_label_home = f"{home}"
                             
-                        if st.button(btn_label_home, key=f"btn_h_{m_id}", disabled=dis_home, type="primary" if is_sel_home else "secondary", width='stretch'):
+                        if st.button(btn_label_home, key=f"btn_h_{m_id}", disabled=dis_home, type="primary" if is_sel_home else "secondary"):
                             if is_sel_home: st.session_state.selected_teams.remove(home)
                             else: st.session_state.selected_teams.append(home)
                             st.rerun()
