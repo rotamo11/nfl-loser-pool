@@ -28,7 +28,7 @@ with st.sidebar:
 
     # 2. Dynamic Theme Profile Mapping
     sidebar_bg = "#1d3d70" if game_slug == "Main" else "#974706"
-    
+
     st.markdown(
         f"""
         <style>
@@ -39,11 +39,7 @@ with st.sidebar:
             /* Overwrite sidebar text to remain clean white across modes */
             [data-testid="stSidebar"] .stText, [data-testid="stSidebar"] p, 
             [data-testid="stSidebar"] h3, [data-testid="stSidebar"] label {{
-                color: #ffffff !important;
-            }}
-            /* Force dropdown selection text contrast values */
-            [data-testid="stSidebar"] div[data-baseweb="select"] div {{
-                color: #1e293b !important;
+                color: #999999 !important;
             }}
         </style>
         """,
@@ -135,7 +131,7 @@ with st.sidebar:
     st.markdown("<hr style='margin:10px 0 15px 0; border:0; border-top:1px solid rgba(255,255,255,0.3);'/>", unsafe_allow_html=True)
     
     # Basic navigation paths open to every pool player
-    st.page_link("app.py", label="Picks / Login")
+    st.page_link("app.py", label="Picks")
     st.page_link("pages/overview.py", label="Overview")
     st.page_link("pages/chat.py", label="Chat")
     st.page_link("pages/rules.py", label="Rules")
