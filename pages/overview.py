@@ -671,10 +671,26 @@ else:
             uname = user_map.get(u_id, "Anonymous")
             user_weeks_map = picks_by_user.get(u_id, {})
             
-            user_record = next((u for u in users_list if u["id"] == u_id), None)
-            first_name_str = user_record.get("first_name") or ""
-            last_name_str = user_record.get("last_name") or ""
-            full_display_name = f"{first_name_str} {last_name_str}".strip() or "Profile Unset"
+            # Searches your pre-loaded master array safely without key mismatch crashes
+            user_record = None
+            if users_list:
+                for u in users_list:
+                    # Robust string evaluation pass checks for absolute matching keys
+                    if str(u.get("id")).strip() == str(u_id).strip():
+                        user_record = u
+                        break
+
+            # Process data fields with case-insensitive fallback mapping metrics
+            if user_record:
+                first_name_str = user_record.get("first_name") or user_record.get("First_Name") or ""
+                last_name_str = user_record.get("last_name") or user_record.get("Last_Name") or ""
+                full_display_name = f"{first_name_str} {last_name_str}".strip()
+            else:
+                full_display_name = ""
+
+            # Final check fallback rule to display the Username handle if names are empty
+            if not full_display_name:
+                full_display_name = f"Registered Player"
             
             row_html_cells = []
             for w_num in visible_weeks:
