@@ -718,7 +718,7 @@ else:
                             """
                             <style>
                             div[data-testid="stButton"] > button {
-                                width: 150px;
+                                width: 100px;
                                 height: 50px;
                             }
                             </style>
