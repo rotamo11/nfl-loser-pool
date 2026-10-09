@@ -646,67 +646,72 @@ else:
             st.caption(f"*No players currently active inside {bracket_title}*")
             return
             
+        players_group_count = len(players_group)
         st.markdown(f"#### {bracket_title}: {players_group_count} Players")
+        header_row = "| Player | " + " | ".join(f"Wk {w}" for w in visible_weeks) + " |"
+        divider_row = "| :--- | " + " | ".join(" :---: " for _ in visible_weeks) + " |"
+        table_markdown_lines = [header_row, divider_row]
         
-        # THE FIX: Use an HTML container layout to render rows beautifully with fully working tooltips
         for reg in players_group:
             u_id = reg["user_id"]
             uname = user_map.get(u_id, "Anonymous")
             user_weeks_map = picks_by_user.get(u_id, {})
             
-            # Match first/last name out of our pre-loaded users metadata array
+            # THE HOVER OVERLAY FEATURE: Pre-maps first and last names directly into an HTML tooltip title anchor!
+            # 1. Locate matching profile metadata fields out of your pre-loaded users master list
             user_record = next((u for u in users_list if u["id"] == u_id), None)
-            first_name_str = user_record.get("first_name") or ""
-            last_name_str = user_record.get("last_name") or ""
-            full_display_name = f"{first_name_str} {last_name_str}".strip() or "Profile Unset"
             
-            # Construct a row line with an explicit HTML hover title card wrapper
-            row_html_cells = []
+            if user_record and (user_record.get("first_name") or user_record.get("last_name")):
+                first_name_str = user_record.get("first_name") or ""
+                last_name_str = user_record.get("last_name") or ""
+                full_display_name = f"{first_name_str} {last_name_str}".strip()
+                
+                # Injects standard browser native tooltip anchor string
+                player_cell_markup = f'{uname}</span>'
+            else:
+                # Safe fallback if player has not configured their first/last profile drawer cards yet
+                player_cell_markup = f'**{uname}**'
+                
+            row_cells = [player_cell_markup]
+            
             for w_num in visible_weeks:
                 p_data = user_weeks_map.get(w_num, None)
                 if not p_data: 
-                    row_html_cells.append('<div style="flex:1; text-align:center; color:#cbd5e1; font-size:12px;">&bull;</div>')
+                    row_cells.append("&bull;")
                 else:
                     t_pick = p_data["team_picked"].upper()
                     p_state = p_data.get("pick_state", "Pending")
                     
                     is_current_loop_week_locked = w_num < CALCULATED_CURRENT_WEEK
-                    user_has_finalized_for_loop_week = w_num in current_user_finalized_weeks
-                    is_own_profile_row = (u_id == current_user_uid)
-                    reveal_tile_cell = is_current_loop_week_locked or user_has_finalized_for_loop_week or is_own_profile_row or is_logged_in_admin
                     
-                    if not reveal_tile_cell:
-                        row_html_cells.append('<div style="flex:1; background-color: rgba(148, 163, 184, 0.15); padding: 4px 2px; border-radius: 4px; font-weight:600; font-size:10px; color:gray; text-align:center; white-space:nowrap; max-width:55px;">🔒 Hid</div>')
+                    # READ FROM LOCAL CACHE: Lightning-fast check with zero network overhead
+                    user_has_finalized_for_loop_week = w_num in current_user_finalized_weeks
+                    
+                    is_own_profile_row = (u_id == current_user_uid)
+                    reveal_tile_cell = is_current_loop_week_locked or user_has_finalized_for_loop_week or is_own_profile_row # or is_logged_in_admin
+                    
+                    if not reveal_tile_cell: 
+                        cell_content = '<div style="background-color: rgba(148, 163, 184, 0.15); padding: 4px 6px; border-radius: 4px; font-weight:600; font-size:10px; color:gray; white-space:nowrap;">🔒 Hidden</div>'
                     else:
                         logo_html = get_base64_logo_html(t_pick)
                         clean_team_display = t_pick.replace('_SO', '')
-                        if t_pick.endswith("_SO"): clean_team_display += "🎯"
+                        if t_pick.endswith("_SO"): 
+                            clean_team_display += "🎯"
                             
                         if p_state == "Correct" or t_pick == "BYE": 
-                            bg_style = "background-color: rgba(16, 185, 129, 0.15); padding: 4px 6px; border-radius: 4px; display: inline-flex; align-items: center; justify-content:center; gap: 2px; flex:1; max-width:55px;"
+                            bg_style = "background-color: rgba(16, 185, 129, 0.15); padding: 4px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 2px;"
                         elif p_state == "Incorrect": 
-                            bg_style = "background-color: rgba(239, 68, 68, 0.15); padding: 4px 6px; border-radius: 4px; display: inline-flex; align-items: center; justify-content:center; gap: 2px; flex:1; max-width:55px;"
+                            bg_style = "background-color: rgba(239, 68, 68, 0.15); padding: 4px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 2px;"
                         else: 
-                            bg_style = "display: inline-flex; align-items: center; justify-content:center; gap: 2px; color: var(--text-color); flex:1; max-width:55px;"
+                            bg_style = "display: inline-flex; align-items: center; gap: 2px; color: var(--text-color);"
                             
-                        cell_div = f'<div style="{bg_style}">{logo_html}<span style="font-weight:600; font-size:11px;">{clean_team_display}</span></div>'
-                        row_html_cells.append(cell_div)
-            
-            # Combine the Player hover name text card and the weekly cells into a single fluid flex row box layout
-            unified_row_container = f"""
-            <div style="display: flex; align-items: center; width: 100%; padding: 4px 0; border-bottom: 1px solid rgba(128,128,128,0.15); font-family: sans-serif;">
-                <div style="width: 150px; min-width: 120px; font-size: 14px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                    {uname}</span>
-                </div>
-                <div style="display: flex; flex: 1; align-items: center; gap: 6px; overflow-x: auto;">
-                    {"".join(row_html_cells)}
-                </div>
-            </div>
-            """
-            st.html(unified_row_container)
+                        cell_content = f'<div style="{bg_style}">{logo_html}<span style="font-weight:600; font-size:11px;">{clean_team_display}</span></div>'
+                    row_cells.append(cell_content)
+            table_markdown_lines.append("| " + " | ".join(row_cells) + " |")
+        st.markdown("\n".join(table_markdown_lines), unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
 
-    # render_bracket_table("Loser Bracket", loser_bracket_players)
-    # render_bracket_table("Winner Bracket", winner_bracket_players)
-    # render_bracket_table("Eliminated", eliminated_players)
+    render_bracket_table("Loser Bracket", loser_bracket_players)
+    render_bracket_table("Winner Bracket", winner_bracket_players)
+    render_bracket_table("Eliminated", eliminated_players)
 
