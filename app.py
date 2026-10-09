@@ -717,7 +717,7 @@ else:
                         st.markdown(
                             """
                             <style>
-                            div[data-testid="stButton"][id="btn_label_away"] > button {
+                            div[data-testid="stButton"][id="btn_a_{m_id}"] > button {
                                 width: 150px;
                                 height: 50px;
                             }
