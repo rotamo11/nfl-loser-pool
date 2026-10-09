@@ -602,7 +602,7 @@ else:
 
     # 2. Render Message Submission Input Box
     with st.form("chat_form", clear_on_submit=True):
-        user_message = st.text_input("Spit some banter or talk trash:", placeholder="Your message...")
+        user_message = st.text_input("Talk all the smack you want, but please remember not to reveal picks until after the weekly deadline.", placeholder="Your message...")
         submit_msg = st.form_submit_button("Send Message", width='stretch')
         
         if submit_msg and user_message.strip():
@@ -635,4 +635,4 @@ else:
                 unsafe_allow_html=True
             )
     else:
-        st.info("Talk all the smack you want, but please remember not to reveal picks until after the weekly deadline.")
+        # st.info("Talk all the smack you want, but please remember not to reveal picks until after the weekly deadline.")
