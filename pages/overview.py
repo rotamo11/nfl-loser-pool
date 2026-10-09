@@ -646,10 +646,10 @@ else:
             st.caption(f"*No players currently active inside {bracket_title}*")
             return
             
-        st.markdown(f"#### 🏅 {bracket_title}")
+        players_group_count = len(players_group)
+        st.markdown(f"#### {bracket_title}: {players_group_count} Players")
         
         # 🚀 1. INJECT FIXED TOOLTIP LAYOUT RULES
-        # Creates a beautiful, theme-adaptive floating pop-up card box natively
         st.html(
             """
             <style>
@@ -666,31 +666,32 @@ else:
             """
         )
         
+        # 🚀 2. FIXED UNIFORM COLUMN HEADERS ROW PASS
+        # Build matching weekly text tags to align perfectly right above player picks
+        header_html_cells = []
+        for w_num in visible_weeks:
+            header_html_cells.append(f'<div style="flex:1; text-align:center; font-size:11px; font-weight:800; color:var(--text-color); opacity:0.8; max-width:55px;">Wk {w_num}</div>')
+            
+        unified_table_header = f"""
+        <div style="display: flex; align-items: center; width: 100%; padding: 6px 0; border-bottom: 2px solid rgba(128,128,128,0.3); font-family: sans-serif;">
+            <div style="width: 150px; min-width: 120px; font-size: 12px; font-weight: 900; uppercase; color:var(--text-color); opacity:0.8;">PLAYER</div>
+            <div style="display: flex; flex: 1; align-items: center; gap: 6px; overflow-x: auto;">
+                {"".join(header_html_cells)}
+            </div>
+        </div>
+        """
+        st.html(unified_table_header)
+        
+        # 🚀 3. INDIVIDUAL LEAGUE PLAYER ROW LOOPS
         for reg in players_group:
             u_id = reg["user_id"]
             uname = user_map.get(u_id, "Anonymous")
             user_weeks_map = picks_by_user.get(u_id, {})
             
-            # Searches your pre-loaded master array safely without key mismatch crashes
-            user_record = None
-            if users_list:
-                for u in users_list:
-                    # Robust string evaluation pass checks for absolute matching keys
-                    if str(u.get("id")).strip() == str(u_id).strip():
-                        user_record = u
-                        break
-
-            # Process data fields with case-insensitive fallback mapping metrics
-            if user_record:
-                first_name_str = user_record.get("first_name") or user_record.get("First_Name") or ""
-                last_name_str = user_record.get("last_name") or user_record.get("Last_Name") or ""
-                full_display_name = f"{first_name_str} {last_name_str}".strip()
-            else:
-                full_display_name = ""
-
-            # Final check fallback rule to display the Username handle if names are empty
-            if not full_display_name:
-                full_display_name = f"Registered Player"
+            user_record = next((u for u in users_list if u["id"] == u_id), None)
+            first_name_str = user_record.get("first_name") or "" if user_record else ""
+            last_name_str = user_record.get("last_name") or "" if user_record else ""
+            full_display_name = f"{first_name_str} {last_name_str}".strip() or "Registered Player"
             
             row_html_cells = []
             for w_num in visible_weeks:
@@ -723,14 +724,12 @@ else:
                         cell_div = f'<div style="{bg_style}">{logo_html}<span style="font-weight:600; font-size:11px;">{clean_team_display}</span></div>'
                         row_html_cells.append(cell_div)
             
-            # 2. UNIFIED HIGH-DENSITY ROW FLEX CONTAINER PASS
-            # Injects your clean CSS popup component directly inside the table row frame layout
             unified_row_container = f"""
             <div style="display: flex; align-items: center; width: 100%; padding: 4px 0; border-bottom: 1px solid rgba(128,128,128,0.15); font-family: sans-serif;">
                 <div style="width: 150px; min-width: 120px; font-size: 14px; font-weight: bold; white-space: nowrap;">
                     <div class="tip-wrapper" style="color: var(--text-color);">
                         {uname}
-                        <div class="tip-card">{full_display_name}</div>
+                        <div class="tip-card">👤 ID: {full_display_name}</div>
                     </div>
                 </div>
                 <div style="display: flex; flex: 1; align-items: center; gap: 6px; overflow-x: auto;">
