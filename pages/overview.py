@@ -697,7 +697,7 @@ else:
             for w_num in visible_weeks:
                 p_data = user_weeks_map.get(w_num, None)
                 if not p_data: 
-                    row_html_cells.append('<div style="flex:1; text-align:center; color:#cbd5e1; font-size:12px;">&bull;</div>')
+                    row_html_cells.append('<div style="flex:1; max-width:65px; text-align:center; color:#cbd5e1; font-size:12px;">&bull;</div>')
                 else:
                     t_pick = p_data["team_picked"].upper()
                     p_state = p_data.get("pick_state", "Pending")
