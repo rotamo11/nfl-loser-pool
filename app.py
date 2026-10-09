@@ -713,8 +713,20 @@ else:
                             btn_label_away = f"{away} (Used {used_wk_title})"
                         else:
                             btn_label_away = f"{away}"
+
+                        st.markdown(
+                            """
+                            <style>
+                            div[data-testid="stButton"][id=f"btn_a_{m_id}"] > button {
+                                width: 150px;
+                                height: 50px;
+                            }
+                            </style>
+                            """,
+                            unsafe_allow_html=True,
+                        )
                             
-                        if st.button(btn_label_away, key=f"btn_a_{m_id}", disabled=dis_away, type="primary" if is_sel_away else "secondary", width='200'):
+                        if st.button(btn_label_away, key=f"btn_a_{m_id}", disabled=dis_away, type="primary" if is_sel_away else "secondary"):
                             if is_sel_away: st.session_state.selected_teams.remove(away)
                             else: st.session_state.selected_teams.append(away)
                             st.rerun()
