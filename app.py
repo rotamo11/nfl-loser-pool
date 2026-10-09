@@ -38,7 +38,7 @@ with st.sidebar:
             /* Overwrite sidebar text to remain clean white across modes */
             [data-testid="stSidebar"] .stText, [data-testid="stSidebar"] p, 
             [data-testid="stSidebar"] h3, [data-testid="stSidebar"] label {{
-                color: #000000 !important;
+                color: #888888 !important;
             }}
         </style>
         """,
