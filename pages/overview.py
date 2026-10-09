@@ -666,11 +666,11 @@ else:
             """
         )
         
-        # 🚀 2. FIXED UNIFORM COLUMN HEADERS ROW PASS
+        # 2. FIXED UNIFORM COLUMN HEADERS ROW PASS
         # Build matching weekly text tags to align perfectly right above player picks
         header_html_cells = []
         for w_num in visible_weeks:
-            header_html_cells.append(f'<div style="flex:1; text-align:center; font-size:11px; font-weight:800; color:var(--text-color); opacity:0.8; max-width:55px;">Wk {w_num}</div>')
+            header_html_cells.append(f'<div style="flex:1; text-align:center; font-size:11px; font-weight:800; color:var(--text-color); opacity:0.8; max-width:65px;">Wk {w_num}</div>')
             
         unified_table_header = f"""
         <div style="display: flex; align-items: center; width: 100%; padding: 6px 0; border-bottom: 2px solid rgba(128,128,128,0.3); font-family: sans-serif;">
@@ -682,7 +682,7 @@ else:
         """
         st.html(unified_table_header)
         
-        # 🚀 3. INDIVIDUAL LEAGUE PLAYER ROW LOOPS
+        # 3. INDIVIDUAL LEAGUE PLAYER ROW LOOPS
         for reg in players_group:
             u_id = reg["user_id"]
             uname = user_map.get(u_id, "Anonymous")
@@ -708,18 +708,18 @@ else:
                     reveal_tile_cell = is_current_loop_week_locked or user_has_finalized_for_loop_week or is_own_profile_row or is_logged_in_admin
                     
                     if not reveal_tile_cell:
-                        row_html_cells.append('<div style="flex:1; background-color: rgba(148, 163, 184, 0.15); padding: 4px 2px; border-radius: 4px; font-weight:600; font-size:10px; color:gray; text-align:center; white-space:nowrap; max-width:55px;">🔒 Hid</div>')
+                        row_html_cells.append('<div style="flex:1; background-color: rgba(148, 163, 184, 0.15); padding: 4px 2px; border-radius: 4px; font-weight:600; font-size:10px; color:gray; text-align:center; white-space:nowrap; max-width:65px;">Hidden</div>')
                     else:
                         logo_html = get_base64_logo_html(t_pick)
                         clean_team_display = t_pick.replace('_SO', '')
                         if t_pick.endswith("_SO"): clean_team_display += "🎯"
                             
                         if p_state == "Correct" or t_pick == "BYE": 
-                            bg_style = "background-color: rgba(95, 175, 95, 0.25); border: 1px solid rgba(56, 118, 29, 0.8); padding: 4px 6px; border-radius: 4px; display: inline-flex; align-items: center; justify-content:center; gap: 2px; flex:1; max-width:60px;"
+                            bg_style = "background-color: rgba(95, 175, 95, 0.25); border: 1px solid rgba(56, 118, 29, 0.8); padding: 4px 6px; border-radius: 4px; display: inline-flex; align-items: center; justify-content:center; gap: 2px; flex:1; max-width:65px;"
                         elif p_state == "Incorrect": 
-                            bg_style = "background-color: rgba(239, 68, 68, 0.25); border: 1px solid rgba(255, 0, 0, 0.8); padding: 4px 6px; border-radius: 4px; display: inline-flex; align-items: center; justify-content:center; gap: 2px; flex:1; max-width:60px;"
+                            bg_style = "background-color: rgba(239, 68, 68, 0.25); border: 1px solid rgba(255, 0, 0, 0.8); padding: 4px 6px; border-radius: 4px; display: inline-flex; align-items: center; justify-content:center; gap: 2px; flex:1; max-width:65px;"
                         else: 
-                            bg_style = "display: inline-flex; align-items: center; justify-content:center; gap: 2px; color: var(--text-color); flex:1; max-width:55px;"
+                            bg_style = "display: inline-flex; align-items: center; justify-content:center; gap: 2px; color: var(--text-color); flex:1; max-width:65px;"
                             
                         cell_div = f'<div style="{bg_style}">{logo_html}<span style="font-weight:600; font-size:11px;">{clean_team_display}</span></div>'
                         row_html_cells.append(cell_div)
