@@ -635,4 +635,4 @@ else:
                 unsafe_allow_html=True
             )
     else:
-        st.info("") # Talk all the smack you want, but please remember not to reveal picks until after the weekly deadline.")
+        st.info("Nothing to see here... yet.")
