@@ -692,7 +692,7 @@ else:
                     is_sel_home = home in st.session_state.selected_teams
                     
                     limit_reached = len(st.session_state.selected_teams) >= required_picks
-                    col_a_logo, col_a_btn, col_vs, col_h_btn, col_h_logo = st.columns(5, width="stretch", vertical_alignment="top", wrap=False)
+                    col_a_logo, col_a_btn, col_vs, col_h_btn, col_h_logo = st.columns(0.15, 0.3, 0.1, 0.3, 0.15, width="stretch", vertical_alignment="top", wrap=False)
 
                     # --- AWAY TEAM RENDERER ---
                     with col_a_logo:
