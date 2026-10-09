@@ -608,7 +608,7 @@ st.markdown("---")
 # ==========================================
 st.write("### Live Championship Standings Grid")
 
-users_list = supabase.table("users").select("id", "username").order("username").execute().data
+users_list = supabase.table("users").select("*").order("username").execute().data
 registrations = supabase.table("tournament_registrations").select("*").eq("game_type", game_slug).eq("is_enrolled", True).execute().data
 all_historical_picks = supabase.table("user_picks").select("*").eq("game_type", game_slug).execute().data
 
