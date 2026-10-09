@@ -657,7 +657,7 @@ else:
             uname = user_map.get(u_id, "Anonymous")
             user_weeks_map = picks_by_user.get(u_id, {})
             
-            # THE HOVER OVERLAY FEATURE: Pre-maps first and last names directly into an HTML tooltip title anchor!
+            # THE HOVER OVERLAY FEATURE: Pre-maps first and last names directly into an HTML tooltip title anchor - doesn't work due to the way Streamlit parses markdown tables - PENDING
             # 1. Locate matching profile metadata fields out of your pre-loaded users master list
             user_record = next((u for u in users_list if u["id"] == u_id), None)
             
