@@ -588,7 +588,7 @@ else:
             counts.items(), 
             key=lambda item: (0, 0, "") if item[0] == "BYE" else (1, -item[1], item[0])
         )
-        dist_cols = st.columns(min(len(sorted_distribution), 10))
+        dist_cols = st.columns(min(len(sorted_distribution), 15))
         for idx, (team, count) in enumerate(sorted_distribution):
             with dist_cols[idx % 10]:
                 so_label = " 🎯" if team.endswith("_SO") else ""
