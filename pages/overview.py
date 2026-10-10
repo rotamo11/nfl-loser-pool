@@ -537,6 +537,7 @@ if user_id and not is_paid_status:
 # 1. Pull the active user object using every possible token structure safely
 current_user_logged_in = st.session_state.get("user")
 current_user_uid = None
+all_historical_picks = supabase.table("user_picks").select("*").eq("game_type", game_slug).execute().data
 
 if current_user_logged_in:
     if hasattr(current_user_logged_in, 'id'): current_user_uid = current_user_logged_in.id
@@ -621,7 +622,7 @@ st.write("### Live Championship Standings Grid")
 
 users_list = supabase.table("users").select("*").order("username").execute().data
 registrations = supabase.table("tournament_registrations").select("*").eq("game_type", game_slug).eq("is_enrolled", True).execute().data
-all_historical_picks = supabase.table("user_picks").select("*").eq("game_type", game_slug).execute().data
+# Moved up the file: all_historical_picks = supabase.table("user_picks").select("*").eq("game_type", game_slug).execute().data
 
 if not registrations:
     st.info("No active enrolled competitor rows verified on record for this game tournament track.")
