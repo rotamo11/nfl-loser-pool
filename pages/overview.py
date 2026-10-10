@@ -552,6 +552,15 @@ if current_user_uid:
 # Calculate if the target week's locks have passed chronologically
 is_past_week_locked = SELECTED_WEEK < CALCULATED_CURRENT_WEEK
 
+# Admin check fallback safety routing parameters
+is_logged_in_admin = False
+if user_id:
+    try:
+        admin_check = supabase.table("users").select("is_admin").eq("id", user_id).single().execute().data
+        if admin_check and admin_check.get("is_admin", False):
+            is_logged_in_admin = True
+    except Exception: pass
+
 # Absolute override criteria: Unlocked if it is an old week, if the user committed, or if admin
 reveal_picks_condition = is_past_week_locked or user_has_finalized_this_week # or is_logged_in_admin
 
