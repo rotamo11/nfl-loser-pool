@@ -670,10 +670,15 @@ else:
                         used_teams[clean_pick_name] = p["week"]
 
 
+
+
+
+        
+
         # ====================================================================
         # 📱 PORTRAIT MOBILE-OPTIMIZED KICKOFF TIMESTAMPS ENGINE PASS
         # ====================================================================
-        for idx, match in enumerate(schedule_res):
+        for idx, match in enumerate(matchups):
             m_id = match["id"]
             away, home = match["away_team"].upper(), match["home_team"].upper()
             
@@ -757,6 +762,11 @@ else:
                             toggle_shutout_modifier(active_team, so_chk, "Finalized" if is_early_game else "Confirmed")
                             st.rerun()
 
+
+
+
+
+            
             # Determine conversational playoff labels or standard week integers
             team_word = "team" if SELECTED_WEEK <= 14 else "teams"
             required_picks = 1 if SELECTED_WEEK <= 14 else 2 if SELECTED_WEEK <= 18 else 99
