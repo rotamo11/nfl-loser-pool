@@ -534,34 +534,36 @@ if user_id and not is_paid_status:
 # ====================================================================
 # GLOBAL ACCESSIBILITY & SECURITY PRIVACY GATES RECKONER
 # ====================================================================
+# 1. Pull the active user object using every possible token structure safely
 current_user_logged_in = st.session_state.get("user")
+current_user_uid = None
 
-# THE FIX: Use an explicit conditional step to extract ID only if an active user object exists
-if current_user_logged_in is not None and hasattr(current_user_logged_in, 'id'):
-    current_user_uid = current_user_logged_in.id
-else:
-    current_user_uid = None
+if current_user_logged_in:
+    if hasattr(current_user_logged_in, 'id'): current_user_uid = current_user_logged_in.id
+    elif isinstance(current_user_logged_in, dict) and "id" in current_user_logged_in: current_user_uid = current_user_logged_in["id"]
+    elif hasattr(current_user_logged_in, 'user') and hasattr(current_user_logged_in.user, 'id'): current_user_uid = current_user_logged_in.user.id
 
-# Check if the current user has finalized a pick for the active selected week
-user_has_finalized_this_week = False
+# 2. Extract admin roles status parameters
+is_logged_in_admin = False
 if current_user_uid:
-    user_pick_record = supabase.table("user_picks").select("id").eq("user_id", current_user_uid).eq("game_type", game_slug).eq("week", SELECTED_WEEK).eq("pick_state", ["Finalized", "Correct", "Incorrect"]).execute().data
-    if user_pick_record:
-        user_has_finalized_this_week = True
+    try:
+        admin_check = supabase.table("users").select("is_admin").eq("id", current_user_uid).single().execute().data
+        if admin_check and admin_check.get("is_admin", False): is_logged_in_admin = True
+    except Exception: pass
+
+# This bypasses all separate network overhead to verify participation states instantly
+user_has_finalized_this_week = False
+if current_user_uid and all_historical_picks:
+    for p in all_historical_picks:
+        if str(p.get("user_id")).strip() == str(current_user_uid).strip() and p.get("week") == SELECTED_WEEK:
+            if p.get("pick_state") in ["Finalized", "Correct", "Incorrect"]:
+                user_has_finalized_this_week = True
+                break
 
 # Calculate if the target week's locks have passed chronologically
 is_past_week_locked = SELECTED_WEEK < CALCULATED_CURRENT_WEEK
 
-# Admin check fallback safety routing parameters
-is_logged_in_admin = False
-if user_id:
-    try:
-        admin_check = supabase.table("users").select("is_admin").eq("id", user_id).single().execute().data
-        if admin_check and admin_check.get("is_admin", False):
-            is_logged_in_admin = True
-    except Exception: pass
-
-# Absolute override criteria: Unlocked if it is an old week, if the user committed, or if admin
+# Combine everything into your master unlock key
 reveal_picks_condition = is_past_week_locked or user_has_finalized_this_week # or is_logged_in_admin
 
 # ==========================================
