@@ -634,7 +634,7 @@ else:
     current_user_finalized_weeks = set()
     if current_user_uid:
         for p in all_historical_picks:
-            if p["user_id"] == current_user_uid and p.get("pick_state") == "Finalized":
+            if p["user_id"] == current_user_uid and p.get("pick_state") in ["Finalized", "Correct", "Incorrect"]:
                 current_user_finalized_weeks.add(p["week"])
 
     loser_bracket_players, winner_bracket_players, eliminated_players = [], [], []
