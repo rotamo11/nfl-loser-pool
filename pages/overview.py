@@ -545,7 +545,7 @@ else:
 # Check if the current user has finalized a pick for the active selected week
 user_has_finalized_this_week = False
 if current_user_uid:
-    user_pick_record = supabase.table("user_picks").select("id").eq("user_id", current_user_uid).eq("game_type", game_slug).eq("week", SELECTED_WEEK).eq("pick_state", "Finalized").execute().data
+    user_pick_record = supabase.table("user_picks").select("id").eq("user_id", current_user_uid).eq("game_type", game_slug).eq("week", SELECTED_WEEK).eq("pick_state", ["Finalized", "Correct", "Incorrect"]).execute().data
     if user_pick_record:
         user_has_finalized_this_week = True
 
