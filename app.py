@@ -669,6 +669,94 @@ else:
                     if not p["team_picked"].endswith("_SO"): 
                         used_teams[clean_pick_name] = p["week"]
 
+
+        # ====================================================================
+        # 📱 PORTRAIT MOBILE-OPTIMIZED KICKOFF TIMESTAMPS ENGINE PASS
+        # ====================================================================
+        for idx, match in enumerate(schedule_res):
+            m_id = match["id"]
+            away, home = match["away_team"].upper(), match["home_team"].upper()
+            
+            # ⏰ Secure Kickoff Validation Pass: Reads ISO string values from your database row
+            # Expected format: "2026-10-11T13:00:00" (Eastern Time mapped as standard local)
+            kickoff_raw = match.get("kickoff_time") 
+            game_time_label = match.get("kickoff_display_label") or "Sunday 1:00 PM ET"
+            
+            is_game_locked = False
+            is_early_game = False
+            
+            if kickoff_raw:
+                try:
+                    kickoff_dt = datetime.datetime.fromisoformat(str(kickoff_raw))
+                    if datetime.datetime.now() >= kickoff_dt:
+                        is_game_locked = True # Kickoff passed -> Locks out all pick modifications
+                        
+                    # Evaluate if game starts prior to Sunday 12:00 PM ET deadline parameters
+                    # (Finds Friday/Saturday loops or early Sunday morning international slates)
+                    sunday_deadline_anchor = datetime.datetime(kickoff_dt.year, kickoff_dt.month, kickoff_dt.day, 12, 0, 0)
+                    while sunday_deadline_anchor.weekday() != 6: # Rewinds or advances string markers to Sunday
+                        sunday_deadline_anchor -= datetime.timedelta(days=1)
+                        
+                    if kickoff_dt < sunday_deadline_anchor:
+                        is_early_game = True # Early kickoff matches force instant Finalized state
+                except Exception: pass
+
+            # Extract current selection status indicators
+            is_sel_away = away in st.session_state.selected_teams or f"{away}_SO" in st.session_state.selected_teams
+            is_sel_home = home in st.session_state.selected_teams or f"{home}_SO" in st.session_state.selected_teams
+            away_is_used = away in used_teams
+            home_is_used = home in used_teams
+
+            with st.container(border=True):
+                # 🚀 MOBIL ROW: High-density layout splits teams equally without wide side-scrolling
+                c_logos, c_away_btn, c_home_btn = st.columns([2.0, 4.0, 4.0])
+                
+                with c_logos:
+                    # Renders your working inline Base64 vector logos side-by-side perfectly centered
+                    away_html = get_base64_logo_html(away)
+                    home_html = get_base64_logo_html(home)
+                    st.html(f'<div style="display:flex; justify-content:center; align-items:center; gap:4px; height:35px; width:100%;">{away_html}<span style="font-size:10px; color:gray; font-weight:bold;">@</span>{home_html}</div>')
+                
+                with c_away_btn:
+                    dis_away = is_game_locked or away_is_used or (limit_reached and not is_sel_away)
+                    lbl_away = f"{away} (Used)" if away_is_used else f"{away}"
+                    
+                    if st.button(lbl_away, key=f"ma_{m_id}", disabled=dis_away, type="primary" if is_sel_away else "secondary", width='stretch'):
+                        # 🚀 RULE: Early selections save directly as Finalized, standard choices save as Confirmed
+                        target_state = "Finalized" if is_early_game else "Confirmed"
+                        toggle_team_selection_pass(away, game_slug, SELECTED_WEEK, target_state)
+                        st.rerun()
+                        
+                with c_home_btn:
+                    dis_home = is_game_locked or home_is_used or (limit_reached and not is_sel_home)
+                    lbl_home = f"{home} (Used)" if home_is_used else f"{home}"
+                    
+                    if st.button(lbl_home, key=f"mh_{m_id}", disabled=dis_home, type="primary" if is_sel_home else "secondary", width='stretch'):
+                        target_state = "Finalized" if is_early_game else "Confirmed"
+                        toggle_team_selection_pass(home, game_slug, SELECTED_WEEK, target_state)
+                        st.rerun()
+
+                # --- FOOTER METADATA STRIP ---
+                # Prints clean kickoff times. Disables pick sheet if match is live/completed
+                c_meta, c_so = st.columns([6, 4])
+                with c_meta:
+                    if is_game_locked:
+                        st.markdown(f"<span style='color:#ef4444; font-size:11px; font-weight:bold;'>🔒 Kickoff Passed ({game_time_label})</span>", unsafe_allow_html=True)
+                    else:
+                        st.markdown(f"<span style='color:gray; font-size:11px; font-weight:500;'>⏰ Kickoff: {game_time_label}</span>", unsafe_allow_html=True)
+                
+                with c_so:
+                    # 🎯 Shutout modifier check slider toggles neatly right next to it
+                    if (is_sel_away or is_sel_home) and not is_game_locked:
+                        active_team = away if is_sel_away else home
+                        so_token = f"{active_team}_SO"
+                        is_so = so_token in st.session_state.selected_teams
+                        
+                        so_chk = st.checkbox("🎯 SO", value=is_so, key=f"so_sh_p_{m_id}")
+                        if so_chk != is_so:
+                            toggle_shutout_modifier(active_team, so_chk, "Finalized" if is_early_game else "Confirmed")
+                            st.rerun()
+
             # Determine conversational playoff labels or standard week integers
             team_word = "team" if SELECTED_WEEK <= 14 else "teams"
             required_picks = 1 if SELECTED_WEEK <= 14 else 2 if SELECTED_WEEK <= 18 else 99
