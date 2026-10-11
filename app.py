@@ -692,31 +692,52 @@ else:
         required_picks = 1 if SELECTED_WEEK <= 14 else 2 if SELECTED_WEEK <= 18 else 1
         
         st.write(f"Select **{required_picks}** {team_word} to lose from the matchups below:")
+        
+        matchups = supabase.table("nfl_schedule").select("*").eq("week", CALCULATED_CURRENT_WEEK).execute().data
 
         # ====================================================================
         # 📱 FIXED MOBILE-FIRST MATCHUP MASTER LOOP
         # ====================================================================
         main_grid_col1, main_grid_col2 = st.columns(2)
-
-        matchups = supabase.table("nfl_schedule").select("*").eq("week", CALCULATED_CURRENT_WEEK).execute().data
         
         for idx, match in enumerate(matchups):
             m_id = match["id"]
             away, home = match["away_team"].upper(), match["home_team"].upper()
             
-            # Secure Kickoff Validation Pass & Early Game Identifier Tracker
+            # ⏰ Secure Kickoff Validation Pass & Dynamic String Formatter Pass
             kickoff_raw = match.get("kickoff_time") 
-            game_time_label = match.get("kickoff_display_label") or "Sunday 1:00 PM ET"
             
+            # 🚀 THE FIX: Parse the ISO timestamp dynamically into a clean human label!
+            game_time_label = "Sunday 1:00 PM ET" # Safe baseline fallback
             is_game_locked, is_early_game = False, False
+            
             if kickoff_raw:
                 try:
+                    # Convert database string "2026-10-11T13:00:00" into a standard datetime object
                     kickoff_dt = datetime.datetime.fromisoformat(str(kickoff_raw))
-                    if datetime.datetime.now() >= kickoff_dt: is_game_locked = True
+                    
+                    # 1. Evaluate if game kickoff time has passed live user clock settings
+                    if datetime.datetime.now() >= kickoff_dt: 
+                        is_game_locked = True
                         
+                    # 2. Build our conversational time labels dynamically on click
+                    day_name = kickoff_dt.strftime("%A") # e.g., "Thursday", "Sunday"
+                    hour_int = kickoff_dt.hour
+                    min_int = kickoff_dt.minute
+                    
+                    # Convert 24h clock integers to custom standard 12h AM/PM symbols
+                    am_pm_suffix = "PM" if hour_int >= 12 else "AM"
+                    display_hour = hour_int if hour_int <= 12 else hour_int - 12
+                    if display_hour == 0: display_hour = 12
+                        
+                    # Format strings securely (e.g., "Sunday 4:25 PM ET")
+                    game_time_label = f"{day_name} {display_hour}:{min_int:02d} {am_pm_suffix} ET"
+                    
+                    # 3. Securely track early window parameters
                     sunday_deadline = datetime.datetime(kickoff_dt.year, kickoff_dt.month, kickoff_dt.day, 12, 0, 0)
                     while sunday_deadline.weekday() != 6: sunday_deadline -= datetime.timedelta(days=1)
                     if kickoff_dt < sunday_deadline: is_early_game = True
+                    
                 except Exception: pass
 
             # Extract selection status indicators
