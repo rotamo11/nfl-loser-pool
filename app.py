@@ -704,33 +704,42 @@ else:
             m_id = match["id"]
             away, home = match["away_team"].upper(), match["home_team"].upper()
             
-            # ⏰ Secure Kickoff Validation Pass & Dynamic String Formatter Pass
-            kickoff_raw = match.get("kickoff_time") 
+            # 🚀 THE TIMEZONE-AWARE KICKOFF PARSER
+            kickoff_raw = match.get("kickoff_time") or match.get("kickoff")
             
-            # 🚀 THE FIX: Parse the ISO timestamp dynamically into a clean human label!
-            game_time_label = "Sunday 1:00 PM ET" # Safe baseline fallback
+            game_time_label = "Sunday 1:00 PM ET" # Baseline fallback
             is_game_locked, is_early_game = False, False
             
             if kickoff_raw:
                 try:
-                    # Convert database string "2026-10-11T13:00:00" into a standard datetime object
-                    kickoff_dt = datetime.datetime.fromisoformat(str(kickoff_raw))
+                    # Clean up the space to standard T format
+                    clean_time_str = str(kickoff_raw).replace(" ", "T")
+                    
+                    # Split on the '+' timezone symbol and take the primary time block
+                    if "+" in clean_time_str:
+                        clean_time_str = clean_time_str.split("+")[0]
+                        
+                    # Slice precisely down to minute alignment: "YYYY-MM-DDTHH:MM"
+                    clean_time_str = clean_time_str[:16]
+                    
+                    # Safely convert to a datetime object
+                    kickoff_dt = datetime.datetime.fromisoformat(clean_time_str)
                     
                     # 1. Evaluate if game kickoff time has passed live user clock settings
                     if datetime.datetime.now() >= kickoff_dt: 
                         is_game_locked = True
                         
-                    # 2. Build our conversational time labels dynamically on click
+                    # 2. Build your conversational time labels dynamically on the fly
                     day_name = kickoff_dt.strftime("%A") # e.g., "Thursday", "Sunday"
                     hour_int = kickoff_dt.hour
                     min_int = kickoff_dt.minute
                     
-                    # Convert 24h clock integers to custom standard 12h AM/PM symbols
+                    # Convert 24h clock integers to clean standard 12h AM/PM symbols
                     am_pm_suffix = "PM" if hour_int >= 12 else "AM"
                     display_hour = hour_int if hour_int <= 12 else hour_int - 12
                     if display_hour == 0: display_hour = 12
                         
-                    # Format strings securely (e.g., "Sunday 4:25 PM ET")
+                    # Format strings securely (e.g., "Thursday 8:15 PM ET")
                     game_time_label = f"{day_name} {display_hour}:{min_int:02d} {am_pm_suffix} ET"
                     
                     # 3. Securely track early window parameters
@@ -738,7 +747,8 @@ else:
                     while sunday_deadline.weekday() != 6: sunday_deadline -= datetime.timedelta(days=1)
                     if kickoff_dt < sunday_deadline: is_early_game = True
                     
-                except Exception: pass
+                except Exception as e:
+                    game_time_label = f"Format Pending ({str(kickoff_raw)[:16]})"
 
             # Extract selection status indicators
             is_sel_away = away in st.session_state.selected_teams or f"{away}_SO" in st.session_state.selected_teams
