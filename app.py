@@ -358,7 +358,7 @@ elif not st.session_state.user:
         
         # Replace the string below with your absolute master Supabase User ID string
         # You can copy this directly from your 'users' table or Supabase Auth console
-        MASTER_ADMIN_UID = "YOUR_EXACT_SUPABASE_USER_ID_STRING" 
+        MASTER_ADMIN_UID = "3f3a74a6-3725-4a3b-abda-015e73cb6f4b" 
         
         if current_logged_in_user:
             try:
