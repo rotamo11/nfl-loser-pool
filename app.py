@@ -488,7 +488,7 @@ else:
         
         # PAYMENT NOTICE: If enrolled but unpaid, render a gentle reminder banner without locking the form
         if not active_profile.get("is_paid", False):
-            st.warning("**Payment Reminder:** Our ledger shows your entry fee for this pool track is currently outstanding. Please settle up with the Commissioner as soon as possible by sending $25 to @Robert-Moore-65 on Venmo or rotamo@yahoo.com on PayPal.")
+            st.warning("**Payment Reminder:** Our ledger shows your entry fee for this pool track is currently outstanding. Please settle up with the Commissioner as soon as possible by sending $25 to @Robert-Moore-65 on Venmo.")
 
         # Recover user info from Supabase
         user_profile_res = supabase.table("users").select("*").eq("id", user_id).single().execute().data
@@ -502,9 +502,9 @@ else:
         # Render the responsive Flexbox status baseline bar using the Username Code Token
         st.markdown(
             f"""
-            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; font-family: sans-serif; font-size: 14px; font-weight: 500; color: var(--text-color); opacity: 0.85;">
-                <div><h4>Status for <b>{username_token}</b>: {player_status}</h4></div>
-                <div style="text-align: right;"><h4>Remaining Active Players: <b>{remaining_count}</b></h4></div>
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; font-family: sans-serif; font-size: 14px; font-weight: 500; color:#3b82f6;">
+                <div>Status for <b>{username_token}</b>: {player_status}</div>
+                <div style="text-align: right;">Remaining Active Players: <b>{remaining_count}</b></div>
             </div>
             """,
             unsafe_allow_html=True
