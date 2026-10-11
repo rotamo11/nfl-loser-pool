@@ -696,6 +696,24 @@ else:
         matchups = supabase.table("nfl_schedule").select("*").eq("week", CALCULATED_CURRENT_WEEK).execute().data
 
         # ====================================================================
+        # 📊 THE CHRONOLOGICAL MATCHUP SORTING ENGINE
+        # ====================================================================
+        # Sorts matchups from earliest to latest; groups NULL times at the bottom by ID
+        if matchups:
+            matchups = sorted(
+                matchups,
+                key=lambda x: (
+                    0, 
+                    str(x.get("kickoff_time")), 
+                    x.get("id")
+                ) if x.get("kickoff_time") is not None else (
+                    1, 
+                    "", 
+                    x.get("id")
+                )
+            )
+
+        # ====================================================================
         # 📱 FIXED MOBILE-FIRST MATCHUP MASTER LOOP
         # ====================================================================
         main_grid_col1, main_grid_col2 = st.columns(2)
@@ -706,40 +724,31 @@ else:
             
             # 🚀 THE TIMEZONE-AWARE KICKOFF PARSER
             kickoff_raw = match.get("kickoff_time") or match.get("kickoff")
-            
             game_time_label = "Sunday 1:00 PM ET" # Baseline fallback
             is_game_locked, is_early_game = False, False
             
             if kickoff_raw:
                 try:
-                    # Clean up the space to standard T format
                     clean_time_str = str(kickoff_raw).replace(" ", "T")
-                    
-                    # Split on the '+' timezone symbol and take the primary time block
                     if "+" in clean_time_str:
                         clean_time_str = clean_time_str.split("+")[0]
-                        
-                    # Slice precisely down to minute alignment: "YYYY-MM-DDTHH:MM"
                     clean_time_str = clean_time_str[:16]
                     
-                    # Safely convert to a datetime object
                     kickoff_dt = datetime.datetime.fromisoformat(clean_time_str)
                     
-                    # 1. Evaluate if game kickoff time has passed live user clock settings
+                    # 1. Evaluate if kickoff time has passed live user clock
                     if datetime.datetime.now() >= kickoff_dt: 
                         is_game_locked = True
                         
-                    # 2. Build your conversational time labels dynamically on the fly
-                    day_name = kickoff_dt.strftime("%A") # e.g., "Thursday", "Sunday"
+                    # 2. Build conversational time labels dynamically
+                    day_name = kickoff_dt.strftime("%A")
                     hour_int = kickoff_dt.hour
                     min_int = kickoff_dt.minute
                     
-                    # Convert 24h clock integers to clean standard 12h AM/PM symbols
                     am_pm_suffix = "PM" if hour_int >= 12 else "AM"
                     display_hour = hour_int if hour_int <= 12 else hour_int - 12
                     if display_hour == 0: display_hour = 12
                         
-                    # Format strings securely (e.g., "Thursday 8:15 PM ET")
                     game_time_label = f"{day_name} {display_hour}:{min_int:02d} {am_pm_suffix} ET"
                     
                     # 3. Securely track early window parameters
@@ -747,8 +756,10 @@ else:
                     while sunday_deadline.weekday() != 6: sunday_deadline -= datetime.timedelta(days=1)
                     if kickoff_dt < sunday_deadline: is_early_game = True
                     
-                except Exception as e:
-                    game_time_label = f"Format Pending ({str(kickoff_raw)[:16]})"
+                except Exception:
+                    game_time_label = "TBD (Time Formatting Pending)"
+            else:
+                game_time_label = "TBD (Flex Scheduling Pending)"
 
             # Extract selection status indicators
             is_sel_away = away in st.session_state.selected_teams or f"{away}_SO" in st.session_state.selected_teams
@@ -785,11 +796,21 @@ else:
                             else: st.session_state.selected_teams.append(home)
                             st.rerun()
 
-                    # Footer timestamp metadata layout lines
+                    # Footer timestamp metadata lines
                     c_meta, c_so = st.columns([6.5, 3.5])
                     with c_meta:
                         if is_game_locked: st.markdown(f"<span style='color:#ef4444; font-size:11px; font-weight:bold;'>🔒 Kickoff Passed ({game_time_label})</span>", unsafe_allow_html=True)
-                        else: st.markdown(f"<span style='color:gray; font-size:11px; font-weight:500;'>⏰ Kickoff: {game_time_label}</span>", unsafe_allow_html=True)
+                        else: st.markdown(f"<span style='color:gray; font-size:11px; font-weight:500;'>⏰ {game_time_label}</span>", unsafe_allow_html=True)
+                    
+                    with c_so:
+                        if (is_sel_away or is_sel_home) and not is_game_locked:
+                            active_team = away if is_sel_away else home
+                            so_token = f"{active_team}_SO"
+                            is_so = so_token in st.session_state.selected_teams
+                            so_chk = st.checkbox("🎯 SO", value=is_so, key=f"so_sh_p_{m_id}")
+                            if so_chk != is_so:
+                                toggle_shutout_modifier(active_team, so_chk, "Finalized" if is_early_game else "Confirmed")
+                                st.rerun()
 
         # ====================================================================
         # 🚀 THE FIXED SUBMISSION MATRIX & EARLY WINDOWS ENGINE
