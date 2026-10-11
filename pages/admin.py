@@ -486,7 +486,7 @@ with tab_locks:
         
     st.markdown("---")
     
-    st.markdown("### Auto-Fallback & Weekly Deadline Lock Engine")
+    st.markdown("#### Auto-Fallback & Weekly Deadline Lock Engine")
     st.caption("Fires the Sunday Noon lock protocol: Promotes 'Confirmed' entries to 'Finalized'. If a player misses the deadline, they receive a BYE if available. Otherwise, you choose their penalty team below.")
 
     active_players = supabase.table("tournament_registrations").select("user_id, byes_used").eq("game_type", game_slug).eq("is_enrolled", True).neq("bracket_status","Eliminated").execute().data
@@ -519,7 +519,7 @@ with tab_locks:
         nfl_franchises.insert(0, recommended_penalty_team)
 
         with st.form("auto_fallback_enforcer_form"):
-            st.markdown("#### 🛠️ Assign Manual Overrides for Late Players")
+            st.markdown("#### Assign Manual Overrides for Late Players")
             manual_override_selections = {}
             
             for player in late_players_queue:
@@ -562,7 +562,7 @@ with tab_users:
     
     col_l, col_r = st.columns(2)
     with col_l:
-        st.markdown(f"#### 📋 Current Roster Sheets ({game_mode} Status View)")
+        st.markdown(f"#### Current Roster Sheets ({game_mode} Status View)")
         for u in all_users:
             rg = regs_map.get(u["id"])
             badge = "🚫 [Not Enrolled]" if not rg or not rg.get("is_enrolled") else "💲 [Paid]" if rg.get("is_paid") else "❌ [UNPAID]"
@@ -573,7 +573,7 @@ with tab_users:
                 st.rerun()
                 
     with col_r:
-        st.markdown("#### 🖋️ Profile Profile Editor Sheet")
+        st.markdown("#### Profile Profile Editor Sheet")
         selected_user = st.session_state.get("selected_mgmt_user")
         if not selected_user: 
             st.info("Select a competitor from the left list to modify parameters.")
@@ -646,7 +646,7 @@ with tab_users:
 # TAB 4: APPLICATIONS & CSV UTILITIES
 # ==========================================
 with tab_csv:
-    st.subheader("👥 Live Joining Applications Queue")
+    st.subheader("Live Joining Applications Queue")
     requests = supabase.table("join_requests").select("*").eq("status", "Pending").execute().data
     
     if not requests: 
