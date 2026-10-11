@@ -637,8 +637,13 @@ else:
 
         matchups = supabase.table("nfl_schedule").select("*").eq("week", CALCULATED_CURRENT_WEEK).execute().data
 
-        if "selected_teams" not in st.session_state:
-            st.session_state.selected_teams = []
+        if "selected_teams" not in st.session_state or not st.session_state.selected_teams:
+            # 🚀 THE SEED PASS: Pre-load any existing choices on database file records straight into active session memory
+            st.session_state.selected_teams = [p["team_picked"].upper() for p in current_picks]
+
+
+        #if "selected_teams" not in st.session_state:
+            #st.session_state.selected_teams = []
 
         if not matchups:
             st.info("No matchups loaded for this week yet.")
