@@ -639,7 +639,7 @@ else:
         if confirmed_picks_this_week:
             st.info(f"**Confirmed Pick:** You currently have **{', '.join(confirmed_picks_this_week)}** selected for this week. Clicking choices below will alter your Confirmed pick entry.")
 
-        finalized_picks_this_week = [p["team_picked"] for p in current_picks if p["pick_state"] == "Finalized"]
+        finalized_picks_this_week = [p["team_picked"] for p in current_picks if p["pick_state"] in ["Finalized", "Correct", "Incorrect"]]
         if finalized_picks_this_week:
             st.success(f"**Finalized Pick Locked:** You have officially locked in **{', '.join(finalized_picks_this_week)}** for this week. You can view competitor picks under the Overview tab, but edits are no longer allowed.")
 
