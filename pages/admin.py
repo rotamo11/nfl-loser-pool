@@ -306,18 +306,6 @@ tab_scores, tab_locks, tab_users, tab_csv = st.tabs(["Game & Score Processing", 
 # TAB 1: GAME & SCORE PROCESSING
 # ==========================================
 with tab_scores:
-    # Recover configuration metadata constraints
-    sched_meta = supabase.table("nfl_schedule").select("second_chance_start").limit(1).execute().data
-    sc_start = sched_meta[0]["second_chance_start"] if sched_meta else 6
-    
-    st.markdown("#### Configure Post-Season / 2nd Chance Parameters")
-    new_sc_week = st.number_input("Set 2nd Chance Launch Target (NFL Week Number):", min_value=1, max_value=17, value=sc_start)
-    if st.button("Update 2nd Chance Kickoff Line", width='stretch'):
-        supabase.table("nfl_schedule").update({"second_chance_start": new_sc_week}).neq("week", 99).execute()
-        st.success(f"2nd Chance Game start week line moved to Week {new_sc_week}!")
-        st.rerun()
-        
-    st.markdown("---")
     # Pull schedule rows matching your central SELECTED_WEEK variable parameter
     schedule_res = supabase.table("nfl_schedule").select("*").eq("week", SELECTED_WEEK).order("id").execute().data
     
@@ -485,6 +473,19 @@ with tab_scores:
 # TAB 2: SYSTEM LOCKS & MAINTENANCE CONTROL
 # ====================================================================
 with tab_locks:
+    # Recover configuration metadata constraints
+    sched_meta = supabase.table("nfl_schedule").select("second_chance_start").limit(1).execute().data
+    sc_start = sched_meta[0]["second_chance_start"] if sched_meta else 6
+    
+    st.markdown("#### Configure Post-Season / 2nd Chance Parameters")
+    new_sc_week = st.number_input("Set 2nd Chance Launch Target (NFL Week Number):", min_value=1, max_value=17, value=sc_start)
+    if st.button("Update 2nd Chance Kickoff Line", width='stretch'):
+        supabase.table("nfl_schedule").update({"second_chance_start": new_sc_week}).neq("week", 99).execute()
+        st.success(f"2nd Chance Game start week line moved to Week {new_sc_week}!")
+        st.rerun()
+        
+    st.markdown("---")
+    
     st.markdown("### Auto-Fallback & Weekly Deadline Lock Engine")
     st.caption("Fires the Sunday Noon lock protocol: Promotes 'Confirmed' entries to 'Finalized'. If a player misses the deadline, they receive a BYE if available. Otherwise, you choose their penalty team below.")
 
