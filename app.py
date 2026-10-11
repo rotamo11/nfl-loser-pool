@@ -631,17 +631,17 @@ else:
         # ====================================================================
         # 1. Gather any existing entries logged on file for this specific target week
         current_picks = [p for p in all_picks_res if p["week"] == SELECTED_WEEK]
-        is_finalized = any(p["pick_state"] == "Finalized" for p in current_picks)
+        is_finalized = any(p["pick_state"] in ["Finalized", "Correct", "Incorrect"] for p in current_picks)
         is_confirmed = any(p["pick_state"] == "Confirmed" for p in current_picks)
 
         # 2. Render highly visible information banners explaining pick states to players
         confirmed_picks_this_week = [p["team_picked"] for p in current_picks if p["pick_state"] == "Confirmed"]
         if confirmed_picks_this_week:
-            st.info(f"📋 **Confirmed Pick:** You currently have **{', '.join(confirmed_picks_this_week)}** selected for this week. Clicking choices below will alter your Confirmed pick entry.")
+            st.info(f"**Confirmed Pick:** You currently have **{', '.join(confirmed_picks_this_week)}** selected for this week. Clicking choices below will alter your Confirmed pick entry.")
 
         finalized_picks_this_week = [p["team_picked"] for p in current_picks if p["pick_state"] == "Finalized"]
         if finalized_picks_this_week:
-            st.success(f"🔒 **Finalized Pick Locked:** You have officially locked in **{', '.join(finalized_picks_this_week)}** for this week. You can view competitor picks under the Overview tab, but edits are no longer allowed.")
+            st.success(f"**Finalized Pick Locked:** You have officially locked in **{', '.join(finalized_picks_this_week)}** for this week. You can view competitor picks under the Overview tab, but edits are no longer allowed.")
 
         # 3. Pre-seed your active session tracking arrays on mount from these database rows
         if "selected_teams" not in st.session_state or not st.session_state.selected_teams:
