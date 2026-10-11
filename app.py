@@ -730,22 +730,23 @@ else:
             if kickoff_raw:
                 try:
                     # 1. Clean the space separator into standard ISO format
-                    # Example input: "2026-10-11 13:30:00+00" -> "2026-10-11T13:30:00+00"
-                    clean_time_str = str(kickoff_raw).replace(" ", "T")
+                    clean_time_str = str(kickoff_raw).replace(" ", "T").strip()
                     
-                    # 2. Parse the time string keeping the true absolute UTC offset (+00) intact!
-                    # This ensures Python knows the time is absolute UTC, not local server time.
+                    # 🚀 THE FIX: Standardize raw PostgreSQL trailing offsets to valid ISO layout strings
+                    # If it ends in shorthand '+00', append the required ':00' minute slots safely
+                    if clean_time_str.endswith("+00"):
+                        clean_time_str = clean_time_str + ":00"
+                    
+                    # 2. Parse the time string keeping the true absolute UTC offset (+00:00) intact!
                     kickoff_dt_utc = datetime.datetime.fromisoformat(clean_time_str)
                     
                     # 3. Create a strict, absolute comparison using current aware UTC time
-                    # This guarantees the lockout fires at the exact millisecond across the globe!
                     now_utc = datetime.datetime.now(datetime.timezone.utc)
                     if now_utc >= kickoff_dt_utc: 
                         is_game_locked = True
                         
                     # 4. Convert the absolute UTC timestamp to Eastern Time explicitly for the layout label
-                    # Eastern Standard Time (EST) is UTC-5, Eastern Daylight Time (EDT) is UTC-4
-                    # October is EDT, so we subtract 4 hours from the database UTC value
+                    # October is Eastern Daylight Time (EDT), which is UTC-4 hours
                     kickoff_dt_et = kickoff_dt_utc - datetime.timedelta(hours=4)
                     
                     # 5. Build conversational time labels dynamically from the Eastern Time object
