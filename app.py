@@ -819,7 +819,10 @@ else:
         # ====================================================================
         st.markdown("---")
         is_bye_selected = "BYE" in st.session_state.selected_teams
-        dis_bye = is_finalized or (reg_profile["byes_used"] >= 1) or (limit_reached and not is_bye_selected)
+        # Extract bye metrics out of the first row index item [0] of your list array safely
+        # Checks if reg_profile exists as a valid list, then safely reads index 0 parameters
+        user_byes_spent = reg_profile[0].get("byes_used", 0) if (isinstance(reg_profile, list) and len(reg_profile) > 0) else 0        
+        dis_bye = is_finalized or (user_byes_spent >= 1) or (limit_reached and not is_bye_selected)
         
         if st.button("Use My Bye", type="primary" if is_bye_selected else "secondary", disabled=dis_bye):
             if is_bye_selected: st.session_state.selected_teams.remove("BYE")
