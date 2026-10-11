@@ -347,49 +347,11 @@ elif not st.session_state.user:
     # st.markdown("<br>", unsafe_allow_html=True)
 
     # ====================================================================
-    # CHANNEL 1: SECURE ACCOUNT LOGIN & ADMIN MASQUERADE PORTAL
+    # CHANNEL 1: SECURE ACCOUNT LOGIN
     # ====================================================================
     if st.session_state.auth_mode == "Login":
         st.subheader("Player Login")
         
-        # 🚀 THE FIX: Hide masquerade by default until a user is securely logged in
-        current_logged_in_user = st.session_state.get("user")
-        is_authenticated_admin = False
-        
-        # Replace the string below with your absolute master Supabase User ID string
-        # You can copy this directly from your 'users' table or Supabase Auth console
-        MASTER_ADMIN_UID = "3f3a74a6-3725-4a3b-abda-015e73cb6f4b" 
-        
-        if current_logged_in_user:
-            st.info("MASTER_ADMIN_UID: {MASTER_ADMIN_UID] and u_id_str: {u_id_str}")
-            try:
-                u_id_str = str(current_logged_in_user.id).strip()
-                if u_id_str == MASTER_ADMIN_UID:
-                    is_authenticated_admin = True
-            except Exception: pass
-
-        # 🚀 SECURE GATE DISPLAY: Only show masquerade controls if YOU are logged in
-        if is_authenticated_admin:
-            st.success(f"⚡ **Admin Authorization Verified.** Dev tools unlocked.")
-            testing_mode = st.checkbox("Enable Developer Masquerade Mode", key="admin_masq_toggle")
-            
-            if testing_mode:
-                try:
-                    users_list = supabase.table("users").select("id", "username").execute().data
-                    if users_list:
-                        user_options = {u["username"]: u["id"] for u in users_list}
-                        selected_user_name = st.selectbox("Masquerade as Player:", list(user_options.keys()))
-                        if st.button("Switch Session Identity", width='stretch', type="primary"):
-                            class MockUser:
-                                def __init__(self, uid): self.id = uid
-                            st.session_state.user = MockUser(user_options[selected_user_name])
-                            st.session_state.force_password_change = False
-                            st.session_state.selected_teams = []
-                            st.success(f"Now masquerading as {selected_user_name}!")
-                            st.rerun()
-                except Exception as e: st.error(f"Masquerade Error: {str(e)}")
-                st.markdown("---")
-
         # Standard secure login interface fields open to all users
         if not current_logged_in_user or not is_authenticated_admin or (is_authenticated_admin and not st.session_state.get("admin_masq_toggle")):
             email = st.text_input("Email Address", key="main_login_email")
@@ -514,13 +476,13 @@ else:
         user_profile = user_profile_res if user_profile_res else {}
         username_token = user_profile.get("username", "Anonymous Player")
 
-        # 🚀 THE ABSOLUTE FIX: Inject the Admin Masquerade Deck directly into your post-login view layer
+        # Inject the Admin Masquerade Portal directly into your post-login view layer
         # Replace this string with your exact Supabase User ID string from your auth dashboard console
         MASTER_ADMIN_UID = "3f3a74a6-3725-4a3b-abda-015e73cb6f4b"
         
         if str(user_id).strip() == MASTER_ADMIN_UID:
             with st.container(border=True):
-                st.markdown("### 🛠️ Commissioner Session Masquerade Deck")
+                st.markdown("#### Commissioner Session Masquerade Portal")
                 st.caption("This utility control panel is restricted to your Admin ID only. Enabling Masquerade allows you to swap identities and test player views.")
                 
                 testing_mode = st.checkbox("Enable Developer Masquerade Mode", key="admin_session_masq_toggle")
