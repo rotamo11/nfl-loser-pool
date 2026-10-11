@@ -158,7 +158,7 @@ with st.sidebar:
                                         auth_headers = {"Authorization": f"Bearer {KEY}", "apikey": KEY, "Content-Type": "application/json"}
                                         auth_payload = {"password": clean_sb_pw}
                                         auth_response = requests.put(auth_endpoint, json=auth_payload, headers=auth_headers)
-                                        if auth_response.status_code in:
+                                        if auth_response.status_code in [200, 201]:
                                             st.sidebar.success("Password updated successfully!")
                                             st.toast("Security encryption synchronized!")
                                         else: st.sidebar.error(f"Server Rejected Update: {auth_response.text}")
