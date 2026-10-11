@@ -722,32 +722,28 @@ else:
             m_id = match["id"]
             away, home = match["away_team"].upper(), match["home_team"].upper()
             
-            # 🚀 THE BULLETPROOF ZERO-REGEX TIMEZONE PARSER
-            kickoff_raw = match.get("kickoff_time") or match.get("kickoff")
+            # 🚀 THE FIXED EASTERN-LOCALIZED KICKOFF PARSER
+            # Bypasses UTC translation entirely since timestamps are pre-mapped to ET
+            kickoff_raw = match.get("kickoff_time")
             game_time_label = "Sunday 1:00 PM ET" # Baseline fallback
             is_game_locked, is_early_game = False, False
             
             if kickoff_raw:
                 try:
-                    # 1. Standardize formatting and strip the troublesome timezone offset entirely
-                    # Example input: "2026-10-11 13:30:00+00" -> "2026-10-11T13:30:00"
+                    # 1. Clean the space separator and slice away the false trailing offset
+                    # Example input: "2026-10-11 09:30:00+00" -> "2026-10-11T09:30:00"
                     clean_time_str = str(kickoff_raw).replace(" ", "T").strip()
                     clean_time_str = clean_time_str[:19] # Extracts exactly YYYY-MM-DDTHH:MM:SS
                     
-                    # 2. Parse as a standard datetime object and explicitly bind it to absolute UTC
-                    naive_dt = datetime.datetime.fromisoformat(clean_time_str)
-                    kickoff_dt_utc = naive_dt.replace(tzinfo=datetime.timezone.utc)
+                    # 2. Parse directly as a standard, localized local Eastern object
+                    kickoff_dt_et = datetime.datetime.fromisoformat(clean_time_str)
                     
-                    # 3. Create a strict, absolute comparison using current aware UTC time
-                    now_utc = datetime.datetime.now(datetime.timezone.utc)
-                    if now_utc >= kickoff_dt_utc: 
+                    # 3. Create a strict comparison using your live current local clock
+                    # (Current time is 8:05 AM ET; game is 9:30 AM ET -> Evaluates to UNLOCKED)
+                    if datetime.datetime.now() >= kickoff_dt_et: 
                         is_game_locked = True
                         
-                    # 4. Convert the absolute UTC timestamp to Eastern Time explicitly for the layout label
-                    # October is Eastern Daylight Time (EDT), which is exactly UTC-4 hours
-                    kickoff_dt_et = kickoff_dt_utc - datetime.timedelta(hours=4)
-                    
-                    # 5. Build conversational time labels dynamically from the Eastern Time object
+                    # 4. Build conversational time labels dynamically from your Eastern object
                     day_name = kickoff_dt_et.strftime("%A")
                     hour_int = kickoff_dt_et.hour
                     min_int = kickoff_dt_et.minute
@@ -758,7 +754,7 @@ else:
                         
                     game_time_label = f"{day_name} {display_hour}:{min_int:02d} {am_pm_suffix} ET"
                     
-                    # 6. Track early window parameters safely using the localized Eastern object
+                    # 5. Track early window parameters safely using the Eastern timeline anchors
                     sunday_deadline = datetime.datetime(kickoff_dt_et.year, kickoff_dt_et.month, kickoff_dt_et.day, 12, 0, 0)
                     while sunday_deadline.weekday() != 6: sunday_deadline -= datetime.timedelta(days=1)
                     if kickoff_dt_et < sunday_deadline: is_early_game = True
