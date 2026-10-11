@@ -513,6 +513,34 @@ else:
         user_profile_res = supabase.table("users").select("*").eq("id", user_id).single().execute().data
         user_profile = user_profile_res if user_profile_res else {}
         username_token = user_profile.get("username", "Anonymous Player")
+
+        # 🚀 THE ABSOLUTE FIX: Inject the Admin Masquerade Deck directly into your post-login view layer
+        # Replace this string with your exact Supabase User ID string from your auth dashboard console
+        MASTER_ADMIN_UID = "3f3a74a6-3725-4a3b-abda-015e73cb6f4b"
+        
+        if str(user_id).strip() == MASTER_ADMIN_UID:
+            with st.container(border=True):
+                st.markdown("### 🛠️ Commissioner Session Masquerade Deck")
+                st.caption("This utility control panel is restricted to your Admin ID only. Enabling Masquerade allows you to swap identities and test player views.")
+                
+                testing_mode = st.checkbox("Enable Developer Masquerade Mode", key="admin_session_masq_toggle")
+                if testing_mode:
+                    try:
+                        users_list = supabase.table("users").select("id", "username").execute().data
+                        if users_list:
+                            user_options = {u["username"]: u["id"] for u in users_list}
+                            selected_user_name = st.selectbox("Select Player Identity to Assume:", list(user_options.keys()))
+                            if st.button("Assume Selected Identity", width='stretch', type="primary"):
+                                class MockUser:
+                                    def __init__(self, uid): self.id = uid
+                                st.session_state.user = MockUser(user_options[selected_user_name])
+                                st.session_state.force_password_change = False
+                                st.session_state.selected_teams = []
+                                st.success(f"Session successfully shifted to {selected_user_name}!")
+                                time.sleep(1)
+                                st.rerun()
+                    except Exception as e: st.error(f"Masquerade Error: {str(e)}")
+            st.markdown("<br>", unsafe_allow_html=True)
         
         # Dynamic Roster Counter
         all_regs = supabase.table("tournament_registrations").select("bracket_status").eq("game_type", game_slug).eq("is_enrolled", True).execute().data
