@@ -802,15 +802,13 @@ else:
                         if is_game_locked: st.markdown(f"<span style='color:#ef4444; font-size:11px; font-weight:bold;'>Kickoff Passed ({game_time_label})</span>", unsafe_allow_html=True)
                         else: st.markdown(f"<span style='color:gray; font-size:11px; font-weight:500;'>{game_time_label}</span>", unsafe_allow_html=True)
                     
-                    with c_so:
-                        if (is_sel_away or is_sel_home) and not is_game_locked:
-                            active_team = away if is_sel_away else home
-                            so_token = f"{active_team}_SO"
-                            is_so = so_token in st.session_state.selected_teams
-                            so_chk = st.checkbox("🎯 SO", value=is_so, key=f"so_sh_p_{m_id}")
-                            if so_chk != is_so:
-                                toggle_shutout_modifier(active_team, so_chk, "Finalized" if is_early_game else "Confirmed")
-                                st.rerun()
+                    # Clean, high-density metadata footer line
+                    c_meta = st.columns(1)[0]
+                    with c_meta:
+                        if is_game_locked: 
+                            st.markdown(f"<span style='color:#ef4444; font-size:11px; font-weight:bold;'>Kickoff Passed ({game_time_label})</span>", unsafe_allow_html=True)
+                        else: 
+                            st.markdown(f"<span style='color:gray; font-size:11px; font-weight:500;'>{game_time_label}</span>", unsafe_allow_html=True)
 
         # ====================================================================
         # 🚀 THE FIXED SUBMISSION MATRIX & EARLY WINDOWS ENGINE
