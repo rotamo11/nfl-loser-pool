@@ -694,8 +694,7 @@ else:
         # 3. Securely set the missing Boolean flag variable for your button disabling configurations
         limit_reached = current_picks_count >= max_allowed_picks
 
-
-        
+        st.write(f"Select **{required_picks}** {team_word} to lose from the matchups below:")
 
         # ====================================================================
         # 📱 FIXED MOBILE-FIRST MATCHUP MASTER LOOP
@@ -764,7 +763,6 @@ else:
 
         team_word = "team" if SELECTED_WEEK <= 14 else "teams"
         required_picks = 1 if SELECTED_WEEK <= 14 else 2 if SELECTED_WEEK <= 18 else 1
-        st.write(f"Select **{required_picks}** {team_word} to lose from the matchups above:")
 
         st.markdown("---")
         is_bye_selected = "BYE" in st.session_state.selected_teams
