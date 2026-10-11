@@ -658,9 +658,6 @@ else:
             st.caption(f"*No players currently active inside {bracket_title}*")
             return
             
-        players_group_count = len(players_group)
-        st.markdown(f"#### {bracket_title}: {players_group_count} Players")
-        
         # 1. INJECT FIXED TOOLTIP LAYOUT RULES
         st.html(
             """
@@ -683,7 +680,8 @@ else:
             st.caption(f"*No players currently active inside {bracket_title}*")
             return
             
-        st.markdown(f"#### 🏅 {bracket_title}")
+        players_group_count = len(players_group)
+        st.markdown(f"#### {bracket_title}: {players_group_count} Players")
         
         # Inject fixed tooltip layout rules (pointer-events none prevents layout clipping)
         st.html(
