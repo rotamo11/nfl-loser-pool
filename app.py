@@ -765,56 +765,56 @@ else:
             with active_lane:
                 with st.container(border=True):
 
-                # Extract selection status indicators
-                is_sel_away = away in st.session_state.selected_teams or f"{away}_SO" in st.session_state.selected_teams
-                is_sel_home = home in st.session_state.selected_teams or f"{home}_SO" in st.session_state.selected_teams
-                away_is_used = away in used_teams
-                home_is_used = home in used_teams
-    
-                active_lane = main_grid_col1 if idx % 2 == 0 else main_grid_col2
-                
-                with active_lane:
-                    with st.container(border=True):
-                        c_logos, c_away_btn, c_home_btn = st.columns([2.0, 4.0, 4.0])
-                        
-                        with c_logos:
-                            st.html(f'<div style="display:flex; justify-content:center; align-items:center; gap:4px; height:35px; width:100%;">{get_base64_logo_html(away)}<span style="font-size:10px; color:gray; font-weight:bold;">@</span>{get_base64_logo_html(home)}</div>')
-                        
-                        with c_away_btn:
-                            dis_away = is_finalized or is_game_locked or away_is_used or (limit_reached and not is_sel_away)
-                            lbl_away = f"{away} (Used)" if away_is_used else f"{away}"
-                            if st.button(lbl_away, key=f"ma_{m_id}", disabled=dis_away, type="primary" if is_sel_away else "secondary", width='stretch'):
-                                if is_sel_away:
-                                    if away in st.session_state.selected_teams: st.session_state.selected_teams.remove(away)
-                                    if f"{away}_SO" in st.session_state.selected_teams: st.session_state.selected_teams.remove(f"{away}_SO")
-                                else: st.session_state.selected_teams.append(away)
-                                st.rerun()
-                                
-                        with c_home_btn:
-                            dis_home = is_finalized or is_game_locked or home_is_used or (limit_reached and not is_sel_home)
-                            lbl_home = f"{home} (Used)" if home_is_used else f"{home}"
-                            if st.button(lbl_home, key=f"mh_{m_id}", disabled=dis_home, type="primary" if is_sel_home else "secondary", width='stretch'):
-                                if is_sel_home:
-                                    if home in st.session_state.selected_teams: st.session_state.selected_teams.remove(home)
-                                    if f"{home}_SO" in st.session_state.selected_teams: st.session_state.selected_teams.remove(f"{home}_SO")
-                                else: st.session_state.selected_teams.append(home)
-                                st.rerun()
-    
-                        # Footer timestamp metadata lines
-                        c_meta, c_so = st.columns([6.5, 3.5])
-                        with c_meta:
-                            if is_game_locked: st.markdown(f"<span style='color:#ef4444; font-size:11px; font-weight:bold;'>Kickoff Passed ({game_time_label})</span>", unsafe_allow_html=True)
-                            else: st.markdown(f"<span style='color:gray; font-size:11px; font-weight:500;'>{game_time_label}</span>", unsafe_allow_html=True)
-                        
-                        with c_so:
-                            if (is_sel_away or is_sel_home) and not is_game_locked:
-                                active_team = away if is_sel_away else home
-                                so_token = f"{active_team}_SO"
-                                is_so = so_token in st.session_state.selected_teams
-                                so_chk = st.checkbox("🎯 SO", value=is_so, key=f"so_sh_p_{m_id}")
-                                if so_chk != is_so:
-                                    toggle_shutout_modifier(active_team, so_chk, "Finalized" if is_early_game else "Confirmed")
+                    # Extract selection status indicators
+                    is_sel_away = away in st.session_state.selected_teams or f"{away}_SO" in st.session_state.selected_teams
+                    is_sel_home = home in st.session_state.selected_teams or f"{home}_SO" in st.session_state.selected_teams
+                    away_is_used = away in used_teams
+                    home_is_used = home in used_teams
+        
+                    active_lane = main_grid_col1 if idx % 2 == 0 else main_grid_col2
+                    
+                    with active_lane:
+                        with st.container(border=True):
+                            c_logos, c_away_btn, c_home_btn = st.columns([2.0, 4.0, 4.0])
+                            
+                            with c_logos:
+                                st.html(f'<div style="display:flex; justify-content:center; align-items:center; gap:4px; height:35px; width:100%;">{get_base64_logo_html(away)}<span style="font-size:10px; color:gray; font-weight:bold;">@</span>{get_base64_logo_html(home)}</div>')
+                            
+                            with c_away_btn:
+                                dis_away = is_finalized or is_game_locked or away_is_used or (limit_reached and not is_sel_away)
+                                lbl_away = f"{away} (Used)" if away_is_used else f"{away}"
+                                if st.button(lbl_away, key=f"ma_{m_id}", disabled=dis_away, type="primary" if is_sel_away else "secondary", width='stretch'):
+                                    if is_sel_away:
+                                        if away in st.session_state.selected_teams: st.session_state.selected_teams.remove(away)
+                                        if f"{away}_SO" in st.session_state.selected_teams: st.session_state.selected_teams.remove(f"{away}_SO")
+                                    else: st.session_state.selected_teams.append(away)
                                     st.rerun()
+                                    
+                            with c_home_btn:
+                                dis_home = is_finalized or is_game_locked or home_is_used or (limit_reached and not is_sel_home)
+                                lbl_home = f"{home} (Used)" if home_is_used else f"{home}"
+                                if st.button(lbl_home, key=f"mh_{m_id}", disabled=dis_home, type="primary" if is_sel_home else "secondary", width='stretch'):
+                                    if is_sel_home:
+                                        if home in st.session_state.selected_teams: st.session_state.selected_teams.remove(home)
+                                        if f"{home}_SO" in st.session_state.selected_teams: st.session_state.selected_teams.remove(f"{home}_SO")
+                                    else: st.session_state.selected_teams.append(home)
+                                    st.rerun()
+        
+                            # Footer timestamp metadata lines
+                            c_meta, c_so = st.columns([6.5, 3.5])
+                            with c_meta:
+                                if is_game_locked: st.markdown(f"<span style='color:#ef4444; font-size:11px; font-weight:bold;'>Kickoff Passed ({game_time_label})</span>", unsafe_allow_html=True)
+                                else: st.markdown(f"<span style='color:gray; font-size:11px; font-weight:500;'>{game_time_label}</span>", unsafe_allow_html=True)
+                            
+                            with c_so:
+                                if (is_sel_away or is_sel_home) and not is_game_locked:
+                                    active_team = away if is_sel_away else home
+                                    so_token = f"{active_team}_SO"
+                                    is_so = so_token in st.session_state.selected_teams
+                                    so_chk = st.checkbox("🎯 SO", value=is_so, key=f"so_sh_p_{m_id}")
+                                    if so_chk != is_so:
+                                        toggle_shutout_modifier(active_team, so_chk, "Finalized" if is_early_game else "Confirmed")
+                                        st.rerun()
 
         # ====================================================================
         # 🚀 THE FIXED SUBMISSION MATRIX & EARLY WINDOWS ENGINE
