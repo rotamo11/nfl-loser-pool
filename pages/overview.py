@@ -678,23 +678,50 @@ else:
             """
         )
         
-        # 2. FIXED UNIFORM COLUMN HEADERS ROW PASS
-        # Build matching weekly text tags to align perfectly right above player picks
+    def render_bracket_table(bracket_title, players_group):
+        if not players_group:
+            st.caption(f"*No players currently active inside {bracket_title}*")
+            return
+            
+        st.markdown(f"#### 🏅 {bracket_title}")
+        
+        # Inject fixed tooltip layout rules (pointer-events none prevents layout clipping)
+        st.html(
+            """
+            <style>
+                .tip-wrapper { position: relative; display: inline-block; cursor: help; border-bottom: 1px dashed rgba(128,128,128,0.5); }
+                .tip-wrapper .tip-card {
+                    visibility: hidden; width: 140px; background-color: #1e293b; color: #ffffff;
+                    text-align: center; border-radius: 4px; padding: 4px 8px; position: absolute;
+                    z-index: 999; bottom: 125%; left: 0; opacity: 0; transition: opacity 0.2s;
+                    font-size: 11px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+                    font-family: sans-serif; pointer-events: none;
+                }
+                .tip-wrapper:hover .tip-card { visibility: visible; opacity: 1; }
+            </style>
+            """
+        )
+        
+        # 🚀 THE FIX STEP A: Open a single global scroll container for the ENTIRE table block
+        # min-width forces a structured landscape canvas boundary (65px max-width * 18 weeks + 150px player)
+        table_html_rows = []
+        
+        # 1. BUILD UNIFORM TABLES HEADER ROW (Pushed straight into global buffer array)
         header_html_cells = []
         for w_num in visible_weeks:
-            header_html_cells.append(f'<div style="flex:1; text-align:center; font-size:11px; font-weight:800; color:var(--text-color); opacity:0.8; max-width:65px;">Wk {w_num}</div>')
+            header_html_cells.append(f'<div style="flex:1; text-align:center; font-size:11px; font-weight:800; color:var(--text-color); opacity:0.8; max-width:65px; min-width:45px;">Wk {w_num}</div>')
             
         unified_table_header = f"""
         <div style="display: flex; align-items: center; width: 100%; padding: 6px 0; border-bottom: 2px solid rgba(128,128,128,0.3); font-family: sans-serif;">
-            <div style="width: 150px; min-width: 120px; font-size: 12px; font-weight: 900; uppercase; color:var(--text-color); opacity:0.8;">PLAYER</div>
-            <div style="display: flex; flex: 1; align-items: center; gap: 6px; overflow-x: auto;">
+            <div style="width: 150px; min-width: 120px; font-size: 12px; font-weight: 900; color:var(--text-color); opacity:0.8;">PLAYER</div>
+            <div style="display: flex; flex: 1; align-items: center; gap: 6px;">
                 {"".join(header_html_cells)}
             </div>
         </div>
         """
-        st.html(unified_table_header)
+        table_html_rows.append(unified_table_header)
         
-        # 3. INDIVIDUAL LEAGUE PLAYER ROW LOOPS
+        # 2. BUILD INDIVIDUAL LEAGUE PLAYER ROWS
         for reg in players_group:
             u_id = reg["user_id"]
             uname = user_map.get(u_id, "Anonymous")
@@ -709,7 +736,7 @@ else:
             for w_num in visible_weeks:
                 p_data = user_weeks_map.get(w_num, None)
                 if not p_data: 
-                    row_html_cells.append('<div style="flex:1; max-width:65px; text-align:center; color:#cbd5e1; font-size:12px;">&bull;</div>')
+                    row_html_cells.append('<div style="flex:1; max-width:65px; min-width:45px; display:flex; justify-content:center; align-items:center; color:#cbd5e1; font-size:14px; font-weight:bold;">&bull;</div>')
                 else:
                     t_pick = p_data["team_picked"].upper()
                     p_state = p_data.get("pick_state", "Pending")
@@ -720,37 +747,50 @@ else:
                     reveal_tile_cell = is_current_loop_week_locked or user_has_finalized_for_loop_week or is_own_profile_row or is_logged_in_admin
                     
                     if not reveal_tile_cell:
-                        row_html_cells.append('<div style="flex:1; background-color: rgba(148, 163, 184, 0.15); padding: 4px 2px; border-radius: 4px; font-weight:600; font-size:10px; color:gray; text-align:center; white-space:nowrap; max-width:65px;">Hidden</div>')
+                        row_html_cells.append('<div style="flex:1; background-color: rgba(148, 163, 184, 0.15); padding: 4px 2px; border-radius: 4px; font-weight:600; font-size:10px; color:gray; text-align:center; white-space:nowrap; max-width:65px; min-width:45px;">🔒 Hid</div>')
                     else:
                         logo_html = get_base64_logo_html(t_pick)
                         clean_team_display = t_pick.replace('_SO', '')
                         if t_pick.endswith("_SO"): clean_team_display += "🎯"
                             
                         if p_state == "Correct" or t_pick == "BYE": 
-                            bg_style = "background-color: rgba(95, 175, 95, 0.05); border: 1px solid rgba(56, 118, 29, 0.8); padding: 4px 6px; border-radius: 4px; display: inline-flex; align-items: center; justify-content:center; gap: 2px; flex:1; max-width:65px;"
+                            bg_style = "background-color: rgba(16, 185, 129, 0.15); padding: 4px 6px; border-radius: 4px; display: inline-flex; align-items: center; justify-content:center; gap: 2px; flex:1; max-width:65px; min-width:45px;"
                         elif p_state == "Incorrect": 
-                            bg_style = "background-color: rgba(204, 51, 51, 0.05); border: 1px solid rgba(255, 0, 0, 0.8); padding: 4px 6px; border-radius: 4px; display: inline-flex; align-items: center; justify-content:center; gap: 2px; flex:1; max-width:65px;"
+                            bg_style = "background-color: rgba(239, 68, 68, 0.15); padding: 4px 6px; border-radius: 4px; display: inline-flex; align-items: center; justify-content:center; gap: 2px; flex:1; max-width:65px; min-width:45px;"
                         else: 
-                            bg_style = "display: inline-flex; align-items: center; justify-content:center; gap: 2px; color: var(--text-color); flex:1; max-width:65px;"
+                            bg_style = "display: inline-flex; align-items: center; justify-content:center; gap: 2px; color: var(--text-color); flex:1; max-width:65px; min-width:45px;"
                             
                         cell_div = f'<div style="{bg_style}">{logo_html}<span style="font-weight:600; font-size:11px;">{clean_team_display}</span></div>'
                         row_html_cells.append(cell_div)
             
-            unified_row_container = f"""
-            <div style="display: flex; align-items: center; width: 100%; padding: 4px 0; border-bottom: 1px solid rgba(128,128,128,0.15); font-family: sans-serif;">
+            # Note: Removed the local overflow-x configuration parameter on this row item div!
+            player_row_container = f"""
+            <div style="display: flex; align-items: center; width: 100%; padding: 4px 0; border-bottom: 1px solid rgba(128,128,128,0.15);">
                 <div style="width: 150px; min-width: 120px; font-size: 14px; font-weight: bold; white-space: nowrap;">
                     <div class="tip-wrapper" style="color: var(--text-color);">
                         {uname}
                         <div class="tip-card">👤 ID: {full_display_name}</div>
                     </div>
                 </div>
-                <div style="display: flex; flex: 1; align-items: center; gap: 6px; overflow-x: auto;">
+                <div style="display: flex; flex: 1; align-items: center; gap: 6px;">
                     {"".join(row_html_cells)}
                 </div>
             </div>
             """
-            st.html(unified_row_container)
-        st.markdown("<br>", unsafe_allow_html=True)
+            table_html_rows.append(player_row_container)
+            
+        # 🚀 THE FIX STEP B: Render everything wrapped inside one outer scrolling viewport window!
+        # min-width calculates to roughly 1350px total horizontal tracking boundary area
+        total_canvas_width = 150 + (len(visible_weeks) * 71)
+        st.html(
+            f"""
+            <div style="width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:10px; margin-bottom:15px;">
+                <div style="min-width:{total_canvas_width}px; display:flex; flex-direction:column;">
+                    {"".join(table_html_rows)}
+                </div>
+            </div>
+            """
+        )
 
     render_bracket_table("Loser Bracket", loser_bracket_players)
     render_bracket_table("Winner Bracket", winner_bracket_players)
