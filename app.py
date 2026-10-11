@@ -346,48 +346,66 @@ elif not st.session_state.user:
 
     # st.markdown("<br>", unsafe_allow_html=True)
 
-    # ==========================================
-    # CHANNEL 1: STANDARD ACCOUNT LOGIN PORTAL
-    # ==========================================
+    # ====================================================================
+    # CHANNEL 1: SECURE ACCOUNT LOGIN & ADMIN MASQUERADE PORTAL
+    # ====================================================================
     if st.session_state.auth_mode == "Login":
         st.subheader("Player Login")
-        url_params = st.query_params
-        #dev_pass_unlocked = url_params.get("dev", "").lower() == "true"
         
-        testing_mode = False
-        #if dev_pass_unlocked:
-        testing_mode = st.checkbox("Enable Developer Masquerade Mode")
+        # 🚀 THE FIX: Hide masquerade by default until a user is securely logged in
+        current_logged_in_user = st.session_state.get("user")
+        is_authenticated_admin = False
         
-        if testing_mode: # and dev_pass_unlocked:
+        # Replace the string below with your absolute master Supabase User ID string
+        # You can copy this directly from your 'users' table or Supabase Auth console
+        MASTER_ADMIN_UID = "YOUR_EXACT_SUPABASE_USER_ID_STRING" 
+        
+        if current_logged_in_user:
             try:
-                users_list = supabase.table("users").select("id", "username").execute().data
-                if users_list:
-                    user_options = {u["username"]: u["id"] for u in users_list}
-                    selected_user_name = st.selectbox("Masquerade as Player:", list(user_options.keys()))
-                    if st.button("Masquerade Login", width='stretch'):
-                        class MockUser:
-                            def __init__(self, uid): self.id = uid
-                        st.session_state.user = MockUser(user_options[selected_user_name])
-                        st.session_state.force_password_change = False
-                        st.session_state.selected_teams = []
-                        st.success(f"Masquerading as {selected_user_name}!")
-                        st.rerun()
-            except Exception as e: st.error(f"Error: {str(e)}")
-        else:
-            email = st.text_input("Email Address")
-            password = st.text_input("Password", type="password")
-            if st.button("Log In", width='stretch'):
+                u_id_str = str(current_logged_in_user.id).strip()
+                if u_id_str == MASTER_ADMIN_UID:
+                    is_authenticated_admin = True
+            except Exception: pass
+
+        # 🚀 SECURE GATE DISPLAY: Only show masquerade controls if YOU are logged in
+        if is_authenticated_admin:
+            st.success(f"⚡ **Admin Authorization Verified.** Dev tools unlocked.")
+            testing_mode = st.checkbox("Enable Developer Masquerade Mode", key="admin_masq_toggle")
+            
+            if testing_mode:
+                try:
+                    users_list = supabase.table("users").select("id", "username").execute().data
+                    if users_list:
+                        user_options = {u["username"]: u["id"] for u in users_list}
+                        selected_user_name = st.selectbox("Masquerade as Player:", list(user_options.keys()))
+                        if st.button("Switch Session Identity", width='stretch', type="primary"):
+                            class MockUser:
+                                def __init__(self, uid): self.id = uid
+                            st.session_state.user = MockUser(user_options[selected_user_name])
+                            st.session_state.force_password_change = False
+                            st.session_state.selected_teams = []
+                            st.success(f"Now masquerading as {selected_user_name}!")
+                            st.rerun()
+                except Exception as e: st.error(f"Masquerade Error: {str(e)}")
+                st.markdown("---")
+
+        # Standard secure login interface fields open to all users
+        if not current_logged_in_user or not is_authenticated_admin or (is_authenticated_admin and not st.session_state.get("admin_masq_toggle")):
+            email = st.text_input("Email Address", key="main_login_email")
+            password = st.text_input("Password", type="password", key="main_login_pwd")
+            
+            if st.button("Log In", width='stretch', type="primary"):
                 try:
                     res = supabase.auth.sign_in_with_password({"email": email, "password": password})
                     st.session_state.user = res.user
                     profile_check = supabase.table("users").select("first_login_complete").eq("id", res.user.id).single().execute().data
-                    # Force password change if reset by admin or first login incomplete
                     if not profile_check or not profile_check.get("first_login_complete", False):
                         st.session_state.force_password_change = True
                     st.session_state.selected_teams = []
                     st.success("Authentication validated.")
                     st.rerun()
-                except Exception: st.error("Authentication rejected. Check your credentials.")
+                except Exception: 
+                    st.error("Authentication rejected. Check your credentials.")
 
     # ==========================================
     # CHANNEL 2: ELIGIBILITY-GATED JOIN REQUESTS
