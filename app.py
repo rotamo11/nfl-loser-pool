@@ -671,6 +671,20 @@ else:
 
 
 
+        # 🚀 THE LIMIT DETECTOR PATCH: Calculates choice constraints dynamically
+        # 1. Tally up how many teams the player has selected or confirmed on their current workspace layout sheet
+        current_picks_count = len(st.session_state.selected_teams)
+        
+        # 2. Establish maximum limits based on your league rules timeline parameters
+        if SELECTED_WEEK <= 14:
+            max_allowed_picks = 1
+        elif SELECTED_WEEK <= 18:
+            max_allowed_picks = 2
+        else:
+            max_allowed_picks = 32 # Playoffs pass permits picking all losers
+            
+        # 3. Securely set the missing Boolean flag variable for your button disabling configurations
+        limit_reached = current_picks_count >= max_allowed_picks
 
 
         
