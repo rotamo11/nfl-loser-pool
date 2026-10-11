@@ -723,24 +723,31 @@ else:
             away, home = match["away_team"].upper(), match["home_team"].upper()
             
             # 🚀 THE FIXED EASTERN-LOCALIZED KICKOFF PARSER
-            # Bypasses UTC translation entirely since timestamps are pre-mapped to ET
+            # Bypasses UTC translation since database timestamps are pre-mapped to ET
             kickoff_raw = match.get("kickoff_time")
             game_time_label = "Sunday 1:00 PM ET" # Baseline fallback
             is_game_locked, is_early_game = False, False
             
             if kickoff_raw:
                 try:
-                    # 1. Clean the space separator and slice away the false trailing offset
+                    # 1. Clean the space separator and slice away the trailing offset
                     # Example input: "2026-10-11 09:30:00+00" -> "2026-10-11T09:30:00"
                     clean_time_str = str(kickoff_raw).replace(" ", "T").strip()
                     clean_time_str = clean_time_str[:19] # Extracts exactly YYYY-MM-DDTHH:MM:SS
                     
-                    # 2. Parse directly as a standard, localized local Eastern object
+                    # 2. Parse directly as a localized local Eastern object
                     kickoff_dt_et = datetime.datetime.fromisoformat(clean_time_str)
                     
-                    # 3. Create a strict comparison using your live current local clock
-                    # (Current time is 8:05 AM ET; game is 9:30 AM ET -> Evaluates to UNLOCKED)
-                    if datetime.datetime.now() >= kickoff_dt_et: 
+                    # 3. 🚀 THE SERVER-CLOCK FIX: Convert the hosting server's UTC time to Eastern Time!
+                    # Streamlit Cloud runs on UTC. Subtracting 4 hours aligns it perfectly with ET.
+                    now_utc = datetime.datetime.now(datetime.timezone.utc)
+                    now_et = now_utc - datetime.timedelta(hours=4)
+                    
+                    # Remove timezone awareness from now_et so it compares cleanly with kickoff_dt_et
+                    now_et_naive = now_et.replace(tzinfo=None)
+                    
+                    # Strict comparison using matching Eastern Time values across both variables
+                    if now_et_naive >= kickoff_dt_et: 
                         is_game_locked = True
                         
                     # 4. Build conversational time labels dynamically from your Eastern object
