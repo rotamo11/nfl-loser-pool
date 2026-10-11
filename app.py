@@ -722,28 +722,36 @@ else:
             m_id = match["id"]
             away, home = match["away_team"].upper(), match["home_team"].upper()
             
-            # 🚀 THE TIMEZONE-AWARE KICKOFF PARSER
+            # 🚀 THE BULLETPROOF TIMEZONE-AWARE KICKOFF PARSER
             kickoff_raw = match.get("kickoff_time") or match.get("kickoff")
             game_time_label = "Sunday 1:00 PM ET" # Baseline fallback
             is_game_locked, is_early_game = False, False
             
             if kickoff_raw:
                 try:
+                    # 1. Clean the space separator into standard ISO format
+                    # Example input: "2026-10-11 13:30:00+00" -> "2026-10-11T13:30:00+00"
                     clean_time_str = str(kickoff_raw).replace(" ", "T")
-                    if "+" in clean_time_str:
-                        clean_time_str = clean_time_str.split("+")[0]
-                    clean_time_str = clean_time_str[:16]
                     
-                    kickoff_dt = datetime.datetime.fromisoformat(clean_time_str)
+                    # 2. Parse the time string keeping the true absolute UTC offset (+00) intact!
+                    # This ensures Python knows the time is absolute UTC, not local server time.
+                    kickoff_dt_utc = datetime.datetime.fromisoformat(clean_time_str)
                     
-                    # 1. Evaluate if kickoff time has passed live user clock
-                    if datetime.datetime.now() >= kickoff_dt: 
+                    # 3. Create a strict, absolute comparison using current aware UTC time
+                    # This guarantees the lockout fires at the exact millisecond across the globe!
+                    now_utc = datetime.datetime.now(datetime.timezone.utc)
+                    if now_utc >= kickoff_dt_utc: 
                         is_game_locked = True
                         
-                    # 2. Build conversational time labels dynamically
-                    day_name = kickoff_dt.strftime("%A")
-                    hour_int = kickoff_dt.hour
-                    min_int = kickoff_dt.minute
+                    # 4. Convert the absolute UTC timestamp to Eastern Time explicitly for the layout label
+                    # Eastern Standard Time (EST) is UTC-5, Eastern Daylight Time (EDT) is UTC-4
+                    # October is EDT, so we subtract 4 hours from the database UTC value
+                    kickoff_dt_et = kickoff_dt_utc - datetime.timedelta(hours=4)
+                    
+                    # 5. Build conversational time labels dynamically from the Eastern Time object
+                    day_name = kickoff_dt_et.strftime("%A")
+                    hour_int = kickoff_dt_et.hour
+                    min_int = kickoff_dt_et.minute
                     
                     am_pm_suffix = "PM" if hour_int >= 12 else "AM"
                     display_hour = hour_int if hour_int <= 12 else hour_int - 12
@@ -751,10 +759,10 @@ else:
                         
                     game_time_label = f"{day_name} {display_hour}:{min_int:02d} {am_pm_suffix} ET"
                     
-                    # 3. Securely track early window parameters
-                    sunday_deadline = datetime.datetime(kickoff_dt.year, kickoff_dt.month, kickoff_dt.day, 12, 0, 0)
+                    # 6. Track early window parameters safely using the localized Eastern object
+                    sunday_deadline = datetime.datetime(kickoff_dt_et.year, kickoff_dt_et.month, kickoff_dt_et.day, 12, 0, 0)
                     while sunday_deadline.weekday() != 6: sunday_deadline -= datetime.timedelta(days=1)
-                    if kickoff_dt < sunday_deadline: is_early_game = True
+                    if kickoff_dt_et < sunday_deadline: is_early_game = True
                     
                 except Exception:
                     game_time_label = "TBD (Time Formatting Pending)"
