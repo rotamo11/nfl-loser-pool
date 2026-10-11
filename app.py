@@ -361,6 +361,7 @@ elif not st.session_state.user:
         MASTER_ADMIN_UID = "3f3a74a6-3725-4a3b-abda-015e73cb6f4b" 
         
         if current_logged_in_user:
+            st.info(f"MASTER_ADMIN_UID: {MASTER_ADMIN_UID] and u_id_str: {u_id_str}")
             try:
                 u_id_str = str(current_logged_in_user.id).strip()
                 if u_id_str == MASTER_ADMIN_UID:
