@@ -722,23 +722,21 @@ else:
             m_id = match["id"]
             away, home = match["away_team"].upper(), match["home_team"].upper()
             
-            # 🚀 THE BULLETPROOF TIMEZONE-AWARE KICKOFF PARSER
+            # 🚀 THE BULLETPROOF ZERO-REGEX TIMEZONE PARSER
             kickoff_raw = match.get("kickoff_time") or match.get("kickoff")
             game_time_label = "Sunday 1:00 PM ET" # Baseline fallback
             is_game_locked, is_early_game = False, False
             
             if kickoff_raw:
                 try:
-                    # 1. Clean the space separator into standard ISO format
+                    # 1. Standardize formatting and strip the troublesome timezone offset entirely
+                    # Example input: "2026-10-11 13:30:00+00" -> "2026-10-11T13:30:00"
                     clean_time_str = str(kickoff_raw).replace(" ", "T").strip()
+                    clean_time_str = clean_time_str[:19] # Extracts exactly YYYY-MM-DDTHH:MM:SS
                     
-                    # 🚀 THE BULLETPROOF FIX: Safely check for "+00" anywhere at the end of the string
-                    # If it ends with "+00" without the trailing minutes block, fix it automatically
-                    if clean_time_str.endswith("+00"):
-                        clean_time_str = clean_time_str.replace("+00", "+00:00")
-                    
-                    # 2. Parse the time string keeping the true absolute UTC offset (+00:00) intact!
-                    kickoff_dt_utc = datetime.datetime.fromisoformat(clean_time_str)
+                    # 2. Parse as a standard datetime object and explicitly bind it to absolute UTC
+                    naive_dt = datetime.datetime.fromisoformat(clean_time_str)
+                    kickoff_dt_utc = naive_dt.replace(tzinfo=datetime.timezone.utc)
                     
                     # 3. Create a strict, absolute comparison using current aware UTC time
                     now_utc = datetime.datetime.now(datetime.timezone.utc)
@@ -746,7 +744,7 @@ else:
                         is_game_locked = True
                         
                     # 4. Convert the absolute UTC timestamp to Eastern Time explicitly for the layout label
-                    # October is Eastern Daylight Time (EDT), which is UTC-4 hours
+                    # October is Eastern Daylight Time (EDT), which is exactly UTC-4 hours
                     kickoff_dt_et = kickoff_dt_utc - datetime.timedelta(hours=4)
                     
                     # 5. Build conversational time labels dynamically from the Eastern Time object
