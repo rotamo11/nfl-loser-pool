@@ -697,6 +697,8 @@ else:
         # 📱 FIXED MOBILE-FIRST MATCHUP MASTER LOOP
         # ====================================================================
         main_grid_col1, main_grid_col2 = st.columns(2)
+
+        matchups = supabase.table("nfl_schedule").select("*").eq("week", CALCULATED_CURRENT_WEEK).execute().data
         
         for idx, match in enumerate(matchups):
             m_id = match["id"]
