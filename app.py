@@ -732,10 +732,10 @@ else:
                     # 1. Clean the space separator into standard ISO format
                     clean_time_str = str(kickoff_raw).replace(" ", "T").strip()
                     
-                    # 🚀 THE FIX: Standardize raw PostgreSQL trailing offsets to valid ISO layout strings
-                    # If it ends in shorthand '+00', append the required ':00' minute slots safely
+                    # 🚀 THE BULLETPROOF FIX: Safely check for "+00" anywhere at the end of the string
+                    # If it ends with "+00" without the trailing minutes block, fix it automatically
                     if clean_time_str.endswith("+00"):
-                        clean_time_str = clean_time_str + ":00"
+                        clean_time_str = clean_time_str.replace("+00", "+00:00")
                     
                     # 2. Parse the time string keeping the true absolute UTC offset (+00:00) intact!
                     kickoff_dt_utc = datetime.datetime.fromisoformat(clean_time_str)
