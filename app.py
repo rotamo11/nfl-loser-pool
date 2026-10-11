@@ -693,7 +693,9 @@ else:
             
         # 3. Securely set the missing Boolean flag variable for your button disabling configurations
         limit_reached = current_picks_count >= max_allowed_picks
-
+        team_word = "team" if SELECTED_WEEK <= 14 else "teams"
+        required_picks = 1 if SELECTED_WEEK <= 14 else 2 if SELECTED_WEEK <= 18 else 1
+        
         st.write(f"Select **{required_picks}** {team_word} to lose from the matchups below:")
 
         # ====================================================================
@@ -760,9 +762,6 @@ else:
                     with c_meta:
                         if is_game_locked: st.markdown(f"<span style='color:#ef4444; font-size:11px; font-weight:bold;'>🔒 Kickoff Passed ({game_time_label})</span>", unsafe_allow_html=True)
                         else: st.markdown(f"<span style='color:gray; font-size:11px; font-weight:500;'>⏰ Kickoff: {game_time_label}</span>", unsafe_allow_html=True)
-
-        team_word = "team" if SELECTED_WEEK <= 14 else "teams"
-        required_picks = 1 if SELECTED_WEEK <= 14 else 2 if SELECTED_WEEK <= 18 else 1
 
         st.markdown("---")
         is_bye_selected = "BYE" in st.session_state.selected_teams
