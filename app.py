@@ -796,12 +796,6 @@ else:
                             else: st.session_state.selected_teams.append(home)
                             st.rerun()
 
-                    # Footer timestamp metadata lines
-                    c_meta, c_so = st.columns([6.5, 3.5])
-                    with c_meta:
-                        if is_game_locked: st.markdown(f"<span style='color:#ef4444; font-size:11px; font-weight:bold;'>Kickoff Passed ({game_time_label})</span>", unsafe_allow_html=True)
-                        else: st.markdown(f"<span style='color:gray; font-size:11px; font-weight:500;'>{game_time_label}</span>", unsafe_allow_html=True)
-                    
                     # Clean, high-density metadata footer line
                     c_meta = st.columns(1)[0]
                     with c_meta:
