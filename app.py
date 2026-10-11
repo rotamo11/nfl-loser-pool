@@ -680,8 +680,16 @@ else:
             max_allowed_picks = 1
         elif SELECTED_WEEK <= 18:
             max_allowed_picks = 2
+        elif SELECTED_WEEK == 19:
+            max_allowed_picks = 6 # Wildcard
+        elif SELECTED_WEEK == 20:
+            max_allowed_picks = 4 # Divisional
+        elif SELECTED_WEEK == 21:
+            max_allowed_picks = 2 # Conference Championship
+        elif SELECTED_WEEK == 22:
+            max_allowed_picks = 1 # Super Bowl
         else:
-            max_allowed_picks = 32 # Playoffs pass permits picking all losers
+            max_allowed_picks = 32 # Catch all
             
         # 3. Securely set the missing Boolean flag variable for your button disabling configurations
         limit_reached = current_picks_count >= max_allowed_picks
@@ -771,84 +779,7 @@ else:
 
 
             
-            # Determine conversational playoff labels or standard week integers
-            team_word = "team" if SELECTED_WEEK <= 14 else "teams"
-            required_picks = 1 if SELECTED_WEEK <= 14 else 2 if SELECTED_WEEK <= 18 else 99
-            st.write(f"Select **{required_picks}** {team_word} to lose from the matchups below:")
 
-            matchups = supabase.table("nfl_schedule").select("*").eq("week", SELECTED_WEEK).execute().data
-
-            if not matchups:
-                st.info(f"Matchups for {get_week_label(SELECTED_WEEK)} haven't been added by the Commissioner yet.")
-            else:
-                for match in matchups:
-                    m_id = match["id"]
-                    away = match["away_team"].upper()
-                    home = match["home_team"].upper()
-
-                    # Check dictionary map presence to verify historical exclusion rules
-                    away_is_used = away in used_teams and SELECTED_WEEK <= 18
-                    home_is_used = home in used_teams and SELECTED_WEEK <= 18
-                    
-                    is_sel_away = away in st.session_state.selected_teams
-                    is_sel_home = home in st.session_state.selected_teams
-                    
-                    limit_reached = len(st.session_state.selected_teams) >= required_picks
-                    col_a_logo, col_a_btn, col_vs, col_h_btn, col_h_logo = st.columns(5, gap="xxsmall", width="stretch", vertical_alignment="top", wrap=False)
-
-                    # --- AWAY TEAM RENDERER ---
-                    with col_a_logo:
-                        try:
-                            import base64
-                            with open(f"static/{away}.svg", "rb") as f:
-                                encoded_away_logo = base64.b64encode(f.read()).decode("utf-8")
-                            away_logo_url = f"data:image/svg+xml;base64,{encoded_away_logo}"
-                            st.markdown(f'<div style="width:32px; height:24px; padding-top:6px; margin:0 auto; display:flex; align-items:center;"><img src="{away_logo_url}" width="32" height="24" style="object-fit:contain; display:block;"/></div>', unsafe_allow_html=True)
-                        except Exception: st.write("")
-                        
-                    with col_a_btn:
-                        dis_away = away_is_used or (limit_reached and not is_sel_away)
-                        
-                        # DYNAMIC LABEL GENERATION: Extract custom playoff or regular week title tags 
-                        if away_is_used:
-                            used_wk_title = get_week_label(used_teams[away]).replace("Week ", "Wk ")
-                            btn_label_away = f"{away} (Used {used_wk_title})"
-                        else:
-                            btn_label_away = f"{away}"
-                            
-                        if st.button(btn_label_away, key=f"btn_a_{m_id}", disabled=dis_away, type="primary" if is_sel_away else "secondary", width='stretch'):
-                            if is_sel_away: st.session_state.selected_teams.remove(away)
-                            else: st.session_state.selected_teams.append(away)
-                            st.rerun()
-
-                    # --- MIDPOINT VS DIVIDER ---
-                    with col_vs:
-                        st.markdown("<center style='color:#64748b; font-size:12px; font-weight:bold; padding-top:8px;'>@</center>", unsafe_allow_html=True)
-
-                    # --- HOME TEAM RENDERER ---
-                    with col_h_btn:
-                        dis_home = home_is_used or (limit_reached and not is_sel_home)
-                        
-                        # DYNAMIC LABEL GENERATION: Extract matching label text for home team columns
-                        if home_is_used:
-                            used_wk_title = get_week_label(used_teams[home]).replace("Week ", "Wk ")
-                            btn_label_home = f"{home} (Used {used_wk_title})"
-                        else:
-                            btn_label_home = f"{home}"
-                            
-                        if st.button(btn_label_home, key=f"btn_h_{m_id}", disabled=dis_home, type="primary" if is_sel_home else "secondary", width='stretch'):
-                            if is_sel_home: st.session_state.selected_teams.remove(home)
-                            else: st.session_state.selected_teams.append(home)
-                            st.rerun()
-
-                    with col_h_logo:
-                        try:
-                            import base64
-                            with open(f"static/{home}.svg", "rb") as f:
-                                encoded_home_logo = base64.b64encode(f.read()).decode("utf-8")
-                            home_logo_url = f"data:image/svg+xml;base64,{encoded_home_logo}"
-                            st.markdown(f'<div style="width:32px; height:24px; padding-top:6px; margin:0 auto; display:flex; align-items:center;"><img src="{home_logo_url}" width="32" height="24" style="object-fit:contain; display:block;"/></div>', unsafe_allow_html=True)
-                        except Exception: st.write("")
 
                     # ======================================================================
                     # Dynamic Flex-Game Kickoff String Renderer - Handles Blank Timestamps
