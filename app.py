@@ -714,52 +714,56 @@ else:
             )
 
         # ====================================================================
-        # 📱 FIXED MOBILE-FIRST MATCHUP MASTER LOOP
+        # 📱 FIXED MOBILE-FIRST MATCHUP MASTER LOOP (Responsive Layout Enforcer)
         # ====================================================================
+        # Pre-calculate the exact midpoint split of your total weekly matchups array
+        total_games = len(matchups)
+        # The ceiling division math ensures odd-numbered match slates split safely
+        midpoint = (total_games + 1) // 2
+        
         main_grid_col1, main_grid_col2 = st.columns(2)
         
         for idx, match in enumerate(matchups):
             m_id = match["id"]
             away, home = match["away_team"].upper(), match["home_team"].upper()
             
-            # 🚀 THE TIMEZONE-AWARE KICKOFF PARSER
+            # ⏰ Secure Kickoff Validation Pass & Timezone Parser
             kickoff_raw = match.get("kickoff_time") or match.get("kickoff")
-            game_time_label = "Sunday 1:00 PM ET" # Baseline fallback
+            game_time_label = "Sunday 1:00 PM ET"
             is_game_locked, is_early_game = False, False
             
             if kickoff_raw:
                 try:
                     clean_time_str = str(kickoff_raw).replace(" ", "T")
-                    if "+" in clean_time_str:
-                        clean_time_str = clean_time_str.split("+")[0]
+                    if "+" in clean_time_str: clean_time_str = clean_time_str.split("+")[0]
                     clean_time_str = clean_time_str[:16]
-                    
                     kickoff_dt = datetime.datetime.fromisoformat(clean_time_str)
                     
-                    # 1. Evaluate if kickoff time has passed live user clock
-                    if datetime.datetime.now() >= kickoff_dt: 
-                        is_game_locked = True
-                        
-                    # 2. Build conversational time labels dynamically
+                    if datetime.datetime.now() >= kickoff_dt: is_game_locked = True
                     day_name = kickoff_dt.strftime("%A")
                     hour_int = kickoff_dt.hour
                     min_int = kickoff_dt.minute
-                    
                     am_pm_suffix = "PM" if hour_int >= 12 else "AM"
                     display_hour = hour_int if hour_int <= 12 else hour_int - 12
                     if display_hour == 0: display_hour = 12
-                        
                     game_time_label = f"{day_name} {display_hour}:{min_int:02d} {am_pm_suffix} ET"
                     
-                    # 3. Securely track early window parameters
                     sunday_deadline = datetime.datetime(kickoff_dt.year, kickoff_dt.month, kickoff_dt.day, 12, 0, 0)
                     while sunday_deadline.weekday() != 6: sunday_deadline -= datetime.timedelta(days=1)
                     if kickoff_dt < sunday_deadline: is_early_game = True
-                    
-                except Exception:
-                    game_time_label = "TBD (Time Formatting Pending)"
+                except Exception: game_time_label = "TBD (Time Formatting Pending)"
+            else: game_time_label = "TBD (Flex Scheduling Pending)"
+
+            # 🚀 THE RESPONSIVE RESPONSIVE ROW FIX:
+            # Map the first half of chronological games straight down column 1, 
+            # and the second half of chronological games straight down column 2!
+            if idx < midpoint:
+                active_lane = main_grid_col1
             else:
-                game_time_label = "TBD (Flex Scheduling Pending)"
+                active_lane = main_grid_col2
+            
+            with active_lane:
+                with st.container(border=True):
 
             # Extract selection status indicators
             is_sel_away = away in st.session_state.selected_teams or f"{away}_SO" in st.session_state.selected_teams
@@ -799,8 +803,8 @@ else:
                     # Footer timestamp metadata lines
                     c_meta, c_so = st.columns([6.5, 3.5])
                     with c_meta:
-                        if is_game_locked: st.markdown(f"<span style='color:#ef4444; font-size:11px; font-weight:bold;'>🔒 Kickoff Passed ({game_time_label})</span>", unsafe_allow_html=True)
-                        else: st.markdown(f"<span style='color:gray; font-size:11px; font-weight:500;'>⏰ {game_time_label}</span>", unsafe_allow_html=True)
+                        if is_game_locked: st.markdown(f"<span style='color:#ef4444; font-size:11px; font-weight:bold;'>Kickoff Passed ({game_time_label})</span>", unsafe_allow_html=True)
+                        else: st.markdown(f"<span style='color:gray; font-size:11px; font-weight:500;'>{game_time_label}</span>", unsafe_allow_html=True)
                     
                     with c_so:
                         if (is_sel_away or is_sel_home) and not is_game_locked:
