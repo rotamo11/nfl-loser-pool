@@ -811,18 +811,17 @@ else:
                             st.markdown(f"<span style='color:gray; font-size:11px; font-weight:500;'>{game_time_label}</span>", unsafe_allow_html=True)
 
         # ====================================================================
-        # 🚀 THE FIXED SUBMISSION MATRIX & EARLY WINDOWS ENGINE
+        # 🚀 CLEAN ACTION SUBMIT & VERIFICATION MATRIX (Zero SO Clutter)
         # ====================================================================
         st.markdown("---")
         is_bye_selected = "BYE" in st.session_state.selected_teams
-        dis_bye = is_finalized or (reg_profile[0]["byes_used"] >= 1) or (limit_reached and not is_bye_selected)
+        dis_bye = is_finalized or (reg_profile["byes_used"] >= 1) or (limit_reached and not is_bye_selected)
         
         if st.button("Use My Bye", type="primary" if is_bye_selected else "secondary", disabled=dis_bye):
             if is_bye_selected: st.session_state.selected_teams.remove("BYE")
             else: st.session_state.selected_teams.append("BYE")
             st.rerun()
 
-        # --- 6. ACTION SUBMIT CONTROLS MATRIX ---
         st.markdown("---")
         c_sub, c_res = st.columns(2)
         submit_disabled = is_finalized or (len(st.session_state.selected_teams) != required_picks)
@@ -835,7 +834,7 @@ else:
                 st.session_state.selected_teams = []
                 st.rerun()
 
-        # --- 7. THREE-OPTION VERIFICATION DIALOGUE POPUP ---
+        # --- THREE-OPTION VERIFICATION DIALOGUE POPUP ---
         if st.session_state.get("show_confirmation_modal", False):
             st.markdown("### Confirm or Finalize?")
             st.warning(f"You are selecting the following to lose: **{', '.join(st.session_state.selected_teams)}**")
@@ -843,35 +842,23 @@ else:
             m_c1, m_c2, m_c3 = st.columns(3)
             with m_c1:
                 if st.button("Confirm Pick (editable, Overview not visible)", width='stretch'):
-                    # Wipe out any previous un-finalized draft picks for this week
+                    # Wipe out any previous un-finalized draft picks for this specific week
                     supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", game_slug).eq("week", SELECTED_WEEK).execute()
                     
                     for team in st.session_state.selected_teams:
-                        # 🚀 THE KICKOFF STATE INTERCEPTOR:
-                        # Scan if the individual team selected belongs to an early window game
-                        is_early_pick = False
-                        for m_chk in matchups:
-                            if m_chk["away_team"].upper() == team or m_chk["home_team"].upper() == team:
-                                k_raw = m_chk.get("kickoff_time")
-                                if k_raw:
-                                    k_dt = datetime.datetime.fromisoformat(str(k_raw))
-                                    s_dead = datetime.datetime(k_dt.year, k_dt.month, k_dt.day, 12, 0, 0)
-                                    while s_dead.weekday() != 6: s_dead -= datetime.timedelta(days=1)
-                                    if k_dt < s_dead: is_early_pick = True
-                        
-                        # Early games are forced straight to Finalized to lock out scouting
-                        final_state = "Finalized" if is_early_pick else "Confirmed"
+                        # 🚀 Early games lock down to Finalized immediately, standard games go to Confirmed
+                        final_state = "Finalized" if is_early_game else "Confirmed"
                         supabase.table("user_picks").insert({
                             "user_id": user_id, "game_type": game_slug, "week": SELECTED_WEEK, "team_picked": team, "pick_state": final_state
                         }).execute()
                         
                     st.session_state.show_confirmation_modal = False
-                    st.toast("Selections synchronizing...")
+                    st.toast("Selections synchronized...")
                     time.sleep(1)
                     st.rerun()
                     
             with m_c2:
-                if st.button("Finalize Pick (not editable, Overview visible)", width='stretch'):
+                if st.button("Finalize Pick (not editable, Overview visible)", width='stretch', type="primary"):
                     supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", game_slug).eq("week", SELECTED_WEEK).execute()
                     for team in st.session_state.selected_teams:
                         supabase.table("user_picks").insert({
