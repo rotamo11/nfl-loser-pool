@@ -777,6 +777,31 @@ else:
 
 
 
+            # Determine conversational playoff labels or standard week integers
+            team_word = "team" if SELECTED_WEEK <= 14 else "teams"
+            required_picks = 1 if SELECTED_WEEK <= 14 else 2 if SELECTED_WEEK <= 18 else 99
+            st.write(f"Select **{required_picks}** {team_word} to lose from the matchups below:")
+
+            matchups = supabase.table("nfl_schedule").select("*").eq("week", SELECTED_WEEK).execute().data
+
+            if not matchups:
+                st.info(f"Matchups for {get_week_label(SELECTED_WEEK)} haven't been added by the Commissioner yet.")
+            else:
+                for match in matchups:
+                    m_id = match["id"]
+                    away = match["away_team"].upper()
+                    home = match["home_team"].upper()
+
+                    # Check dictionary map presence to verify historical exclusion rules
+                    away_is_used = away in used_teams and SELECTED_WEEK <= 18
+                    home_is_used = home in used_teams and SELECTED_WEEK <= 18
+                    
+                    is_sel_away = away in st.session_state.selected_teams
+                    is_sel_home = home in st.session_state.selected_teams
+                    
+                    limit_reached = len(st.session_state.selected_teams) >= required_picks
+                    col_a_logo, col_a_btn, col_vs, col_h_btn, col_h_logo = st.columns(5, gap="xxsmall", width="stretch", vertical_alignment="top", wrap=False)
+
 
             
 
