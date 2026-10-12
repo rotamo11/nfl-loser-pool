@@ -434,7 +434,7 @@ with tab_scores:
             st.markdown("<br>", unsafe_allow_html=True)
             
             # THE MASTER ACCUMULATOR ACTION BUTTON
-            submit_all_scores = st.form_submit_button("Calculate & Update Weekly Standings", width='stretch', type="secondary")
+            submit_all_scores = st.form_submit_button("Calculate & Update Weekly Standings", width='stretch', type="tertiary")
             
             if submit_all_scores:
                 with st.spinner("Processing selections and synchronizing pool brackets..."):
