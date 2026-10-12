@@ -240,11 +240,27 @@ with st.sidebar:
                                             st.sidebar.error(f"Server Rejected Update: {auth_response.text}")
                                     except Exception as pw_err:
                                         st.sidebar.error(f"Failed to update password: {str(pw_err)}")
-                # Logout button appears only when logged in
-                if st.button("Log Out", key="sidebar_logout_btn", width='stretch'):
-                    st.session_state.user = None
-                    st.session_state.selected_teams = []
-                    st.session_state.force_password_change = False
+                # 🚀 THE SMART ADMIN RESTORATION LOGOUT ROUTER
+                logout_label = "Return to Admin Session" if "admin_backup_uid" in st.session_state else "Log Out"
+                
+                if st.button(logout_label, key="sidebar_logout_btn", width='stretch'):
+                    # If you are currently masquerading, restore your true admin session
+                    if "admin_backup_uid" in st.session_state:
+                        class AdminUser:
+                            def __init__(self, uid): self.id = uid
+                        
+                        st.session_state.user = AdminUser(st.session_state.admin_backup_uid)
+                        del st.session_state.admin_backup_uid # Clear backup cookie cleanly
+                        st.session_state.selected_teams = []
+                        st.session_state.force_password_change = False
+                        st.toast("Admin session restored successfully!")
+                    else:
+                        # Standard full logout sequence for regular players
+                        st.session_state.user = None
+                        st.session_state.selected_teams = []
+                        st.session_state.force_password_change = False
+                        
+                    time.sleep(0.5)
                     st.rerun()
         except Exception:
             pass
@@ -305,6 +321,52 @@ tab_scores, tab_locks, tab_users, tab_csv = st.tabs(["Game & Score Processing", 
 # ==========================================
 # TAB 1: GAME & SCORE PROCESSING
 # ==========================================
+# Provide Masquerade option at all times in admin.py
+if st.session_state.auth_mode == "Login":
+    st.subheader("Player Login")
+    url_params = st.query_params
+    
+    testing_mode = False
+    testing_mode = st.checkbox("Enable Developer Masquerade Mode")
+    
+    if testing_mode: # and dev_pass_unlocked:
+        try:
+            users_list = supabase.table("users").select("id", "username").execute().data
+            if users_list:
+                user_options = {u["username"]: u["id"] for u in users_list}
+                selected_user_name = st.selectbox("Masquerade as Player:", list(user_options.keys()))
+                if st.button("Masquerade Login", width='stretch'):
+                    class MockUser:
+                        def __init__(self, uid): self.id = uid
+
+                    # 🚀 THE BACKUP CACHE PASSTHROUGH:
+                    # Saves your true admin identity to session memory before swapping
+                    st.session_state.admin_backup_uid = MASTER_ADMIN_UID
+
+                    st.session_state.user = MockUser(user_options[selected_user_name])
+                    st.session_state.force_password_change = False
+                    st.session_state.selected_teams = []
+                    st.success(f"Masquerading as {selected_user_name}!")
+                    st.rerun()
+        except Exception as e: st.error(f"Error: {str(e)}")
+    else:
+        email = st.text_input("Email Address")
+        password = st.text_input("Password", type="password")
+        if st.button("Log In", width='stretch'):
+            try:
+                res = supabase.auth.sign_in_with_password({"email": email, "password": password})
+                st.session_state.user = res.user
+                profile_check = supabase.table("users").select("first_login_complete").eq("id", res.user.id).single().execute().data
+                # Force password change if reset by admin or first login incomplete
+                if not profile_check or not profile_check.get("first_login_complete", False):
+                    st.session_state.force_password_change = True
+                st.session_state.selected_teams = []
+                st.success("Authentication validated.")
+                st.rerun()
+            except Exception: st.error("Authentication rejected. Check your credentials.")
+
+
+
 with tab_scores:
     # Pull schedule rows matching your central SELECTED_WEEK variable parameter
     schedule_res = supabase.table("nfl_schedule").select("*").eq("week", SELECTED_WEEK).order("id").execute().data
