@@ -316,6 +316,38 @@ with header_col2:
 
 st.markdown("---")
 
+# --- SAFE SESSION STATE ACCOUNT LOOKUPS ---
+if "user" not in st.session_state: 
+    st.session_state.user = None
+
+# --- THE ABSOLUTE ADMIN ROLE GATE CHECK ---
+# Replace this string with your exact Supabase User ID string from your auth dashboard console
+MASTER_ADMIN_UID = "YOUR_EXACT_SUPABASE_USER_ID_STRING"
+
+is_verified_admin = False
+if st.session_state.user:
+    try:
+        # Match the active session string against your master administrator account key
+        if str(st.session_state.user.id).strip() == MASTER_ADMIN_UID:
+            is_verified_admin = True
+    except Exception: pass
+
+# REJECTION SCREEN: If the user is not logged in as the master admin, intercept the view
+if not is_verified_admin:
+    st.error("**Access Denied: Restricted Administrative Workspace**")
+    st.warning("You do not have active authorization privileges to view this control workspace console panel.")
+    
+    st.info("**How to log in:** Please return to the Picks page, click **Account Login** if not already selected, and log in using your Commissioner credentials.")
+    
+    if st.page_link("app.py", label="Go to Picks page", type="secondary"):
+        st.rerun()
+        
+    st.stop() # STOPS EXECUTING THE REST OF THE SCRIPT IMEDIDATELY (Locks out all lower code/tabs)
+
+# ====================================================================
+# EVERYTHING BELOW THIS LINE ONLY RUNS IF YOU ARE SECURELY VERIFIED!
+# ====================================================================
+
 # Provide Masquerade option at all times in admin.py
 if st.session_state.auth_mode == "Login":
     st.subheader("Player Login")
