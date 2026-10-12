@@ -239,11 +239,27 @@ with st.sidebar:
                                             st.sidebar.error(f"Server Rejected Update: {auth_response.text}")
                                     except Exception as pw_err:
                                         st.sidebar.error(f"Failed to update password: {str(pw_err)}")
-                # Logout button appears only when logged in
-                if st.button("Log Out", key="sidebar_logout_btn", width='stretch'):
-                    st.session_state.user = None
-                    st.session_state.selected_teams = []
-                    st.session_state.force_password_change = False
+                # 🚀 THE SMART ADMIN RESTORATION LOGOUT ROUTER
+                logout_label = "Return to Admin Session" if "admin_backup_uid" in st.session_state else "Log Out"
+                
+                if st.button(logout_label, key="sidebar_logout_btn", width='stretch'):
+                    # If you are currently masquerading, restore your true admin session
+                    if "admin_backup_uid" in st.session_state:
+                        class AdminUser:
+                            def __init__(self, uid): self.id = uid
+                        
+                        st.session_state.user = AdminUser(st.session_state.admin_backup_uid)
+                        del st.session_state.admin_backup_uid # Clear backup cookie cleanly
+                        st.session_state.selected_teams = []
+                        st.session_state.force_password_change = False
+                        st.toast("Admin session restored successfully!")
+                    else:
+                        # Standard full logout sequence for regular players
+                        st.session_state.user = None
+                        st.session_state.selected_teams = []
+                        st.session_state.force_password_change = False
+                        
+                    time.sleep(0.5)
                     st.rerun()
         except Exception:
             pass
