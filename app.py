@@ -348,15 +348,15 @@ elif not st.session_state.user:
         
     c_log, c_jn, c_rst = st.columns(3)
     with c_log:
-        if st.button("Account Login", width='stretch', type="secondary" if st.session_state.auth_mode == "Login" else "secondary"):
+        if st.button("Account Login", width='stretch', type="primary" if st.session_state.auth_mode == "Login" else "secondary"):
             st.session_state.auth_mode = "Login"
             st.rerun()
     with c_jn:
-        if st.button("Join a Pool", width='stretch', type="secondary" if st.session_state.auth_mode == "Join" else "secondary"):
+        if st.button("Join a Pool", width='stretch', type="primary" if st.session_state.auth_mode == "Join" else "secondary"):
             st.session_state.auth_mode = "Join"
             st.rerun()
     with c_rst:
-        if st.button("Reset Password", width='stretch', type="secondary" if st.session_state.auth_mode == "Reset" else "secondary"):
+        if st.button("Reset Password", width='stretch', type="primary" if st.session_state.auth_mode == "Reset" else "secondary"):
             st.session_state.auth_mode = "Reset"
             st.rerun()
 
