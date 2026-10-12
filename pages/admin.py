@@ -411,7 +411,7 @@ with tab_scores:
                 )
                 
                 # Inline Controls: Radio selection matching your column layout alongside the checkbox
-                col_radio, col_check = st.columns([3, 1])
+                col_radio, col_check = st.columns([1, 1])
                 with col_radio:
                     loser_selection = st.radio(
                         f"Loser selection for game {m_id}",
