@@ -316,11 +316,6 @@ with header_col2:
 
 st.markdown("---")
 
-tab_scores, tab_locks, tab_users, tab_csv = st.tabs(["Game & Score Processing", "System Locks & Maintenance Control", "League Roster Management", "Applications Queue & CSV Utilities"])
-
-# ==========================================
-# TAB 1: GAME & SCORE PROCESSING
-# ==========================================
 # Provide Masquerade option at all times in admin.py
 if st.session_state.auth_mode == "Login":
     st.subheader("Player Login")
@@ -365,8 +360,11 @@ if st.session_state.auth_mode == "Login":
                 st.rerun()
             except Exception: st.error("Authentication rejected. Check your credentials.")
 
+tab_scores, tab_locks, tab_users, tab_csv = st.tabs(["Game & Score Processing", "System Locks & Maintenance Control", "League Roster Management", "Applications Queue & CSV Utilities"])
 
-
+# ==========================================
+# TAB 1: GAME & SCORE PROCESSING
+# ==========================================
 with tab_scores:
     # Pull schedule rows matching your central SELECTED_WEEK variable parameter
     schedule_res = supabase.table("nfl_schedule").select("*").eq("week", SELECTED_WEEK).order("id").execute().data
@@ -529,8 +527,8 @@ with tab_scores:
                     st.session_state.weekly_summary_report_cache = summary_report_markdown
                     
                     st.success("Standings updated and fully synchronized successfully!")
-                    time.sleep(5)
-                    st.rerun()
+                    # time.sleep(5)
+                    # st.rerun()
 
 # ====================================================================
 # TAB 2: SYSTEM LOCKS & MAINTENANCE CONTROL
