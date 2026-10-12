@@ -371,7 +371,7 @@ elif not st.session_state.user:
         email = st.text_input("Email Address", key="main_login_email")
         password = st.text_input("Password", type="password", key="main_login_pwd")
         
-        if st.button("Log In", width='stretch', type="primary"):
+        if st.button("Log In", width='stretch', type="secondary"):
             try:
                 res = supabase.auth.sign_in_with_password({"email": email, "password": password})
                 st.session_state.user = res.user
