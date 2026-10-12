@@ -512,7 +512,7 @@ with tab_scores:
                     
                     st.markdown("### Summary Report")
                     summary_report_markdown = f"""
-                    > **NFL Loser Pool - {game_slug} — {get_week_label(SELECTED_WEEK)} Results**
+                    > **NFL Loser Pool - {game_slug} Game — {get_week_label(SELECTED_WEEK)} Results**
                     > * **Wrong Picks This Week:** {wrong_picks_count}
                     > * **Players Eliminated This Week:** {newly_eliminated_count}
                     > * **Remaining Players:** {active_pool_remaining} Contenders
