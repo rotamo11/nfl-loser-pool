@@ -411,18 +411,18 @@ with tab_scores:
                 )
                 
                 # Inline Controls: Radio selection matching your column layout alongside the checkbox
-                #col_radio, col_check = st.columns([1, 1])
-                #with col_radio:
-                loser_selection = st.radio(
-                    f"Loser selection for game {m_id}",
-                    options=[away, home, "TIE"],
-                    index=default_radio_index,
-                    key=f"los_radio_{m_id}",
-                    horizontal=True,
-                    label_visibility="collapsed"
-                )
-                #with col_check:
-                is_so = st.checkbox("SO", value=current_db_so, key=f"so_check_{m_id}")
+                col_radio, col_check = st.columns([.7, .3])
+                with col_radio:
+                    loser_selection = st.radio(
+                        f"Loser selection for game {m_id}",
+                        options=[away, home, "TIE"],
+                        index=default_radio_index,
+                        key=f"los_radio_{m_id}",
+                        horizontal=True,
+                        label_visibility="collapsed"
+                    )
+                with col_check:
+                    is_so = st.checkbox("SO", value=current_db_so, key=f"so_check_{m_id}")
                     
                 # Cache parameters to ingest on bulk form submission pass
                 weekly_selections_cache[m_id] = {
