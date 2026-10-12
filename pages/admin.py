@@ -339,7 +339,7 @@ if not is_verified_admin:
     
     st.info("**How to log in:** Please return to the Picks page, click **Account Login** if not already selected, and log in using your Commissioner credentials.")
     
-    if st.page_link("app.py", label="Go to Picks page", type="secondary"):
+    if st.form_submit_button("app.py", label="Go to Picks page", type="secondary"):
         st.rerun()
         
     st.stop() # STOPS EXECUTING THE REST OF THE SCRIPT IMEDIDATELY (Locks out all lower code/tabs)
