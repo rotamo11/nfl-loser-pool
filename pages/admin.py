@@ -512,15 +512,15 @@ with tab_scores:
                     
                     st.markdown("### Summary Report")
                     summary_report_markdown = f"""
-                    > **NFL Loser Pool — {get_week_label(SELECTED_WEEK)} Results**
+                    > **NFL Loser Pool - {game_slug} — {get_week_label(SELECTED_WEEK)} Results**
                     > * **Wrong Picks This Week:** {wrong_picks_count}
                     > * **Players Eliminated This Week:** {newly_eliminated_count}
-                    > * **Active Pool Remaining:** {active_pool_remaining} Contenders
+                    > * **Remaining Players:** {active_pool_remaining} Contenders
                     >
-                    > **Current League Bracket Standings Breakdown:**
+                    > **Bracket Breakdown:**
                     > * **Loser Bracket (0 Losses):** {loser_count} Players
                     > * **Winner Bracket (1 Loss):** {winner_count} Players
-                    > * **Total Eliminated (2+ Losses):** {eliminated_count} Players
+                    > * **Eliminated (2+ Losses):** {eliminated_count} Players
                     """
                     # Write summary report right onto your admin dashboard dashboard console screen 
                     st.markdown(summary_report_markdown)
