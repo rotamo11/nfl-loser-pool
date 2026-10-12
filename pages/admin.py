@@ -424,7 +424,7 @@ with tab_scores:
                         label_visibility="collapsed"
                     )
                 with col_check:
-                    is_so = st.checkbox("🎯 Shutout", value=current_db_so, key=f"so_check_{m_id}")
+                    is_so = st.checkbox("Shutout", value=current_db_so, key=f"so_check_{m_id}")
                     
                 # Cache parameters to ingest on bulk form submission pass
                 weekly_selections_cache[m_id] = {
@@ -514,7 +514,7 @@ with tab_scores:
                     
                     st.markdown("### Summary Report")
                     summary_report_markdown = f"""
-                    > 🏁 **NFL Loser Pool — {get_week_label(SELECTED_WEEK)} Results**
+                    > **NFL Loser Pool — {get_week_label(SELECTED_WEEK)} Results**
                     > * **Wrong Picks This Week:** {wrong_picks_count}
                     > * **Players Eliminated This Week:** {newly_eliminated_count}
                     > * **Active Pool Remaining:** {active_pool_remaining} Contenders
@@ -529,6 +529,7 @@ with tab_scores:
                     st.session_state.weekly_summary_report_cache = summary_report_markdown
                     
                     st.success("Standings updated and fully synchronized successfully!")
+                    time.sleep(5)
                     st.rerun()
 
 # ====================================================================
