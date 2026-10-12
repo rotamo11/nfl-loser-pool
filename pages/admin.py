@@ -6,6 +6,7 @@ import io
 import uuid
 import datetime
 import base64
+import time
 
 # --- SETUP MANDATORY FIRST DIRECTIVE PASS ---
 st.set_page_config(layout="wide")
