@@ -927,7 +927,7 @@ else:
                 else:
                     st.session_state.selected_teams = ["BYE"]
                     # Auto-confirm bye selection row parameters straight into database ledger tables
-                    supabase.table("user_picks").insert({"user_id": user_id, "game_type", game_slug, "week", SELECTED_WEEK, "team_picked": "BYE", "pick_state": "Confirmed"}).execute()
+                    supabase.table("user_picks").insert({"user_id": user_id, "game_type", game_slug, "week", SELECTED_WEEK, "team_picked": "BYE", "pick_state": "Confirmed"}).execute():
                     st.toast("BYE Option Logged as Confirmed")
                 time.sleep(0.3); st.rerun()
         else:
