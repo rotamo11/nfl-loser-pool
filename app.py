@@ -468,11 +468,44 @@ else:
     if not reg_profile:
         st.error(f"**Access Locked.** You are not registered for the {game_mode} game.")
         st.info("Please contact the League Commissioner to initialize your account profile: nfl.loser.pool@gmail.com")
-    
+
+    # ====================================================================
+    # SECURE SMART SELF-ENROLLMENT GATE (2ND CHANCE MATRIX INTERCEPTOR)
+    # ====================================================================
     elif isinstance(reg_profile, list) and len(reg_profile) > 0 and not reg_profile[0].get("is_enrolled", False):
-        st.error(f"**Not Enrolled.** Your profile is not currently enrolled in the **{game_mode}** game for the this season.")
-        st.info("*Note: If you have already paid or submitted entry data to the Commissioner, access will open automatically once your enrollment status is enabled.*")
+        st.error(f"**Not Enrolled.** Your profile is not currently active for the **{game_mode}** game this season.")
         
+        # 1. Pull the 2nd Chance timeline start week setting from schedule logs
+        sched_meta = supabase.table("nfl_schedule").select("second_chance_start").limit(1).execute().data
+        sc_start_week = sched_meta[0]["second_chance_start"] if sched_meta else 6
+        
+        # 2. Check timeline eligibility: Open until the conclusion of the 2nd Chance starting week
+        is_2nd_chance_window_open = CALCULATED_CURRENT_WEEK <= (sc_start_week + 1)
+        
+        if game_mode == "2nd Chance" and is_2nd_chance_window_open:
+            st.info("**Good News!** The enrollment window for the 2nd Chance Pool is currently open. You can activate your slot right now to jump into this week's action instantly.")
+            
+            # Render high-visibility self-service registration button row layout
+            if st.button("Activate My 2nd Chance Game Registration", key="user_self_enroll_btn", type="primary", width='stretch'):
+                with st.spinner("Synchronizing league roster ledgers..."):
+                    try:
+                        # Update the target user's enrollment tracking metrics natively in Supabase
+                        supabase.table("tournament_registrations").update({
+                            "is_enrolled": True,
+                            "bracket_status": "Loser Bracket", # Enters un-eliminated with clean loss sheet
+                            "byes_used": 0,
+                            "is_paid": False  # Flaunted as unpaid until Venmo pass clears
+                        }).eq("user_id", user_id).eq("game_type", "2nd_Chance").execute()
+                        
+                        st.success("Roster enrollment verified! Welcome to the 2nd Chance game.")
+                        time.sleep(2)
+                        st.rerun()
+                    except Exception as err:
+                        st.error(f" Roster verification exception: {str(err)}")
+        else:
+            # Traditional baseline disclaimer notice for closed tracks or Main game overrides
+            st.info("*Note: If you are looking to join the Main Game, or if you have already paid or submitted entry data to the Commissioner, access will open automatically once your enrollment status is enabled.*")
+    
     elif isinstance(reg_profile, list) and len(reg_profile) > 0 and reg_profile[0].get("bracket_status") == "Eliminated":
         st.error(f"**Eliminated.** You have been eliminated from the {game_mode} game. Selection access is locked, but you can still view the Overview page.")
         
