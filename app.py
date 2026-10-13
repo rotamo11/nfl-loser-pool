@@ -770,7 +770,7 @@ else:
             )
 
         # ====================================================================
-        # 📱 FIXED MOBILE-FIRST MATCHUP MASTER LOOP
+        # 📱 FIXED MOBILE-FIRST MATCHUP MASTER LOOP (INLINE WORKSPACE CONTROLS)
         # ====================================================================
         main_grid_col1, main_grid_col2 = st.columns(2)
         
@@ -778,64 +778,58 @@ else:
             m_id = match["id"]
             away, home = match["away_team"].upper(), match["home_team"].upper()
             
-            # 🚀 THE FIXED EASTERN-LOCALIZED KICKOFF PARSER
-            # Bypasses UTC translation since database timestamps are pre-mapped to ET
+            # ⏰ Secure Kickoff Validation Pass & Server-Clock Eastern Alignment Pass
             kickoff_raw = match.get("kickoff_time")
-            game_time_label = "Sunday 1:00 PM ET" # Baseline fallback
+            game_time_label = "Sunday 1:00 PM ET"
             is_game_locked, is_early_game = False, False
             
             if kickoff_raw:
                 try:
-                    # 1. Clean the space separator and slice away the trailing offset
-                    # Example input: "2026-10-11 09:30:00+00" -> "2026-10-11T09:30:00"
-                    clean_time_str = str(kickoff_raw).replace(" ", "T").strip()
-                    clean_time_str = clean_time_str[:19] # Extracts exactly YYYY-MM-DDTHH:MM:SS
-                    
-                    # 2. Parse directly as a localized local Eastern object
+                    clean_time_str = str(kickoff_raw).replace(" ", "T").strip()[:19]
                     kickoff_dt_et = datetime.datetime.fromisoformat(clean_time_str)
-                    
-                    # 3. 🚀 THE SERVER-CLOCK FIX: Convert the hosting server's UTC time to Eastern Time!
-                    # Streamlit Cloud runs on UTC. Subtracting 4 hours aligns it perfectly with ET.
                     now_utc = datetime.datetime.now(datetime.timezone.utc)
-                    now_et = now_utc - datetime.timedelta(hours=4)
+                    now_et_naive = (now_utc - datetime.timedelta(hours=4)).replace(tzinfo=None)
                     
-                    # Remove timezone awareness from now_et so it compares cleanly with kickoff_dt_et
-                    now_et_naive = now_et.replace(tzinfo=None)
-                    
-                    # Strict comparison using matching Eastern Time values across both variables
-                    if now_et_naive >= kickoff_dt_et: 
-                        is_game_locked = True
+                    if now_et_naive >= kickoff_dt_et: is_game_locked = True
                         
-                    # 4. Build conversational time labels dynamically from your Eastern object
                     day_name = kickoff_dt_et.strftime("%A")
                     hour_int = kickoff_dt_et.hour
                     min_int = kickoff_dt_et.minute
-                    
                     am_pm_suffix = "PM" if hour_int >= 12 else "AM"
                     display_hour = hour_int if hour_int <= 12 else hour_int - 12
                     if display_hour == 0: display_hour = 12
-                        
                     game_time_label = f"{day_name} {display_hour}:{min_int:02d} {am_pm_suffix} ET"
                     
-                    # 5. Track early window parameters safely using the Eastern timeline anchors
                     sunday_deadline = datetime.datetime(kickoff_dt_et.year, kickoff_dt_et.month, kickoff_dt_et.day, 12, 0, 0)
                     while sunday_deadline.weekday() != 6: sunday_deadline -= datetime.timedelta(days=1)
                     if kickoff_dt_et < sunday_deadline: is_early_game = True
-                    
-                except Exception:
-                    game_time_label = "TBD (Time Formatting Pending)"
-            else:
-                game_time_label = "TBD (Flex Scheduling Pending)"
-                
-            # Extract selection status indicators
-            is_sel_away = away in st.session_state.selected_teams or f"{away}_SO" in st.session_state.selected_teams
-            is_sel_home = home in st.session_state.selected_teams or f"{home}_SO" in st.session_state.selected_teams
-            away_is_used = away in used_teams
-            home_is_used = home in used_teams
+                except Exception: game_time_label = "TBD (Time Formatting Pending)"
 
-            active_lane = main_grid_col1 if idx % 2 == 0 else main_grid_col2
+            # 🔍 Resolve Active States Natively for this Matchup Slot
+            db_away_pick = next((p for p in current_picks if p["team_picked"].upper() == away), None)
+            db_home_pick = next((p for p in current_picks if p["team_picked"].upper() == home), None)
+            active_db_pick = db_away_pick or db_home_pick
             
-            with active_lane:
+            # Determine current pick state configuration tiers
+            has_db_confirmed = active_db_pick is not None and active_db_pick.get("pick_state") == "Confirmed"
+            has_db_finalized = active_db_pick is not None and active_db_pick.get("pick_state") in ["Finalized", "Correct", "Incorrect"]
+            
+            # Read local session state selections cache values
+            is_sel_away = away in st.session_state.selected_teams
+            is_sel_home = home in st.session_state.selected_teams
+            has_workspace_selection = is_sel_away or is_sel_home
+            
+            # Force auto-highlight matching state loops on page initial load
+            if active_db_pick and not has_workspace_selection and not is_finalized:
+                if db_away_pick: st.session_state.selected_teams.append(away); is_sel_away = True
+                if db_home_pick: st.session_state.selected_teams.append(home); is_sel_home = True
+                has_workspace_selection = True
+
+            away_is_used = away in used_teams and not (active_db_pick and db_away_pick)
+            home_is_used = home in used_teams and not (active_db_pick and db_home_pick)
+            
+            # Render layout paths into alternating column containers grids
+            with (main_grid_col1 if idx % 2 == 0 else main_grid_col2):
                 with st.container(border=True):
                     c_logos, c_away_btn, c_home_btn = st.columns([2.0, 4.0, 4.0])
                     
@@ -843,96 +837,98 @@ else:
                         st.html(f'<div style="display:flex; justify-content:center; align-items:center; gap:4px; height:35px; width:100%;">{get_base64_logo_html(away)}<span style="font-size:10px; color:gray; font-weight:bold;">@</span>{get_base64_logo_html(home)}</div>')
                     
                     with c_away_btn:
-                        dis_away = is_finalized or is_game_locked or away_is_used or (limit_reached and not is_sel_away)
-                        lbl_away = f"{away} (Used)" if away_is_used else f"{away}"
-                        if st.button(lbl_away, key=f"ma_{m_id}", disabled=dis_away, type="primary" if is_sel_away else "secondary", width='stretch'):
-                            if is_sel_away:
-                                if away in st.session_state.selected_teams: st.session_state.selected_teams.remove(away)
-                                if f"{away}_SO" in st.session_state.selected_teams: st.session_state.selected_teams.remove(f"{away}_SO")
-                            else: st.session_state.selected_teams.append(away)
+                        lbl_away = f"{away} (Used)" if away_is_used else away
+                        dis_away = is_game_locked or has_db_finalized or away_is_used or (limit_reached and not is_sel_away)
+                        if st.button(lbl_away, key=f"btn_aw_{m_id}", disabled=dis_away, type="primary" if is_sel_away else "secondary", width='stretch'):
+                            if is_sel_away: st.session_state.selected_teams.remove(away)
+                            else:
+                                st.session_state.selected_teams = [t for t in st.session_state.selected_teams if t in [away, home]] # Clear row conflicts
+                                st.session_state.selected_teams.append(away)
                             st.rerun()
                             
                     with c_home_btn:
-                        dis_home = is_finalized or is_game_locked or home_is_used or (limit_reached and not is_sel_home)
-                        lbl_home = f"{home} (Used)" if home_is_used else f"{home}"
-                        if st.button(lbl_home, key=f"mh_{m_id}", disabled=dis_home, type="primary" if is_sel_home else "secondary", width='stretch'):
-                            if is_sel_home:
-                                if home in st.session_state.selected_teams: st.session_state.selected_teams.remove(home)
-                                if f"{home}_SO" in st.session_state.selected_teams: st.session_state.selected_teams.remove(f"{home}_SO")
-                            else: st.session_state.selected_teams.append(home)
+                        lbl_home = f"{home} (Used)" if home_is_used else home
+                        dis_home = is_game_locked or has_db_finalized or home_is_used or (limit_reached and not is_sel_home)
+                        if st.button(lbl_home, key=f"btn_hm_{m_id}", disabled=dis_home, type="primary" if is_sel_home else "secondary", width='stretch'):
+                            if is_sel_home: st.session_state.selected_teams.remove(home)
+                            else:
+                                st.session_state.selected_teams = [t for t in st.session_state.selected_teams if t in [away, home]]
+                                st.session_state.selected_teams.append(home)
                             st.rerun()
+                    # --- DYNAMIC INLINE ACTION BUTTONS SYSTEM RAIL ---
+                    # Only visible if a choice is actively selected in session workspace or exists in the database
+                    if has_workspace_selection or active_db_pick:
+                        st.markdown("<div style='margin: 4px 0;'></div>", unsafe_allow_html=True)
+                        c_conf, c_fin, c_res = st.columns(3)
+                        active_team_choice = away if is_sel_away else home
+                        
+                        with c_conf:
+                            # Confirmed state handler button parameters
+                            if has_db_finalized:
+                                st.button("Confirmed", key=f"inf_c_{m_id}", disabled=True, width='stretch')
+                            else:
+                                if st.button("Confirm", key=f"act_c_{m_id}", type="primary" if has_db_confirmed else "secondary", disabled=is_game_locked, width='stretch'):
+                                    supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", game_slug).eq("week", SELECTED_WEEK).execute()
+                                    target_state = "Finalized" if is_early_game else "Confirmed"
+                                    supabase.table("user_picks").insert({"user_id": user_id, "game_type": game_slug, "week": SELECTED_WEEK, "team_picked": active_team_choice, "pick_state": target_state}).execute()
+                                    st.toast("Selection Confirmed!")
+                                    time.sleep(0.3); st.rerun()
+                                    
+                        with c_fin:
+                            # Finalized state button logic with absolute confirmation requirement popover modal
+                            if has_db_finalized:
+                                st.button("🔒 Finalized", key=f"inf_f_{m_id}", type="primary", disabled=True, width='stretch')
+                            else:
+                                # Use st.popover to enforce the user confirmation requirement right inside the matchup box container
+                                with st.popover("Finalize", key=f"pop_f_{m_id}", use_container_width=True):
+                                    st.warning("⚠️ Finalizing locks this choice permanently. Edits are not allowed after this step.")
+                                    if st.button("🔥 Yes, Lock It In", key=f"h_lock_{m_id}", type="primary", use_container_width=True):
+                                        supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", game_slug).eq("week", SELECTED_WEEK).execute()
+                                        supabase.table("user_picks").insert({"user_id": user_id, "game_type": game_slug, "week": SELECTED_WEEK, "team_picked": active_team_choice, "pick_state": "Finalized"}).execute()
+                                        st.session_state.selected_teams = []
+                                        st.balloons()
+                                        time.sleep(0.5); st.rerun()
+                                        
+                        with c_res:
+                            # Reset control state logic router parameters
+                            if has_db_finalized:
+                                pass # Simply do not present the Reset button once hard-locked to Finalized state
+                            else:
+                                if st.button("Reset", key=f"act_r_{m_id}", disabled=is_game_locked, width='stretch'):
+                                    if has_db_confirmed:
+                                        # If already written to DB as Confirmed, remove row record entirely from ledger sheets
+                                        supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", game_slug).eq("week", SELECTED_WEEK).execute()
+                                        st.toast("Database Entry Removed")
+                                    else:
+                                        st.toast("Workspace Reset Completed")
+                                    st.session_state.selected_teams = [t for t in st.session_state.selected_teams if t not in [away, home]]
+                                    time.sleep(0.3); st.rerun()
 
-                    # Clean, high-density metadata footer line
-                    c_meta = st.columns(1)[0]
-                    with c_meta:
-                        if is_game_locked: 
-                            st.markdown(f"<span style='color:#ef4444; font-size:11px; font-weight:bold;'>Kickoff Passed ({game_time_label})</span>", unsafe_allow_html=True)
-                        else: 
-                            st.markdown(f"<span style='color:gray; font-size:11px; font-weight:500;'>{game_time_label}</span>", unsafe_allow_html=True)
+                    # Footnote metadata row timestamps metrics
+                    st.markdown("<div style='margin-top: 4px;'></div>", unsafe_allow_html=True)
+                    if is_game_locked: st.markdown(f"<span style='color:#ef4444; font-size:11px; font-weight:bold;'>🔒 Kickoff Passed ({game_time_label})</span>", unsafe_allow_html=True)
+                    else: st.markdown(f"<span style='color:gray; font-size:11px; font-weight:500;'>⏰ {game_time_label}</span>", unsafe_allow_html=True)
 
-        # ====================================================================
-        # 🚀 CLEAN ACTION SUBMIT & VERIFICATION MATRIX (Zero SO Clutter)
-        # ====================================================================
+        # --- DEDICATED LEAGUE BYE SLOT UTILITY CARD BLOCK ---
         st.markdown("---")
         is_bye_selected = "BYE" in st.session_state.selected_teams
-        # Extract bye metrics out of the first row index item [0] of your list array safely
-        # Checks if reg_profile exists as a valid list, then safely reads index 0 parameters
-        user_byes_spent = reg_profile[0].get("byes_used", 0) if (isinstance(reg_profile, list) and len(reg_profile) > 0) else 0        
-        dis_bye = is_finalized or (user_byes_spent >= 1) or (limit_reached and not is_bye_selected)
+        db_bye_pick = next((p for p in current_picks if p["team_picked"].upper() == "BYE"), None)
+        has_bye_finalized = db_bye_pick is not None and db_bye_pick.get("pick_state") in ["Finalized", "Correct", "Incorrect"]
         
-        if st.button("Use My Bye", type="primary" if is_bye_selected else "secondary", disabled=dis_bye):
-            if is_bye_selected: st.session_state.selected_teams.remove("BYE")
-            else: st.session_state.selected_teams.append("BYE")
-            st.rerun()
-
-        st.markdown("---")
-        c_sub, c_res = st.columns(2)
-        submit_disabled = is_finalized or (len(st.session_state.selected_teams) != required_picks)
+        user_byes_spent = reg_profile.get("byes_used", 0) if (isinstance(reg_profile, list) and len(reg_profile) > 0) else 0
+        dis_bye = is_finalized or has_bye_finalized or (user_byes_spent >= 1) or (limit_reached and not is_bye_selected)
         
-        with c_sub:
-            if st.button("Next", disabled=submit_disabled, width='stretch'):
-                st.session_state.show_confirmation_modal = True
-        with c_res:
-            if st.button("Reset", disabled=is_finalized, width='stretch'):
-                st.session_state.selected_teams = []
-                st.rerun()
-
-        # --- THREE-OPTION VERIFICATION DIALOGUE POPUP ---
-        if st.session_state.get("show_confirmation_modal", False):
-            st.markdown("### Confirm or Finalize?")
-            st.warning(f"You are selecting the following to lose: **{', '.join(st.session_state.selected_teams)}**")
-            
-            m_c1, m_c2, m_c3 = st.columns(3)
-            with m_c1:
-                if st.button("Confirm Pick (editable, Overview not visible)", width='stretch'):
-                    # Wipe out any previous un-finalized draft picks for this specific week
-                    supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", game_slug).eq("week", SELECTED_WEEK).execute()
-                    
-                    for team in st.session_state.selected_teams:
-                        # 🚀 Early games lock down to Finalized immediately, standard games go to Confirmed
-                        final_state = "Finalized" if is_early_game else "Confirmed"
-                        supabase.table("user_picks").insert({
-                            "user_id": user_id, "game_type": game_slug, "week": SELECTED_WEEK, "team_picked": team, "pick_state": final_state
-                        }).execute()
-                        
-                    st.session_state.show_confirmation_modal = False
-                    st.toast("Selections synchronized...")
-                    time.sleep(1)
-                    st.rerun()
-                    
-            with m_c2:
-                if st.button("Finalize Pick (not editable, Overview visible)", width='stretch', type="primary"):
-                    supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", game_slug).eq("week", SELECTED_WEEK).execute()
-                    for team in st.session_state.selected_teams:
-                        supabase.table("user_picks").insert({
-                            "user_id": user_id, "game_type": game_slug, "week": SELECTED_WEEK, "team_picked": team, "pick_state": "Finalized"
-                        }).execute()
-                    st.session_state.show_confirmation_modal = False
-                    st.balloons()
-                    time.sleep(1)
-                    st.rerun()
-                    
-            with m_c3:
-                if st.button("Go Back / Cancel", width='stretch'):
-                    st.session_state.show_confirmation_modal = False
-                    st.rerun()
+        if not has_bye_finalized:
+            if st.button("Use My Bye Slot Option", type="primary" if is_bye_selected or db_bye_pick else "secondary", disabled=dis_bye, width='stretch'):
+                supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", game_slug).eq("week", SELECTED_WEEK).execute()
+                if is_bye_selected or db_bye_pick:
+                    st.session_state.selected_teams = [t for t in st.session_state.selected_teams if t != "BYE"]
+                    st.toast("BYE Slot Choice Cleared")
+                else:
+                    st.session_state.selected_teams = ["BYE"]
+                    # Auto-confirm bye selection row parameters straight into database ledger tables
+                    supabase.table("user_picks").insert({"user_id": user_id, "game_type", game_slug, "week", SELECTED_WEEK, "team_picked": "BYE", "pick_state": "Confirmed"}).execute()
+                    st.toast("BYE Option Logged as Confirmed")
+                time.sleep(0.3); st.rerun()
+        else:
+            st.button("🔒 Bye Slot Option Finalized & Exhausted", disabled=True, type="primary", width='stretch')
