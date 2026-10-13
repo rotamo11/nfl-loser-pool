@@ -94,7 +94,7 @@ with st.sidebar:
             pass
         return ""
 
-    # --- SIDEBAR INTERFACE ENHANCEMENT ---
+    # --- SEBAR INTERFACE ENHANCEMENT ---
     with st.sidebar:
         week_options = []
         for w in range(1, 23):
@@ -160,7 +160,7 @@ with st.sidebar:
     # Self-Service Profile Management Drawer nested inside the left rail navigation
     if st.session_state.get("user"):
         try:
-            # THE FIXED VERSION: Extracts the ID safely only if a user is logged in
+            # THE FIXED VERSION: Extracts the  safely only if a user is logged in
             current_user = st.session_state.get("user")
             user_id = current_user.id if current_user else None
             u_prof = supabase.table("users").select("*").eq("id", user_id).single().execute().data
@@ -252,7 +252,7 @@ with header_col2:
 
 st.markdown("---")
 
-# --- USER SELECTION AUTHENTICATION & OVERRIDES GATES ---
+# --- USER SELECTION AUTHENTICATION & OVERRES GATES ---
 if 'user' not in st.session_state:
     st.session_state.user = None
 if 'force_password_change' not in st.session_state:
@@ -400,7 +400,7 @@ elif not st.session_state.user:
                 st.error("Email Address field is mandatory.")
             else:
                 with st.spinner("Verifying identity records..."):
-                    # DOUBLE LOCK PRE-CHECK: Match BOTH columns simultaneously to locate the exact player ID
+                    # DOUBLE LOCK PRE-CHECK: Match BOTH columns simultaneously to locate the exact player 
                     account_match = supabase.table("users").select("id, email").eq("email", clean_email).execute().data
                     
                     if not account_match:
@@ -465,7 +465,7 @@ else:
 
         st.markdown("---")
 
-# THE FIXED VERSION: Extracts the ID safely only if a user is logged in
+# THE FIXED VERSION: Extracts the  safely only if a user is logged in
 current_user = st.session_state.get("user")
 user_id = current_user.id if current_user else None
 
@@ -474,7 +474,7 @@ user_id = current_user.id if current_user else None
 # ====================================================================
 reg_profile = None
 
-# Only query tournament registrations if we have a valid, logged-in user session ID
+# Only query tournament registrations if we have a valid, logged-in user session 
 if user_id:
     try:
         reg_profile = supabase.table("tournament_registrations").select("*").eq("user_id", user_id).eq("game_type", game_slug).execute().data
@@ -719,7 +719,7 @@ else:
         """
         table_html_rows.append(unified_table_header)
         
-        # 2. BUILD INDIVIDUAL LEAGUE PLAYER ROWS
+        # 2. BUILD INDIVUAL LEAGUE PLAYER ROWS
         for reg in players_group:
             u_id = reg["user_id"]
             uname = user_map.get(u_id, "Anonymous")
@@ -767,7 +767,7 @@ else:
                 <div style="width: 150px; min-width: 120px; font-size: 14px; font-weight: bold; white-space: nowrap;">
                     <div class="tip-wrapper" style="color: var(--text-color);">
                         {uname}
-                        <div class="tip-card">👤 ID: {full_display_name}</div>
+                        <div class="tip-card">{full_display_name}</div>
                     </div>
                 </div>
                 <div style="display: flex; flex: 1; align-items: center; gap: 6px;">
