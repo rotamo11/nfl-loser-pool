@@ -781,32 +781,44 @@ else:
             m_id = match["id"]
             away, home = match["away_team"].upper(), match["home_team"].upper()
             
-            # ⏰ Secure Kickoff Validation Pass & Server-Clock Eastern Alignment Pass
+            # ⏰ Secure Kickoff Validation Pass & Dynamic Calendar Isolation Pass
             kickoff_raw = match.get("kickoff_time")
             game_time_label = "Sunday 1:00 PM ET"
             is_game_locked, is_early_game = False, False
             
-            if kickoff_raw:
+            # 🚀 THE FIX: Only lock out or force-finalize selections if viewing the active calendar week!
+            is_currently_active_week = (SELECTED_WEEK == CALCULATED_CURRENT_WEEK)
+            is_past_week = (SELECTED_WEEK < CALCULATED_CURRENT_WEEK)
+            
+            if is_past_week:
+                is_game_locked = True # Past weeks are universally closed
+                
+            if kickoff_raw and is_currently_active_week:
                 try:
                     clean_time_str = str(kickoff_raw).replace(" ", "T").strip()[:19]
                     kickoff_dt_et = datetime.datetime.fromisoformat(clean_time_str)
                     now_utc = datetime.datetime.now(datetime.timezone.utc)
                     now_et_naive = (now_utc - datetime.timedelta(hours=4)).replace(tzinfo=None)
                     
-                    if now_et_naive >= kickoff_dt_et: is_game_locked = True
+                    if now_et_naive >= kickoff_dt_et: 
+                        is_game_locked = True
                         
-                    day_name = kickoff_dt_et.strftime("%A")
-                    hour_int = kickoff_dt_et.hour
-                    min_int = kickoff_dt_et.minute
-                    am_pm_suffix = "PM" if hour_int >= 12 else "AM"
-                    display_hour = hour_int if hour_int <= 12 else hour_int - 12
-                    if display_hour == 0: display_hour = 12
-                    game_time_label = f"{day_name} {display_hour}:{min_int:02d} {am_pm_suffix} ET"
-                    
                     sunday_deadline = datetime.datetime(kickoff_dt_et.year, kickoff_dt_et.month, kickoff_dt_et.day, 12, 0, 0)
                     while sunday_deadline.weekday() != 6: sunday_deadline -= datetime.timedelta(days=1)
-                    if kickoff_dt_et < sunday_deadline: is_early_game = True
-                except Exception: game_time_label = "TBD (Time Formatting Pending)"
+                    if kickoff_dt_et < sunday_deadline: 
+                        is_early_game = True
+                except Exception: pass
+
+            # Re-generate the friendly display label formatting smoothly for future slates
+            if kickoff_raw and not is_past_week:
+                try:
+                    clean_str = str(kickoff_raw).replace(" ", "T").strip()[:19]
+                    dt = datetime.datetime.fromisoformat(clean_str)
+                    day_name = dt.strftime("%A")
+                    display_hour = dt.hour if dt.hour <= 12 else dt.hour - 12
+                    if display_hour == 0: display_hour = 12
+                    game_time_label = f"{day_name} {display_hour}:{dt.minute:02d} {'PM' if dt.hour >= 12 else 'AM'} ET"
+                except Exception: pass
 
             # 🔍 Resolve Active States Natively for this Matchup Slot
             db_away_pick = next((p for p in current_picks if p["team_picked"].upper() == away), None)
@@ -918,27 +930,31 @@ else:
         db_bye_pick = next((p for p in current_picks if p["team_picked"].upper() == "BYE"), None)
         has_bye_finalized = db_bye_pick is not None and db_bye_pick.get("pick_state") in ["Finalized", "Correct", "Incorrect"]
         
-        # 🚀 THE FIX: Target index 0 of the array list BEFORE executing the dictionary .get() lookups!
-        if isinstance(reg_profile, list) and len(reg_profile) > 0:
-            user_byes_spent = reg_profile[0].get("byes_used", 0)
-        elif isinstance(reg_profile, dict):
-            user_byes_spent = reg_profile.get("byes_used", 0)
-        else:
-            user_byes_spent = 0
+        # 🚀 THE ABSOLUTE REFRESH FIX: Scan user selection logs for ANY historical bye usage
+        # Searches across every week state configuration to block multi-bye choices securely
+        historical_byes_spent = 0
+        if all_picks_res:
+            historical_byes_spent = sum(1 for p in all_picks_res if p.get("team_picked", "").upper() == "BYE")
             
-        dis_bye = is_finalized or has_bye_finalized or (user_byes_spent >= 1) or (limit_reached and not is_bye_selected)
+        # A bye is used if spent historically, or if already locked for this specific week selection
+        has_already_exhausted_bye = (historical_byes_spent >= 1) and not (db_bye_pick is not None)
+        
+        dis_bye = is_finalized or has_bye_finalized or has_already_exhausted_bye or (limit_reached and not is_bye_selected)
         
         if not has_bye_finalized:
-            if st.button("Use My Bye Slot Option", type="primary" if is_bye_selected or db_bye_pick else "secondary", disabled=dis_bye, width='stretch'):
+            # Button highlights as active primary if selected in current workspace or active week row
+            lbl_bye_btn = "Bye Already Used This Season" if has_already_exhausted_bye else "Use My Bye"
+            
+            if st.button(lbl_bye_btn, type="primary" if is_bye_selected or db_bye_pick else "secondary", disabled=dis_bye, width='stretch'):
                 supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", game_slug).eq("week", SELECTED_WEEK).execute()
                 if is_bye_selected or db_bye_pick:
                     st.session_state.selected_teams = [t for t in st.session_state.selected_teams if t != "BYE"]
                     st.toast("BYE Slot Choice Cleared")
                 else:
                     st.session_state.selected_teams = ["BYE"]
-                    # Auto-confirm bye selection row parameters straight into database ledger tables
                     supabase.table("user_picks").insert({"user_id": user_id, "game_type": game_slug, "week": SELECTED_WEEK, "team_picked": "BYE", "pick_state": "Confirmed"}).execute()
                     st.toast("BYE Option Logged as Confirmed")
                 time.sleep(0.3); st.rerun()
         else:
-            st.button("🔒 Bye Slot Option Finalized & Exhausted", disabled=True, type="primary", width='stretch')
+            st.button("Bye Option Finalized & Exhausted", disabled=True, type="primary", width='stretch')
+
