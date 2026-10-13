@@ -915,7 +915,14 @@ else:
         db_bye_pick = next((p for p in current_picks if p["team_picked"].upper() == "BYE"), None)
         has_bye_finalized = db_bye_pick is not None and db_bye_pick.get("pick_state") in ["Finalized", "Correct", "Incorrect"]
         
-        user_byes_spent = reg_profile.get("byes_used", 0) if (isinstance(reg_profile, list) and len(reg_profile) > 0) else 0
+        # 🚀 THE FIX: Target index 0 of the array list BEFORE executing the dictionary .get() lookups!
+        if isinstance(reg_profile, list) and len(reg_profile) > 0:
+            user_byes_spent = reg_profile[0].get("byes_used", 0)
+        elif isinstance(reg_profile, dict):
+            user_byes_spent = reg_profile.get("byes_used", 0)
+        else:
+            user_byes_spent = 0
+            
         dis_bye = is_finalized or has_bye_finalized or (user_byes_spent >= 1) or (limit_reached and not is_bye_selected)
         
         if not has_bye_finalized:
