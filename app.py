@@ -781,12 +781,12 @@ else:
             m_id = match["id"]
             away, home = match["away_team"].upper(), match["home_team"].upper()
             
-            # ⏰ Secure Kickoff Validation Pass & Dynamic Calendar Isolation Pass
+            # Secure Kickoff Validation Pass & Dynamic Calendar Isolation Pass
             kickoff_raw = match.get("kickoff_time")
             game_time_label = "Sunday 1:00 PM ET"
             is_game_locked, is_early_game = False, False
             
-            # 🚀 THE FIX: Only lock out or force-finalize selections if viewing the active calendar week!
+            # THE FIX: Only lock out or force-finalize selections if viewing the active calendar week!
             is_currently_active_week = (SELECTED_WEEK == CALCULATED_CURRENT_WEEK)
             is_past_week = (SELECTED_WEEK < CALCULATED_CURRENT_WEEK)
             
@@ -820,7 +820,7 @@ else:
                     game_time_label = f"{day_name} {display_hour}:{dt.minute:02d} {'PM' if dt.hour >= 12 else 'AM'} ET"
                 except Exception: pass
 
-            # 🔍 Resolve Active States Natively for this Matchup Slot
+            # Resolve Active States Natively for this Matchup Slot
             db_away_pick = next((p for p in current_picks if p["team_picked"].upper() == away), None)
             db_home_pick = next((p for p in current_picks if p["team_picked"].upper() == home), None)
             active_db_pick = db_away_pick or db_home_pick
@@ -892,12 +892,12 @@ else:
                         with c_fin:
                             # Finalized state button logic with absolute confirmation requirement popover modal
                             if has_db_finalized:
-                                st.button("🔒 Finalized", key=f"inf_f_{m_id}", type="primary", disabled=True, width='stretch')
+                                st.button("Finalized", key=f"inf_f_{m_id}", type="primary", disabled=True, width='stretch')
                             else:
                                 # Use st.popover to enforce the user confirmation requirement right inside the matchup box container
                                 with st.popover("Finalize", key=f"pop_f_{m_id}", use_container_width=True):
-                                    st.warning("⚠️ Finalizing locks this choice permanently. Edits are not allowed after this step.")
-                                    if st.button("🔥 Yes, Lock It In", key=f"h_lock_{m_id}", type="primary", use_container_width=True):
+                                    st.warning("Finalizing locks this choice permanently. Edits are not allowed after this step.")
+                                    if st.button("Yes, Lock It In", key=f"h_lock_{m_id}", type="primary", use_container_width=True):
                                         supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", game_slug).eq("week", SELECTED_WEEK).execute()
                                         supabase.table("user_picks").insert({"user_id": user_id, "game_type": game_slug, "week": SELECTED_WEEK, "team_picked": active_team_choice, "pick_state": "Finalized"}).execute()
                                         st.session_state.selected_teams = []
@@ -921,8 +921,8 @@ else:
 
                     # Footnote metadata row timestamps metrics
                     st.markdown("<div style='margin-top: 4px;'></div>", unsafe_allow_html=True)
-                    if is_game_locked: st.markdown(f"<span style='color:#ef4444; font-size:11px; font-weight:bold;'>🔒 Kickoff Passed ({game_time_label})</span>", unsafe_allow_html=True)
-                    else: st.markdown(f"<span style='color:gray; font-size:11px; font-weight:500;'>⏰ {game_time_label}</span>", unsafe_allow_html=True)
+                    if is_game_locked: st.markdown(f"<span style='color:#ef4444; font-size:11px; font-weight:bold;'>Kickoff Passed ({game_time_label})</span>", unsafe_allow_html=True)
+                    else: st.markdown(f"<span style='color:gray; font-size:11px; font-weight:500;'>{game_time_label}</span>", unsafe_allow_html=True)
 
         # --- DEDICATED LEAGUE BYE SLOT UTILITY CARD BLOCK ---
         st.markdown("---")
@@ -930,7 +930,7 @@ else:
         db_bye_pick = next((p for p in current_picks if p["team_picked"].upper() == "BYE"), None)
         has_bye_finalized = db_bye_pick is not None and db_bye_pick.get("pick_state") in ["Finalized", "Correct", "Incorrect"]
         
-        # 🚀 THE ABSOLUTE REFRESH FIX: Scan user selection logs for ANY historical bye usage
+        # THE ABSOLUTE REFRESH FIX: Scan user selection logs for ANY historical bye usage
         # Searches across every week state configuration to block multi-bye choices securely
         historical_byes_spent = 0
         if all_picks_res:
