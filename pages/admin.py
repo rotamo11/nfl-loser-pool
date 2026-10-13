@@ -364,7 +364,7 @@ if str(user_id).strip() == MASTER_ADMIN_UID:
                         st.session_state.user = MockUser(user_options[selected_user_name])
                         st.session_state.force_password_change = False
                         st.session_state.selected_teams = []
-                        st.success(f"Session successfully shifted to {selected_user_name}!")
+                        st.success(f"You are masquerading as {selected_user_name}!")
                         time.sleep(1)
                         st.rerun()
             except Exception as e: st.error(f"Masquerade Error: {str(e)}")
