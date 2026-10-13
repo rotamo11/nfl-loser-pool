@@ -749,8 +749,11 @@ else:
         
         st.write(f"Select **{required_picks}** {team_word} to lose from the matchups below:")
         
-        matchups = supabase.table("nfl_schedule").select("*").eq("week", CALCULATED_CURRENT_WEEK).execute().data
-
+        matchups = supabase.table("nfl_schedule").select("*").eq("week", SELECTED_WEEK).execute().data
+        
+        if "selected_teams" not in st.session_state: 
+            st.session_state.selected_teams = []
+            
         # ====================================================================
         # 📊 THE CHRONOLOGICAL MATCHUP SORTING ENGINE
         # ====================================================================
