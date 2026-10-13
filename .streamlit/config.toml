@@ -5,5 +5,3 @@ enableStaticServing = true
 # THIS HIDES THE AUTOMATIC LEFT NAVIGATION MENU ENTIRELY
 showSidebarNavigation = false
 
-[theme]
-primaryColor = "1d3d70" # loser pool blue / "#FF4B4B" # Changes primary buttons to red
