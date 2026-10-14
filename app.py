@@ -402,44 +402,85 @@ elif not st.session_state.user:
     # st.markdown("<br>", unsafe_allow_html=True)
 
     # ====================================================================
-    # CHANNEL 1: SECURE ACCOUNT LOGIN
+    # CHANNEL 1: SECURE ACCOUNT LOGIN & ADMIN MASQUERADE PORTAL
     # ====================================================================
-    # Standard secure login interface fields open to all users
-    if not current_logged_in_user or not is_authenticated_admin or (is_authenticated_admin and not st.session_state.get("admin_masq_toggle")):
-        email = st.text_input("Email Address", key="main_login_email")
-        password = st.text_input("Password", type="password", key="main_login_pwd")
+    if st.session_state.auth_mode == "Login":
+        st.subheader("Player Login")
         
-        # 🚀 THE FIX: Isolate the button click logic cleanly to prevent refresh exceptions
-        submit_login_click = st.button("Log In", width='stretch', type="primary")
+        # 🚀 THE FIX: Synchronize variable naming declarations with top-of-file tokens
+        current_user_logged_in = st.session_state.get("user")
+        is_authenticated_admin = False
         
-        if submit_login_click:
-            if not email.strip() or not password.strip():
-                st.error("Please enter both your email address and password.")
-            else:
+        # Master Supabase User ID string identifier
+        MASTER_ADMIN_UID = "3f3a74a6-3725-4a3b-abda-015e73cb6f4b" 
+        
+        if current_user_logged_in:
+            try:
+                u_id_str = str(current_user_logged_in.id).strip()
+                if u_id_str == MASTER_ADMIN_UID:
+                    is_authenticated_admin = True
+            except Exception: pass
+
+        # Only show masquerade controls if YOU are logged in as admin
+        if is_authenticated_admin:
+            st.success(f"⚡ **Admin Authorization Verified.** Dev tools unlocked.")
+            testing_mode = st.checkbox("Enable Developer Masquerade Mode", key="admin_session_masq_toggle")
+            
+            if testing_mode:
                 try:
-                    # 1. Fire the authorization check against Supabase authentication sheets
-                    res = supabase.auth.sign_in_with_password({"email": email.strip(), "password": password})
-                    st.session_state.user = res.user
-                    
-                    # 2. Extract the secure Refresh Token and drop it into the browser cache
-                    secure_refresh_string = res.session.refresh_token
-                    cookie_ctx.set("loser_pool_refresh_token", secure_refresh_string, max_age=604800)
-                    
-                    # 3. Handle temporary password update routing overrides
-                    profile_check = supabase.table("users").select("first_login_complete").eq("id", res.user.id).single().execute().data
-                    if not profile_check or not profile_check.get("first_login_complete", False):
-                        st.session_state.force_password_change = True
+                    users_list = supabase.table("users").select("id", "username").execute().data
+                    if users_list:
+                        user_options = {u["username"]: u["id"] for u in users_list}
+                        selected_user_name = st.selectbox("Select Player Identity to Assume:", list(user_options.keys()))
+                        if st.button("Assume Selected Identity", width='stretch', type="primary"):
+                            class MockUser:
+                                def __init__(self, uid): self.id = uid
+                            st.session_state.admin_backup_uid = MASTER_ADMIN_UID
+                            st.session_state.user = MockUser(user_options[selected_user_name])
+                            st.session_state.force_password_change = False
+                            st.session_state.selected_teams = []
+                            st.success(f"Session shifted to {selected_user_name}!")
+                            time.sleep(0.5)
+                            st.rerun()
+                except Exception as e: st.error(f"Masquerade Error: {str(e)}")
+                st.markdown("---")
+
+        # Standard secure login interface fields open to all users
+        if not current_user_logged_in or not is_authenticated_admin or (is_authenticated_admin and not st.session_state.get("admin_session_masq_toggle")):
+            email = st.text_input("Email Address", key="main_login_email")
+            password = st.text_input("Password", type="password", key="main_login_pwd")
+            
+            # 🚀 THE FIX: Isolate the button click logic cleanly to prevent refresh exceptions
+            submit_login_click = st.button("Log In", width='stretch', type="primary")
+            
+            if submit_login_click:
+                if not email.strip() or not password.strip():
+                    st.error("Please enter both your email address and password.")
+                else:
+                    try:
+                        # 1. Fire the authorization check against Supabase authentication sheets
+                        res = supabase.auth.sign_in_with_password({"email": email.strip(), "password": password})
+                        st.session_state.user = res.user
                         
-                    st.session_state.selected_teams = []
-                    st.success("Authentication validated. Secure 7-Day Session Active!")
-                    
-                    # Give the browser plenty of time to save the token before reloading the page
-                    time.sleep(0.4) 
-                    st.rerun()
-                    
-                except Exception: 
-                    # This error message will NOW only show if credentials are wrong!
-                    st.error("❌ **Authentication rejected:** The email or password you entered is incorrect. Please check your spelling and try again.")
+                        # 2. Extract the secure Refresh Token and drop it into the browser cache
+                        secure_refresh_string = res.session.refresh_token
+                        cookie_ctx.set("loser_pool_refresh_token", secure_refresh_string, max_age=604800)
+                        
+                        # 3. Handle temporary password update routing overrides
+                        profile_check = supabase.table("users").select("first_login_complete").eq("id", res.user.id).single().execute().data
+                        if not profile_check or not profile_check.get("first_login_complete", False):
+                            st.session_state.force_password_change = True
+                            
+                        st.session_state.selected_teams = []
+                        st.success("Authentication validated. Secure 7-Day Session Active!")
+                        
+                        # Give the browser plenty of time to save the token before reloading the page
+                        time.sleep(0.4) 
+                        st.rerun()
+                        
+                    except Exception: 
+                        # This error message will NOW only show if credentials are wrong!
+                        st.error("❌ **Authentication rejected:** The email or password you entered is incorrect. Please check your spelling and try again.")
 
     # ==========================================
     # CHANNEL 2: ELIGIBILITY-GATED JOIN REQUESTS
