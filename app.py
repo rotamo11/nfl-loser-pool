@@ -410,27 +410,27 @@ elif not st.session_state.user:
         email = st.text_input("Email Address", key="main_login_email")
         password = st.text_input("Password", type="password", key="main_login_pwd")
         
-            try:
-                res = supabase.auth.sign_in_with_password({"email": email, "password": password})
-                st.session_state.user = res.user
+        try:
+            res = supabase.auth.sign_in_with_password({"email": email, "password": password})
+            st.session_state.user = res.user
+            
+            secure_refresh_string = res.session.refresh_token
+            
+            # 🚀 THE SECURE SAVER: Drop the token into their browser cache
+            cookie_ctx.set("loser_pool_refresh_token", secure_refresh_string, max_age=604800)
+            
+            profile_check = supabase.table("users").select("first_login_complete").eq("id", res.user.id).single().execute().data
+            if not profile_check or not profile_check.get("first_login_complete", False):
+                st.session_state.force_password_change = True
                 
-                secure_refresh_string = res.session.refresh_token
-                
-                # 🚀 THE SECURE SAVER: Drop the token into their browser cache
-                cookie_ctx.set("loser_pool_refresh_token", secure_refresh_string, max_age=604800)
-                
-                profile_check = supabase.table("users").select("first_login_complete").eq("id", res.user.id).single().execute().data
-                if not profile_check or not profile_check.get("first_login_complete", False):
-                    st.session_state.force_password_change = True
-                    
-                st.session_state.selected_teams = []
-                st.success("Authentication validated. Secure 7-Day Session Active!")
-                
-                # 🚀 THE FIX: A tiny delay ensures the browser writes the token before the page reruns
-                time.sleep(0.4) 
-                st.rerun()
-            except Exception: 
-                st.error("Authentication rejected. Check your credentials.")
+            st.session_state.selected_teams = []
+            st.success("Authentication validated. Secure 7-Day Session Active!")
+            
+            # 🚀 THE FIX: A tiny delay ensures the browser writes the token before the page reruns
+            time.sleep(0.4) 
+            st.rerun()
+        except Exception: 
+            st.error("Authentication rejected. Check your credentials.")
 
     # ==========================================
     # CHANNEL 2: ELIGIBILITY-GATED JOIN REQUESTS
