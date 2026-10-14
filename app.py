@@ -5,6 +5,35 @@ import datetime
 import time
 import uuid
 import base64
+import extra_streamlit_components as cookie_manager
+
+# Initialize the high-performance browser cookie manager container
+cookie_ctx = cookie_manager.get_cookie_manager()
+
+if 'user' not in st.session_state: 
+    st.session_state.user = None
+
+# 🚀 THE SECURE PERSISTENT REFRESH TOKEN HANDSHAKE GATEWAY
+# If the session memory is wiped, look for the secure refresh token string
+if st.session_state.user is None and cookie_ctx:
+    saved_refresh_token = cookie_ctx.get("loser_pool_refresh_token")
+    
+    if saved_refresh_token:
+        try:
+            # Exchange the low-privilege refresh token for a live authenticated session
+            recovered_session = supabase.auth.refresh_session(saved_refresh_token)
+            if recovered_session and recovered_session.user:
+                st.session_state.user = recovered_session.user
+                st.session_state.selected_teams = []
+                st.session_state.force_password_change = False
+                
+                # 🔄 ROTATION SECURITY: Supabase automatically issues a brand new 
+                # refresh token after use. Save the new one to the browser instantly.
+                new_refresh_token = recovered_session.session.refresh_token
+                cookie_ctx.set("loser_pool_refresh_token", new_refresh_token, max_age=604800)
+        except Exception:
+            # Clear out the cookie row if the validation handshake fails
+            cookie_ctx.delete("loser_pool_refresh_token")
 
 # --- SETUP MANDATORY FIRST DIRECTIVE PASS ---
 st.set_page_config(layout="wide")
@@ -375,11 +404,21 @@ elif not st.session_state.user:
             try:
                 res = supabase.auth.sign_in_with_password({"email": email, "password": password})
                 st.session_state.user = res.user
+                
+                # THE SECURE COOKIE DROPPER:
+                # Extract the secure Refresh Token out of the database response object
+                secure_refresh_string = res.session.refresh_token
+                
+                # Save the refresh token string into their browser cache
+                cookie_ctx.set("loser_pool_refresh_token", secure_refresh_string, max_age=604800)
+                
                 profile_check = supabase.table("users").select("first_login_complete").eq("id", res.user.id).single().execute().data
                 if not profile_check or not profile_check.get("first_login_complete", False):
                     st.session_state.force_password_change = True
+                    
                 st.session_state.selected_teams = []
-                st.success("Authentication validated.")
+                st.success("Authentication validated. Secure 7-Day Session Active!")
+                time.sleep(1) # Small delay gives the browser time to write the cookie safely
                 st.rerun()
             except Exception: 
                 st.error("Authentication rejected. Check your credentials.")
