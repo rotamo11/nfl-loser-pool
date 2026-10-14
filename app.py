@@ -8,7 +8,7 @@ import base64
 import extra_streamlit_components as cookie_manager
 
 # Initialize the high-performance browser cookie manager container
-cookie_ctx = cookie_manager.get_cookie_manager()
+cookie_ctx = cookie_manager.CookieManager()
 
 if 'user' not in st.session_state: 
     st.session_state.user = None
