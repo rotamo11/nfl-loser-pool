@@ -288,6 +288,9 @@ with st.sidebar:
                         st.session_state.selected_teams = []
                         st.session_state.force_password_change = False
                         
+                        # Wipes out the persistent browser token instantly on click
+                        cookie_ctx.delete("loser_pool_refresh_token")
+                        
                     time.sleep(0.5)
                     st.rerun()
         except Exception:
