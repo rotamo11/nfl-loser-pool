@@ -404,33 +404,42 @@ elif not st.session_state.user:
     # ====================================================================
     # CHANNEL 1: SECURE ACCOUNT LOGIN
     # ====================================================================
-    if st.session_state.auth_mode == "Login":
-        st.subheader("Player Login")
-        
+    # Standard secure login interface fields open to all users
+    if not current_logged_in_user or not is_authenticated_admin or (is_authenticated_admin and not st.session_state.get("admin_masq_toggle")):
         email = st.text_input("Email Address", key="main_login_email")
         password = st.text_input("Password", type="password", key="main_login_pwd")
         
-        try:
-            res = supabase.auth.sign_in_with_password({"email": email, "password": password})
-            st.session_state.user = res.user
-            
-            secure_refresh_string = res.session.refresh_token
-            
-            # 🚀 THE SECURE SAVER: Drop the token into their browser cache
-            cookie_ctx.set("loser_pool_refresh_token", secure_refresh_string, max_age=604800)
-            
-            profile_check = supabase.table("users").select("first_login_complete").eq("id", res.user.id).single().execute().data
-            if not profile_check or not profile_check.get("first_login_complete", False):
-                st.session_state.force_password_change = True
-                
-            st.session_state.selected_teams = []
-            st.success("Authentication validated. Secure 7-Day Session Active!")
-            
-            # 🚀 THE FIX: A tiny delay ensures the browser writes the token before the page reruns
-            time.sleep(0.4) 
-            st.rerun()
-        except Exception: 
-            st.error("Authentication rejected. Check your credentials.")
+        # 🚀 THE FIX: Isolate the button click logic cleanly to prevent refresh exceptions
+        submit_login_click = st.button("Log In", width='stretch', type="primary")
+        
+        if submit_login_click:
+            if not email.strip() or not password.strip():
+                st.error("Please enter both your email address and password.")
+            else:
+                try:
+                    # 1. Fire the authorization check against Supabase authentication sheets
+                    res = supabase.auth.sign_in_with_password({"email": email.strip(), "password": password})
+                    st.session_state.user = res.user
+                    
+                    # 2. Extract the secure Refresh Token and drop it into the browser cache
+                    secure_refresh_string = res.session.refresh_token
+                    cookie_ctx.set("loser_pool_refresh_token", secure_refresh_string, max_age=604800)
+                    
+                    # 3. Handle temporary password update routing overrides
+                    profile_check = supabase.table("users").select("first_login_complete").eq("id", res.user.id).single().execute().data
+                    if not profile_check or not profile_check.get("first_login_complete", False):
+                        st.session_state.force_password_change = True
+                        
+                    st.session_state.selected_teams = []
+                    st.success("Authentication validated. Secure 7-Day Session Active!")
+                    
+                    # Give the browser plenty of time to save the token before reloading the page
+                    time.sleep(0.4) 
+                    st.rerun()
+                    
+                except Exception: 
+                    # This error message will NOW only show if credentials are wrong!
+                    st.error("❌ **Authentication rejected:** The email or password you entered is incorrect. Please check your spelling and try again.")
 
     # ==========================================
     # CHANNEL 2: ELIGIBILITY-GATED JOIN REQUESTS
