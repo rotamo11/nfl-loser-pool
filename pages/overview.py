@@ -733,7 +733,7 @@ else:
                     reveal_tile_cell = is_current_loop_week_locked or is_own_profile_row or user_is_strictly_locked_this_week # or is_logged_in_admin
                     
                     if not reveal_tile_cell:
-                        row_html_cells.append('<div style="flex:1; background-color: rgba(148, 163, 184, 0.15); padding: 4px 2px; border-radius: 4px; font-weight:600; font-size:10px; color:gray; text-align:center; white-space:nowrap; max-width:65px; min-width:45px;">🔒 Hid</div>')
+                        row_html_cells.append('<div style="flex:1; background-color: rgba(148, 163, 184, 0.15); padding: 4px 2px; border-radius: 4px; font-weight:600; font-size:10px; color:gray; text-align:center; white-space:nowrap; max-width:65px; min-width:45px;">Hidden</div>')
                     else:
                         logo_html = get_base64_logo_html(t_pick)
                         clean_team_display = t_pick.replace('_SO', '')
