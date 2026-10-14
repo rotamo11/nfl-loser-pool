@@ -11,41 +11,35 @@ import extra_streamlit_components as cookie_manager
 # Using a static anchor key prevents the component from resetting on refresh
 cookie_ctx = cookie_manager.CookieManager(key="loser_pool_cookie_anchor")
 
+# --- INITIALIZE SECURE STREAMLIT AUTHENTICATION STORAGE TIER ---
 if 'user' not in st.session_state: 
     st.session_state.user = None
-if 'cookie_handshake_complete' not in st.session_state:
-    st.session_state.cookie_handshake_complete = False
 
-# 🚀 THE SECURE STATE-DRIVEN REFRESH HANDSHAKE GATEWAY
-# Force a clean, minor rerun pass if memory is empty to let the browser cookies load completely!
+# 🚀 THE BULLETPROOF URL-ANCHORED SESSION RESTORATION GATEWAY
+# Reads parameters directly from the browser's address query string instantly on load!
 if st.session_state.user is None:
-    if not st.session_state.cookie_handshake_complete:
-        # Brief execution pause allows the async React component to mount inside the browser iframe
-        time.sleep(0.2)
-        st.session_state.cookie_handshake_complete = True
-        st.rerun()
-
-    # Safely extract the token out of the loaded browser storage keys
-    saved_refresh_token = cookie_ctx.get("loser_pool_refresh_token")
+    # Read live browser query parameters
+    url_params = st.query_params
     
-    # Verify the browser explicitly returned a valid string token value
-    if saved_refresh_token and str(saved_refresh_token).strip() not in ["None", ""]:
-        try:
-            # Exchange the low-privilege refresh token for a live authenticated session
-            recovered_session = supabase.auth.refresh_session(saved_refresh_token)
-            if recovered_session and recovered_session.user:
-                st.session_state.user = recovered_session.user
-                st.session_state.selected_teams = []
-                st.session_state.force_password_change = False
-                st.session_state.cookie_handshake_complete = False # Reset gate for next logouts
-                
-                # ROTATION SECURITY: Save the freshly cycled token back to the browser instantly
-                new_refresh_token = recovered_session.session.refresh_token
-                cookie_ctx.set("loser_pool_refresh_token", new_refresh_token, max_age=604800)
-        except Exception:
-            # Clear out the invalid or expired token rows safely
-            cookie_ctx.delete("loser_pool_refresh_token")
-            st.session_state.cookie_handshake_complete = False
+    if "session_key" in url_params:
+        saved_refresh_token = url_params["session_key"]
+        
+        if saved_refresh_token and str(saved_refresh_token).strip() not in ["None", ""]:
+            try:
+                # Instantly exchange the url refresh key for a live authenticated profile session
+                recovered_session = supabase.auth.refresh_session(saved_refresh_token)
+                if recovered_session and recovered_session.user:
+                    st.session_state.user = recovered_session.user
+                    st.session_state.selected_teams = []
+                    st.session_state.force_password_change = False
+                    
+                    # ROTATION SECURITY: Keep the URL bar updated with the newly cycled token string
+                    new_refresh_token = recovered_session.session.refresh_token
+                    st.query_params["session_key"] = new_refresh_token
+            except Exception:
+                # If token expires or gets corrupted, clear out the broken URL key safely
+                if "session_key" in st.query_params:
+                    del st.query_params["session_key"]
 
 # --- SETUP MANDATORY FIRST DIRECTIVE PASS ---
 st.set_page_config(layout="wide")
@@ -284,27 +278,26 @@ with st.sidebar:
                 logout_label = "Return to Admin Session" if "admin_backup_uid" in st.session_state else "Log Out"
                 
                 if st.button(logout_label, key="sidebar_logout_btn", width='stretch'):
-                    # If you are currently masquerading, restore your true admin session
                     if "admin_backup_uid" in st.session_state:
                         class AdminUser:
                             def __init__(self, uid): self.id = uid
-                        
                         st.session_state.user = AdminUser(st.session_state.admin_backup_uid)
-                        del st.session_state.admin_backup_uid # Clear backup cookie cleanly
+                        del st.session_state.admin_backup_uid
                         st.session_state.selected_teams = []
                         st.session_state.force_password_change = False
                         st.toast("Admin session restored successfully!")
                     else:
-                        # Standard full logout sequence for regular players
                         st.session_state.user = None
                         st.session_state.selected_teams = []
                         st.session_state.force_password_change = False
                         
-                        # Wipes out the persistent browser token instantly on click
-                        cookie_ctx.delete("loser_pool_refresh_token")
-                        
-                    time.sleep(0.5)
+                        # 🚀 Wipes out the persistent URL parameter instantly on logout
+                        if "session_key" in st.query_params:
+                            del st.query_params["session_key"]
+                            
+                    time.sleep(0.3)
                     st.rerun()
+
         except Exception:
             pass
 
@@ -463,28 +456,26 @@ elif not st.session_state.user:
                     st.error("Please enter both your email address and password.")
                 else:
                     try:
-                        # 1. Fire the authorization check against Supabase authentication sheets
                         res = supabase.auth.sign_in_with_password({"email": email.strip(), "password": password})
                         st.session_state.user = res.user
                         
-                        # 2. Extract the secure Refresh Token and drop it into the browser cache
+                        # 🚀 THE SECURE URL ANCHOR:
+                        # Extract the secure Refresh Token from the database response object
                         secure_refresh_string = res.session.refresh_token
-                        cookie_ctx.set("loser_pool_refresh_token", secure_refresh_string, max_age=604800)
                         
-                        # 3. Handle temporary password update routing overrides
+                        # Inject the refresh token directly into the browser's address query bar
+                        st.query_params["session_key"] = secure_refresh_string
+                        
                         profile_check = supabase.table("users").select("first_login_complete").eq("id", res.user.id).single().execute().data
                         if not profile_check or not profile_check.get("first_login_complete", False):
                             st.session_state.force_password_change = True
                             
                         st.session_state.selected_teams = []
-                        st.success("Authentication validated. Secure 7-Day Session Active!")
-                        
-                        # Give the browser plenty of time to save the token before reloading the page
-                        time.sleep(0.4) 
+                        st.success("Authentication validated. Secure Persistent Session Active!")
+                        time.sleep(0.3)
                         st.rerun()
                         
                     except Exception: 
-                        # This error message will NOW only show if credentials are wrong!
                         st.error("❌ **Authentication rejected:** The email or password you entered is incorrect. Please check your spelling and try again.")
 
     # ==========================================
