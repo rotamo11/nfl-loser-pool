@@ -8,23 +8,27 @@ import base64
 import extra_streamlit_components as cookie_manager
 
 # --- INITIALIZE THE HIGH-PERFORMANCE BROWSER COOKIE MANAGER ---
-# We must provide an explicit static key anchor to prevent the component from resetting on refresh
+# Using a static anchor key prevents the component from resetting on refresh
 cookie_ctx = cookie_manager.CookieManager(key="loser_pool_cookie_anchor")
 
 if 'user' not in st.session_state: 
     st.session_state.user = None
+if 'cookie_handshake_complete' not in st.session_state:
+    st.session_state.cookie_handshake_complete = False
 
-# 🚀 THE FIXED DELAY-GATE REFRESH TOKEN HANDSHAKE
-# Gives the browser component 0.1 seconds to fetch cookies before routing to the login page
+# 🚀 THE SECURE STATE-DRIVEN REFRESH HANDSHAKE GATEWAY
+# Force a clean, minor rerun pass if memory is empty to let the browser cookies load completely!
 if st.session_state.user is None:
-    # Small execution hold forces Streamlit to complete its frontend bridge handshakes
-    time.sleep(0.1)
-    
-    # Safely extract the token out of the loaded browser data dictionary strings
+    if not st.session_state.cookie_handshake_complete:
+        # Brief execution pause allows the async React component to mount inside the browser iframe
+        time.sleep(0.2)
+        st.session_state.cookie_handshake_complete = True
+        st.rerun()
+
+    # Safely extract the token out of the loaded browser storage keys
     saved_refresh_token = cookie_ctx.get("loser_pool_refresh_token")
     
-    # ⚠️ CRITICAL SAFETY CHECK: Only proceed if the browser explicitly returned a string value.
-    # This prevents the app from clearing cookies prematurely during the initial frame pass!
+    # Verify the browser explicitly returned a valid string token value
     if saved_refresh_token and str(saved_refresh_token).strip() not in ["None", ""]:
         try:
             # Exchange the low-privilege refresh token for a live authenticated session
@@ -33,14 +37,15 @@ if st.session_state.user is None:
                 st.session_state.user = recovered_session.user
                 st.session_state.selected_teams = []
                 st.session_state.force_password_change = False
+                st.session_state.cookie_handshake_complete = False # Reset gate for next logouts
                 
-                # ROTATION SECURITY: Supabase automatically rotates refresh tokens continuously.
-                # Save the new one to the browser instantly to keep the 7-day expiration active.
+                # ROTATION SECURITY: Save the freshly cycled token back to the browser instantly
                 new_refresh_token = recovered_session.session.refresh_token
                 cookie_ctx.set("loser_pool_refresh_token", new_refresh_token, max_age=604800)
         except Exception:
-            # Only clear the cookie if the token is proven to be expired or invalid by Supabase
+            # Clear out the invalid or expired token rows safely
             cookie_ctx.delete("loser_pool_refresh_token")
+            st.session_state.cookie_handshake_complete = False
 
 # --- SETUP MANDATORY FIRST DIRECTIVE PASS ---
 st.set_page_config(layout="wide")
