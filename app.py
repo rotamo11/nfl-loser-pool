@@ -7,18 +7,25 @@ import uuid
 import base64
 import extra_streamlit_components as cookie_manager
 
-# Initialize the high-performance browser cookie manager container
-cookie_ctx = cookie_manager.CookieManager()
+# --- INITIALIZE THE HIGH-PERFORMANCE BROWSER COOKIE MANAGER ---
+# We must provide an explicit static key anchor to prevent the component from resetting on refresh
+cookie_ctx = cookie_manager.CookieManager(key="loser_pool_cookie_anchor")
 
 if 'user' not in st.session_state: 
     st.session_state.user = None
 
-# 🚀 THE SECURE PERSISTENT REFRESH TOKEN HANDSHAKE GATEWAY
-# If the session memory is wiped, look for the secure refresh token string
-if st.session_state.user is None and cookie_ctx:
+# 🚀 THE FIXED DELAY-GATE REFRESH TOKEN HANDSHAKE
+# Gives the browser component 0.1 seconds to fetch cookies before routing to the login page
+if st.session_state.user is None:
+    # Small execution hold forces Streamlit to complete its frontend bridge handshakes
+    time.sleep(0.1)
+    
+    # Safely extract the token out of the loaded browser data dictionary strings
     saved_refresh_token = cookie_ctx.get("loser_pool_refresh_token")
     
-    if saved_refresh_token:
+    # ⚠️ CRITICAL SAFETY CHECK: Only proceed if the browser explicitly returned a string value.
+    # This prevents the app from clearing cookies prematurely during the initial frame pass!
+    if saved_refresh_token and str(saved_refresh_token).strip() not in ["None", ""]:
         try:
             # Exchange the low-privilege refresh token for a live authenticated session
             recovered_session = supabase.auth.refresh_session(saved_refresh_token)
@@ -27,12 +34,12 @@ if st.session_state.user is None and cookie_ctx:
                 st.session_state.selected_teams = []
                 st.session_state.force_password_change = False
                 
-                # 🔄 ROTATION SECURITY: Supabase automatically issues a brand new 
-                # refresh token after use. Save the new one to the browser instantly.
+                # ROTATION SECURITY: Supabase automatically rotates refresh tokens continuously.
+                # Save the new one to the browser instantly to keep the 7-day expiration active.
                 new_refresh_token = recovered_session.session.refresh_token
                 cookie_ctx.set("loser_pool_refresh_token", new_refresh_token, max_age=604800)
         except Exception:
-            # Clear out the cookie row if the validation handshake fails
+            # Only clear the cookie if the token is proven to be expired or invalid by Supabase
             cookie_ctx.delete("loser_pool_refresh_token")
 
 # --- SETUP MANDATORY FIRST DIRECTIVE PASS ---
@@ -403,16 +410,13 @@ elif not st.session_state.user:
         email = st.text_input("Email Address", key="main_login_email")
         password = st.text_input("Password", type="password", key="main_login_pwd")
         
-        if st.button("Log In", width='stretch', type="secondary"):
             try:
                 res = supabase.auth.sign_in_with_password({"email": email, "password": password})
                 st.session_state.user = res.user
                 
-                # THE SECURE COOKIE DROPPER:
-                # Extract the secure Refresh Token out of the database response object
                 secure_refresh_string = res.session.refresh_token
                 
-                # Save the refresh token string into their browser cache
+                # 🚀 THE SECURE SAVER: Drop the token into their browser cache
                 cookie_ctx.set("loser_pool_refresh_token", secure_refresh_string, max_age=604800)
                 
                 profile_check = supabase.table("users").select("first_login_complete").eq("id", res.user.id).single().execute().data
@@ -421,7 +425,9 @@ elif not st.session_state.user:
                     
                 st.session_state.selected_teams = []
                 st.success("Authentication validated. Secure 7-Day Session Active!")
-                time.sleep(1) # Small delay gives the browser time to write the cookie safely
+                
+                # 🚀 THE FIX: A tiny delay ensures the browser writes the token before the page reruns
+                time.sleep(0.4) 
                 st.rerun()
             except Exception: 
                 st.error("Authentication rejected. Check your credentials.")
