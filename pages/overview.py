@@ -675,30 +675,8 @@ else:
             """
         )
         
-    def render_bracket_table(bracket_title, players_group):
-        if not players_group:
-            st.caption(f"*No players currently active inside {bracket_title}*")
-            return
-            
         players_group_count = len(players_group)
         st.markdown(f"#### {bracket_title}: {players_group_count} Players")
-        
-        # Inject fixed tooltip layout rules (pointer-events none prevents layout clipping)
-        st.html(
-            """
-            <style>
-                .tip-wrapper { position: relative; display: inline-block; cursor: help; border-bottom: 1px dashed rgba(128,128,128,0.5); }
-                .tip-wrapper .tip-card {
-                    visibility: hidden; width: 140px; background-color: #1e293b; color: #ffffff;
-                    text-align: center; border-radius: 4px; padding: 4px 8px; position: absolute;
-                    z-index: 999; bottom: 125%; left: 0; opacity: 0; transition: opacity 0.2s;
-                    font-size: 11px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.15);
-                    font-family: sans-serif; pointer-events: none;
-                }
-                .tip-wrapper:hover .tip-card { visibility: visible; opacity: 1; }
-            </style>
-            """
-        )
         
         # 🚀 THE FIX STEP A: Open a single global scroll container for the ENTIRE table block
         # min-width forces a structured landscape canvas boundary (65px max-width * 18 weeks + 150px player)
@@ -730,6 +708,9 @@ else:
             last_name_str = user_record.get("last_name") or "" if user_record else ""
             full_display_name = f"{first_name_str} {last_name_str}".strip() or "Registered Player"
             
+            # ====================================================================
+            # 🛡️ THE SECURITY PRIVACY CURTAIN ENFORCER (Overview Anti-Scouting Fix)
+            # ====================================================================
             row_html_cells = []
             for w_num in visible_weeks:
                 p_data = user_weeks_map.get(w_num, None)
@@ -739,10 +720,17 @@ else:
                     t_pick = p_data["team_picked"].upper()
                     p_state = p_data.get("pick_state", "Pending")
                     
+                    # 1. Calculate historical calendar restrictions
                     is_current_loop_week_locked = w_num < CALCULATED_CURRENT_WEEK
-                    user_has_finalized_for_loop_week = w_num in current_user_finalized_weeks
                     is_own_profile_row = (u_id == current_user_uid)
-                    reveal_tile_cell = is_current_loop_week_locked or user_has_finalized_for_loop_week or is_own_profile_row or is_logged_in_admin
+                    
+                    # 2. THE SECURE EXTRACTION GATE: Look up the current user's strict state for this specific loop week
+                    current_user_week_picks = [p for p in all_historical_picks if p.get("user_id") == current_user_uid and p.get("week") == w_num]
+                    user_is_strictly_locked_this_week = any(p.get("pick_state") in ["Finalized", "Correct", "Incorrect"] for p in current_user_week_picks)
+                    
+                    # 3. Combine into the master visibility key parameters
+                    # Opponents stay locked unless the week passed, you finalized your pick, or you are an admin
+                    reveal_tile_cell = is_current_loop_week_locked or is_own_profile_row or user_is_strictly_locked_this_week or is_logged_in_admin
                     
                     if not reveal_tile_cell:
                         row_html_cells.append('<div style="flex:1; background-color: rgba(148, 163, 184, 0.15); padding: 4px 2px; border-radius: 4px; font-weight:600; font-size:10px; color:gray; text-align:center; white-space:nowrap; max-width:65px; min-width:45px;">🔒 Hid</div>')
@@ -752,9 +740,9 @@ else:
                         if t_pick.endswith("_SO"): clean_team_display += "🎯"
                             
                         if p_state == "Correct" or t_pick == "BYE": 
-                            bg_style = "background-color: rgba(95, 175, 95, 0.05); border: 1px solid #008000; padding: 4px 6px; border-radius: 4px; display: inline-flex; align-items: center; justify-content:center; gap: 2px; flex:1; max-width:65px; min-width:45px;"
+                            bg_style = "background-color: rgba(16, 185, 129, 0.15); padding: 4px 6px; border-radius: 4px; display: inline-flex; align-items: center; justify-content:center; gap: 2px; flex:1; max-width:65px; min-width:45px;"
                         elif p_state == "Incorrect": 
-                            bg_style = "background-color: rgba(204, 51, 51, 0.05); border: 1px solid #FF0000; padding: 4px 6px; border-radius: 4px; display: inline-flex; align-items: center; justify-content:center; gap: 2px; flex:1; max-width:65px; min-width:45px;"
+                            bg_style = "background-color: rgba(239, 68, 68, 0.15); padding: 4px 6px; border-radius: 4px; display: inline-flex; align-items: center; justify-content:center; gap: 2px; flex:1; max-width:65px; min-width:45px;"
                         else: 
                             bg_style = "display: inline-flex; align-items: center; justify-content:center; gap: 2px; color: var(--text-color); flex:1; max-width:65px; min-width:45px;"
                             
