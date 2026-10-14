@@ -677,7 +677,7 @@ with tab_users:
                 s_en = st.checkbox("Enrolled in 2nd Chance Pool", value=sr_lock.get("is_enrolled", False))
                 s_pd = st.checkbox("2nd Chance Pool Paid", value=sr_lock.get("is_paid", False))
                 
-                if st.form_submit_button("Commit Alterations Sheet", width='stretch'):
+                if st.form_submit_button("Commit Changes", width='stretch'):
                     supabase.table("users").update({
                         "username": e_user.strip(), "first_name": e_first.strip(), "last_name": e_last.strip(), 
                         "email": e_mail.strip(), "cell_phone": e_cell.strip(), "is_admin": edit_is_admin, "notes": edit_notes.strip()
