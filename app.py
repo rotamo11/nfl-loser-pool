@@ -580,7 +580,7 @@ else:
             st.info("**Good News!** The enrollment window for the 2nd Chance Pool is currently open. You can activate your slot right now to jump into this week's action instantly.")
             
             # Render high-visibility self-service registration button row layout
-            if st.button("Activate My 2nd Chance Game Registration", key="user_self_enroll_btn", type="primary", width='stretch'):
+            if st.button("Join the 2nd Chance Game", key="user_self_enroll_btn", type="primary", width='stretch'):
                 with st.spinner("Synchronizing league roster ledgers..."):
                     try:
                         # Update the target user's enrollment tracking metrics natively in Supabase
