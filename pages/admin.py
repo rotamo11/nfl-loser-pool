@@ -514,9 +514,9 @@ with tab_scores:
                             # Count losses up to the current week
                             total_losses = sum(1 for h in u_historical if h["pick_state"] == "Incorrect" and h["week"] <= SELECTED_WEEK)
                             last_week_losses = sum(1 for h in u_historical if h["pick_state"] == "Incorrect" and h["week"] < SELECTED_WEEK)
-                            if total_losses >= 2 and last_week_losses < 2 and game_slug == "Main":
+                            if total_losses >= 2 and last_week_losses < 2 and game_slug = "Main":
                                 newly_eliminated_count += 1
-                            if total_losses >= 1 and last_week_losses < 1 and game_slug == "2nd Chance":
+                            if total_losses >= 1 and last_week_losses < 1 and game_slug = "2nd Chance":
                                 newly_eliminated_count += 1
                                 
                     # 4. Generate high-visibility summary template output stream
@@ -527,7 +527,7 @@ with tab_scores:
                     > **NFL Loser Pool - {game_slug} Game — {get_week_label(SELECTED_WEEK)} Results**
                     > * **Wrong Picks This Week:** {wrong_picks_count}
                     > * **Players Eliminated This Week:** {newly_eliminated_count}
-                    > * **Remaining Players:** {active_pool_remaining} Contenders
+                    > * **Remaining Players:** {active_pool_remaining}
                     >
                     > **Bracket Breakdown:**
                     > * **Loser Bracket:** {loser_count} Players
