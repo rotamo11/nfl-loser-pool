@@ -516,7 +516,7 @@ with tab_scores:
                             last_week_losses = sum(1 for h in u_historical if h["pick_state"] == "Incorrect" and h["week"] < SELECTED_WEEK)
                             if total_losses >= 2 and last_week_losses < 2 and r["game_type"] == "Main":
                                 newly_eliminated_count += 1
-                            if total_losses >= 1 and last_week_losses < 1 and r["game_type"] == "2nd Chance":
+                            if total_losses >= 1 and last_week_losses < 1 and r["game_type"] == "2nd_Chance":
                                 newly_eliminated_count += 1
                                 
                     # 4. Generate high-visibility summary template output stream
