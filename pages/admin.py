@@ -499,7 +499,7 @@ with tab_scores:
                     wrong_picks_count = sum(1 for p in current_week_picks if p.get("pick_state") == "Incorrect")
                     
                     # 2. Extract current bracket totals from active registrations rows
-                    updated_regs = supabase.table("tournament_registrations").select("user_id, bracket_status").eq("game_type", game_slug).eq("is_enrolled", True).execute().data
+                    updated_regs = supabase.table("tournament_registrations").select("user_id, game_type, bracket_status").eq("game_type", game_slug).eq("is_enrolled", True).execute().data
                     
                     loser_count = sum(1 for r in updated_regs if r["bracket_status"] == "Loser Bracket")
                     winner_count = sum(1 for r in updated_regs if r["bracket_status"] == "Winner Bracket")
