@@ -488,7 +488,7 @@ with tab_scores:
                         all_user_picks = supabase.table("user_picks").select("*").eq("game_type", game_slug).eq("user_id", u_id).execute().data
                         wrong_count = sum(1 for k in all_user_picks if k["pick_state"] == "Incorrect")
                         
-                        new_bracket = "Loser Bracket" if wrong_count == 0 else "Winner Bracket" if wrong_count == 1 and game_slug == 'Main' else "Eliminated"
+                        new_bracket = "Loser Bracket" if wrong_count == 0 else "Winner Bracket" if wrong_count == 1 and game_slug == "Main" else "Eliminated"
                         supabase.table("tournament_registrations").update({"bracket_status": new_bracket}).eq("user_id", u_id).eq("game_type", game_slug).execute()
                         
                     # ====================================================================
@@ -514,7 +514,9 @@ with tab_scores:
                             # Count losses up to the current week
                             total_losses = sum(1 for h in u_historical if h["pick_state"] == "Incorrect" and h["week"] <= SELECTED_WEEK)
                             last_week_losses = sum(1 for h in u_historical if h["pick_state"] == "Incorrect" and h["week"] < SELECTED_WEEK)
-                            if total_losses >= 2 and last_week_losses < 2:
+                            if total_losses >= 2 and last_week_losses < 2 and game_slug == "Main":
+                                newly_eliminated_count += 1
+                            if total_losses >= 1 and last_week_losses < 1 and game_slug == "2nd Chance":
                                 newly_eliminated_count += 1
                                 
                     # 4. Generate high-visibility summary template output stream
@@ -528,9 +530,9 @@ with tab_scores:
                     > * **Remaining Players:** {active_pool_remaining} Contenders
                     >
                     > **Bracket Breakdown:**
-                    > * **Loser Bracket (0 Losses):** {loser_count} Players
-                    > * **Winner Bracket (1 Loss):** {winner_count} Players
-                    > * **Eliminated (2+ Losses):** {eliminated_count} Players
+                    > * **Loser Bracket:** {loser_count} Players
+                    > * **Winner Bracket:** {winner_count} Players
+                    > * **Eliminated:** {eliminated_count} Players
                     """
                     # Write summary report right onto your admin dashboard dashboard console screen 
                     st.markdown(summary_report_markdown)
