@@ -655,7 +655,7 @@ else:
     
     def render_bracket_table(bracket_title, players_group):
         if not players_group:
-            st.caption(f"*No players currently active inside {bracket_title}*")
+            st.caption(f"*No players currently in {bracket_title}*")
             return
             
         # 1. INJECT FIXED TOOLTIP LAYOUT RULES
@@ -740,9 +740,9 @@ else:
                         if t_pick.endswith("_SO"): clean_team_display += "🎯"
                             
                         if p_state == "Correct" or t_pick == "BYE": 
-                            bg_style = "background-color: rgba(16, 185, 129, 0.15); padding: 4px 6px; border-radius: 4px; display: inline-flex; align-items: center; justify-content:center; gap: 2px; flex:1; max-width:65px; min-width:45px;"
+                            bg_style = "background-color: rgba(16, 185, 129, 0.15); border: 1px solid #008000; padding: 4px 6px; border-radius: 4px; display: inline-flex; align-items: center; justify-content:center; gap: 2px; flex:1; max-width:65px; min-width:45px;"
                         elif p_state == "Incorrect": 
-                            bg_style = "background-color: rgba(239, 68, 68, 0.15); padding: 4px 6px; border-radius: 4px; display: inline-flex; align-items: center; justify-content:center; gap: 2px; flex:1; max-width:65px; min-width:45px;"
+                            bg_style = "background-color: rgba(239, 68, 68, 0.15); border: 1px solid #FF0000; padding: 4px 6px; border-radius: 4px; display: inline-flex; align-items: center; justify-content:center; gap: 2px; flex:1; max-width:65px; min-width:45px;"
                         else: 
                             bg_style = "display: inline-flex; align-items: center; justify-content:center; gap: 2px; color: var(--text-color); flex:1; max-width:65px; min-width:45px;"
                             
