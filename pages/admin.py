@@ -488,7 +488,7 @@ with tab_scores:
                         all_user_picks = supabase.table("user_picks").select("*").eq("game_type", game_slug).eq("user_id", u_id).execute().data
                         wrong_count = sum(1 for k in all_user_picks if k["pick_state"] == "Incorrect")
                         
-                        new_bracket = "Loser Bracket" if wrong_count == 0 else "Winner Bracket" if wrong_count == 1 and game_slug == "Main" else "Eliminated"
+                        new_bracket = "Loser Bracket" if wrong_count == 0 else "Winner Bracket" if wrong_count == 1 and game_slug == 'Main' else "Eliminated"
                         supabase.table("tournament_registrations").update({"bracket_status": new_bracket}).eq("user_id", u_id).eq("game_type", game_slug).execute()
                         
                     # ====================================================================
