@@ -605,11 +605,11 @@ else:
             with dist_cols[idx % 15]:
                 so_label = " 🎯" if team.endswith("_SO") else ""
                 clean_team_key = team.replace("_SO", "").strip()
-                if clean_team_key == "BYE": card_style = "background-color: rgba(95, 175, 95, 0.25); border: 1px solid #008000; color: var(--text-color);"
+                if clean_team_key == "BYE": card_style = "background-color: rgba(16, 185, 129, 0.15); border: 1px solid #008000; color: var(--text-color);"
                 else:
                     game_state = outcome_lookup.get(clean_team_key, "Pending")
-                    if game_state == "Correct": card_style = "background-color: rgba(95, 175, 95, 0.05); border: 1px solid #008000; color: var(--text-color);"
-                    elif game_state == "Incorrect": card_style = "background-color: rgba(204, 51, 51, 0.05); border: 1px solid #FF0000; color: var(--text-color);"
+                    if game_state == "Correct": card_style = "background-color: rgba(16, 185, 129, 0.15); border: 1px solid #008000; color: var(--text-color);"
+                    elif game_state == "Incorrect": card_style = "background-color: rgba(239, 68, 68, 0.15); border: 1px solid #FF0000; color: var(--text-color);"
                     else: card_style = "background-color: transparent; border: 1px solid rgba(148, 163, 184, 0.3); color: var(--text-color);"
                 st.markdown(f"""<div style="{card_style} padding:8px 4px; border-radius:6px; text-align:center; box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin-bottom:10px; font-family:sans-serif;"><div style="display:flex; justify-content:center; margin-bottom:4px;">{get_base64_logo_html(team)}</div><b style="font-size:13px; color: inherit;">{team.replace('_SO','')}{so_label}</b><span style="display:block; font-size:18px; font-weight:900; color:#2563eb; margin-top:2px;">{count}</span></div>""", unsafe_allow_html=True)
 
