@@ -25,8 +25,8 @@ for game_slug in ["Main", "2nd_Chance"]:
     # Promote all valid un-locked entries to Finalized
     supabase.table("user_picks").update({"pick_state": "Finalized"}).eq("game_type", game_slug).eq("week", current_week).eq("pick_state", "Confirmed").execute()
     
-    # Track missing entries
-    active = supabase.table("tournament_registrations").select("user_id, byes_used").eq("game_type", game_slug).eq("is_enrolled", True).execute().data
+    # Track missing entries for non-eliminated players
+    active = supabase.table("tournament_registrations").select("user_id, byes_used").eq("game_type", game_slug).eq("is_enrolled", True).neq("bracket_status", 'Eliminated').execute().data
     picks = supabase.table("user_picks").select("user_id").eq("game_type", game_slug).eq("week", current_week).execute().data
     logged_ids = {p["user_id"] for p in (picks or [])}
     late_queue = [p for p in (active or []) if p["user_id"] not in logged_ids]
