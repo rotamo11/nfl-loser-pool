@@ -605,7 +605,7 @@ else:
             with dist_cols[idx % 15]:
                 so_label = " 🎯" if team.endswith("_SO") else ""
                 clean_team_key = team.replace("_SO", "").strip()
-                if clean_team_key == "BYE": card_style = "background-color: rgba(16, 185, 129, 0.15); border: 1px solid #008000; color: var(--text-color);"
+                if clean_team_key == "BYE": card_style = "background-color: rgba(16, 185, 129, 0.85); border: 1px solid #008000; color: var(--text-color);"
                 else:
                     game_state = outcome_lookup.get(clean_team_key, "Pending")
                     if game_state == "Correct": card_style = "background-color: rgba(16, 185, 129, 0.85); border: 1px solid #008000; color: var(--text-color);"
