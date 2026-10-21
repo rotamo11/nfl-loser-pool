@@ -7,7 +7,7 @@ import uuid
 import base64
 import extra_streamlit_components as cookie_manager
 
-# --- INITIALIZE THE HIGH-PERFORMANCE BROWSER COOKIE MANAGER ---
+# --- INITIALIZE THE HIGH-PERFORMANCE BROWSER COOKIE MANAGER --- 
 # Using a static anchor key prevents the component from resetting on refresh
 cookie_ctx = cookie_manager.CookieManager(key="loser_pool_cookie_anchor")
 
