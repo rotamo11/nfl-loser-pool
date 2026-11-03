@@ -538,13 +538,14 @@ if user_id and not is_paid_status:
 current_user_logged_in = st.session_state.get("user")
 current_user_uid = None
 all_historical_picks = supabase.table("user_picks").select("*").eq("game_type", game_slug).execute().data
+all_registrations = supabase.table("tournament_registrations").select("*").eq("game_type", game_slug).execute().data
 
 if current_user_logged_in:
     if hasattr(current_user_logged_in, 'id'): current_user_uid = current_user_logged_in.id
     elif isinstance(current_user_logged_in, dict) and "id" in current_user_logged_in: current_user_uid = current_user_logged_in["id"]
     elif hasattr(current_user_logged_in, 'user') and hasattr(current_user_logged_in.user, 'id'): current_user_uid = current_user_logged_in.user.id
 
-# 2. Extract admin roles status parameters
+# Extract admin roles status parameters
 is_logged_in_admin = False
 if current_user_uid:
     try:
@@ -564,8 +565,16 @@ if current_user_uid and all_historical_picks:
 # Calculate if the target week's locks have passed chronologically
 is_past_week_locked = SELECTED_WEEK < CALCULATED_CURRENT_WEEK
 
+# This bypasses all separate network overhead to verify participation states instantly
+is_eliminated = False
+if current_user_uid and all_registrations:
+    for p in all_registrations:
+        if str(p.get("user_id")).strip() == str(current_user_uid).strip() and p.get("bracket_status") == 'Eliminated':
+            is_eliminated = True
+            break
+
 # Combine everything into your master unlock key
-reveal_picks_condition = is_past_week_locked or user_has_finalized_this_week # or is_logged_in_admin
+reveal_picks_condition = is_past_week_locked or user_has_finalized_this_week or is_eliminated # or is_logged_in_admin
 
 # ==========================================
 # SEGMENT A: WEEKLY PICK DISTRIBUTION LIST
