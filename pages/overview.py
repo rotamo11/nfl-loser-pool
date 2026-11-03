@@ -739,7 +739,7 @@ else:
                     
                     # 3. Combine into the master visibility key parameters
                     # Opponents stay locked unless the week passed, you finalized your pick, or you are an admin
-                    reveal_tile_cell = is_current_loop_week_locked or is_own_profile_row or user_is_strictly_locked_this_week # or is_logged_in_admin
+                    reveal_tile_cell = is_current_loop_week_locked or is_own_profile_row or user_is_strictly_locked_this_week or is_eliminated # or is_logged_in_admin
                     
                     if not reveal_tile_cell:
                         row_html_cells.append('<div style="flex:1; background-color: rgba(148, 163, 184, 0.15); padding: 4px 2px; border-radius: 4px; font-weight:600; font-size:10px; color:gray; text-align:center; white-space:nowrap; max-width:65px; min-width:45px;">Hidden</div>')
