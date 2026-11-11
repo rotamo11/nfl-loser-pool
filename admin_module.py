@@ -3,23 +3,32 @@ import io
 from nicegui import ui
 from picks_module import get_current_nfl_week, get_week_label
 
-# Replace with your exact Supabase User UUID string
-MASTER_ADMIN_UID = "3f3a74a6-3725-4a3b-abda-015e73cb6f4b"
+CARRIER_OPTIONS = [
+    "None / Do Not Use", "AT&T", "Verizon", "T-Mobile", "Sprint",
+    "Boost Mobile", "Cricket Wireless", "MetroPCS", "US Cellular",
+    "Virgin Mobile", "Google Fi", "Xfinity Mobile", "Visible", "Mint Mobile"
+]
 
-def is_admin_user(user) -> bool:
+def is_admin_user(supabase, user) -> bool:
     if not user:
         return False
-    return str(user.id).strip() == MASTER_ADMIN_UID
+    try:
+        res = supabase.table("users").select("is_admin").eq("id", str(user.id)).execute().data
+        if res and isinstance(res, list) and len(res) > 0:
+            return bool(res[0].get("is_admin", False))
+    except Exception:
+        pass
+    return False
 
 def render_admin_view(supabase, user):
-    if not is_admin_user(user):
+    if not is_admin_user(supabase, user):
         ui.label("🔒 Access Denied: Commissioner Privileges Required.").classes("text-red-500 font-bold text-lg")
         return
 
     current_week = get_current_nfl_week()
     ui.label("🛠️ Commissioner Control Console").classes("text-2xl font-black mb-3")
 
-    # --- POOL SUMMARY METRICS (Main vs. 2nd Chance) ---
+    # --- POOL SUMMARY METRICS ---
     regs = supabase.table("tournament_registrations").select("*").eq("is_enrolled", True).execute().data or []
     main_regs = [r for r in regs if r.get("game_type") == "Main"]
     sc_regs = [r for r in regs if r.get("game_type") == "2nd_Chance"]
@@ -40,7 +49,7 @@ def render_admin_view(supabase, user):
 
     with ui.tabs().classes("w-full") as admin_tabs:
         t_score = ui.tab("Score Games")
-        t_roster = ui.tab("League Roster & Payments")
+        t_roster = ui.tab("League Rosters & Payments")
         t_csv = ui.tab("CSV Import")
 
     with ui.tab_panels(admin_tabs, value=t_score).classes("w-full bg-transparent"):
@@ -95,7 +104,6 @@ def render_admin_view(supabase, user):
                             if so_val:
                                 shutouts_set.add(res_val)
 
-                    # Grade picks across BOTH Main and 2nd_Chance simultaneously
                     week_picks = supabase.table("user_picks").select("*").eq("week", w_num).execute().data or []
                     for p in week_picks:
                         raw_t = p["team_picked"].upper()
@@ -108,7 +116,6 @@ def render_admin_view(supabase, user):
                         elif base_t in winners_set or base_t in ties_set:
                             supabase.table("user_picks").update({"pick_state": "Incorrect", "team_picked": base_t}).eq("id", p["id"]).execute()
 
-                    # Recalculate bracket statuses for BOTH pools from full season history
                     all_regs = supabase.table("tournament_registrations").select("*").eq("is_enrolled", True).execute().data or []
                     all_picks = supabase.table("user_picks").select("*").execute().data or []
 
@@ -127,44 +134,124 @@ def render_admin_view(supabase, user):
 
             sel_week.on_value_change(lambda: scoring_form.refresh())
             scoring_form()
-
         # ================================================================
-        # TAB 2: ROSTER, ENROLLMENT & PAYMENT OVERRIDES
+        # TAB 2: USERS, FULL PROFILE EDITOR, DELETE & ROSTER MANAGEMENT
         # ================================================================
         with ui.tab_panel(t_roster).classes("px-0"):
             pool_filter = ui.select(["Main", "2nd_Chance"], value="Main", label="Manage Pool Roster").classes("w-48 mb-3")
 
             @ui.refreshable
             def roster_list():
-                users = supabase.table("users").select("id, username, first_name, last_name").execute().data or []
-                umap = {u["id"]: u for u in users}
+                users = supabase.table("users").select("*").execute().data or []
+                users = sorted(users, key=lambda u: (u.get("username") or "").lower())
                 pool_regs = supabase.table("tournament_registrations").select("*").eq("game_type", pool_filter.value).execute().data or []
-                pool_regs = sorted(pool_regs, key=lambda r: (umap.get(r["user_id"], {}).get("username") or "").lower())
+                reg_by_uid = {str(r["user_id"]): r for r in pool_regs}
 
                 status_opts = ["Loser Bracket", "Eliminated"] if pool_filter.value == "2nd_Chance" else ["Loser Bracket", "Winner Bracket", "Eliminated"]
 
-                for r in pool_regs:
-                    u = umap.get(r["user_id"], {})
+                def open_user_editor(u_row: dict):
+                    uid = str(u_row["id"])
+                    with ui.dialog() as dlg, ui.card().classes("w-full max-w-lg p-5"):
+                        ui.label(f"Edit User: {u_row.get('username') or 'Player'}").classes("text-lg font-black")
+                        ui.label(f"User ID: {uid}").classes("text-[11px] font-mono opacity-60 mb-3 select-all")
+
+                        with ui.grid().classes("w-full grid-cols-1 md:grid-cols-2 gap-2"):
+                            ed_user = ui.input("Username", value=u_row.get("username") or "").classes("w-full")
+                            ed_email = ui.input("Email", value=u_row.get("email") or "").classes("w-full")
+                            ed_first = ui.input("First Name", value=u_row.get("first_name") or "").classes("w-full")
+                            ed_last = ui.input("Last Name", value=u_row.get("last_name") or "").classes("w-full")
+                            ed_phone = ui.input("Cell Phone", value=u_row.get("cell_phone") or "").classes("w-full")
+                            cur_car = u_row.get("cell_carrier") if u_row.get("cell_carrier") in CARRIER_OPTIONS else "None / Do Not Use"
+                            ed_carrier = ui.select(CARRIER_OPTIONS, value=cur_car, label="Cell Carrier").classes("w-full")
+
+                        with ui.row().classes("w-full gap-4 mt-2"):
+                            ed_a_email = ui.checkbox("Alert Email", value=bool(u_row.get("alert_email", True)))
+                            ed_a_sms = ui.checkbox("Alert SMS", value=bool(u_row.get("alert_sms", False)))
+                            ed_admin = ui.checkbox("Is Admin", value=bool(u_row.get("is_admin", False)))
+
+                        ed_notes = ui.textarea("Commissioner Notes", value=u_row.get("notes") or "").classes("w-full mt-2").props("rows=2")
+
+                        with ui.row().classes("w-full justify-between items-center mt-4 pt-3 border-t border-slate-200 dark:border-slate-700"):
+                            def confirm_delete_user():
+                                with ui.dialog() as del_dlg, ui.card().classes("p-4"):
+                                    ui.label(f"Permanently delete {u_row.get('username')}?").classes("font-bold text-red-600")
+                                    ui.label("This removes their user profile, tournament registrations, and all picks.").classes("text-xs opacity-80 my-1")
+                                    with ui.row().classes("w-full justify-end gap-2 mt-3"):
+                                        ui.button("Cancel", on_click=del_dlg.close).props("flat")
+                                        def execute_delete():
+                                            try:
+                                                supabase.table("user_picks").delete().eq("user_id", uid).execute()
+                                                supabase.table("tournament_registrations").delete().eq("user_id", uid).execute()
+                                                supabase.table("users").delete().eq("id", uid).execute()
+                                                del_dlg.close()
+                                                dlg.close()
+                                                ui.notify("User & associated records deleted.", type="warning")
+                                                roster_list.refresh()
+                                            except Exception as err:
+                                                ui.notify(f"Delete error: {str(err)}", type="negative")
+                                        ui.button("Confirm Delete", on_click=execute_delete, color="red")
+                                del_dlg.open()
+
+                            ui.button("Delete User", on_click=confirm_delete_user, color="red").props("outline size=sm")
+
+                            with ui.row().classes("gap-2"):
+                                ui.button("Cancel", on_click=dlg.close).props("flat")
+                                def save_user_edits():
+                                    try:
+                                        supabase.table("users").update({
+                                            "username": ed_user.value.strip(),
+                                            "email": ed_email.value.strip(),
+                                            "first_name": ed_first.value.strip(),
+                                            "last_name": ed_last.value.strip(),
+                                            "cell_phone": ed_phone.value.strip(),
+                                            "cell_carrier": ed_carrier.value,
+                                            "alert_email": ed_a_email.value,
+                                            "alert_sms": ed_a_sms.value,
+                                            "is_admin": ed_admin.value,
+                                            "notes": ed_notes.value.strip(),
+                                        }).eq("id", uid).execute()
+                                        dlg.close()
+                                        ui.notify("User updated!", type="positive")
+                                        roster_list.refresh()
+                                    except Exception as err:
+                                        ui.notify(f"Update error: {str(err)}", type="negative")
+                                ui.button("Save Changes", on_click=save_user_edits, color="primary")
+                    dlg.open()
+
+                for u in users:
+                    uid = str(u["id"])
                     uname = u.get("username") or "Unknown"
-                    fname = f"{u.get('first_name') or ''} {u.get('last_name') or ''}".strip()
+                    uemail = u.get("email") or "No email"
+                    unotes = u.get("notes") or ""
+                    uadmin = bool(u.get("is_admin", False))
+                    r = reg_by_uid.get(uid)
 
-                    with ui.row().classes("w-full items-center justify-between p-2 border-b border-slate-200 dark:border-slate-700 gap-2"):
-                        with ui.column().classes("gap-0"):
-                            ui.label(uname).classes("text-xs font-extrabold")
-                            ui.label(fname).classes("text-[10px] opacity-70")
+                    with ui.card().classes("w-full p-2.5 mb-2 border border-slate-200 dark:border-slate-700 shadow-none"):
+                        with ui.row().classes("w-full items-start justify-between gap-2"):
+                            with ui.column().classes("gap-0.5 flex-1 min-w-0"):
+                                with ui.row().classes("items-center gap-2"):
+                                    ui.label(uname).classes("text-sm font-extrabold")
+                                    if uadmin:
+                                        ui.badge("ADMIN", color="purple").classes("text-[10px] font-bold")
+                                    ui.button("Edit / Delete", on_click=lambda u_obj=u: open_user_editor(u_obj)).props("dense outline size=xs color=primary")
 
-                        with ui.row().classes("items-center gap-2"):
-                            enr_chk = ui.checkbox("Enrolled", value=bool(r.get("is_enrolled")),
-                                                  on_change=lambda e, rid=r["id"]: supabase.table("tournament_registrations").update({"is_enrolled": e.value}).eq("id", rid).execute()).props("dense")
-                            paid_chk = ui.checkbox("Paid", value=bool(r.get("is_paid")),
-                                                   on_change=lambda e, rid=r["id"]: supabase.table("tournament_registrations").update({"is_paid": e.value}).eq("id", rid).execute()).props("dense")
-                            cur_st = r.get("bracket_status") if r.get("bracket_status") in status_opts else "Loser Bracket"
-                            ui.select(status_opts, value=cur_st,
-                                      on_change=lambda e, rid=r["id"]: supabase.table("tournament_registrations").update({"bracket_status": e.value}).eq("id", rid).execute()).props("dense outlined").classes("w-36 text-xs")
+                                ui.label(f"{uemail}").classes("text-xs opacity-80 truncate")
+                                ui.label(f"{uid}").classes("text-[10px] font-mono opacity-60 truncate select-all")
+                                if unotes:
+                                    ui.label(f"{unotes}").classes("text-xs text-amber-700 dark:text-amber-300 italic mt-0.5")
+
+                            if r:
+                                with ui.row().classes("items-center gap-2 shrink-0"):
+                                    ui.checkbox("Enrolled", value=bool(r.get("is_enrolled")),
+                                                on_change=lambda e, rid=r["id"]: supabase.table("tournament_registrations").update({"is_enrolled": e.value}).eq("id", rid).execute()).props("dense")
+                                    ui.checkbox("Paid", value=bool(r.get("is_paid")),
+                                                on_change=lambda e, rid=r["id"]: supabase.table("tournament_registrations").update({"is_paid": e.value}).eq("id", rid).execute()).props("dense")
+                                    cur_st = r.get("bracket_status") if r.get("bracket_status") in status_opts else "Loser Bracket"
+                                    ui.select(status_opts, value=cur_st,
+                                              on_change=lambda e, rid=r["id"]: supabase.table("tournament_registrations").update({"bracket_status": e.value}).eq("id", rid).execute()).props("dense outlined").classes("w-36 text-xs")
 
             pool_filter.on_value_change(lambda: roster_list.refresh())
             roster_list()
-
         # ================================================================
         # TAB 3: CSV HISTORICAL PICK UPLOADER (Accounts for game_type)
         # ================================================================
