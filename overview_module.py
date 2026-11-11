@@ -69,9 +69,10 @@ def render_overview_view(supabase, user, pool_slug: str):
         if uid == current_user_id and p.get("pick_state") in ["Finalized", "Correct", "Incorrect"]:
             viewer_finalized_weeks.add(w)
 
-    # Determine visible week columns (up to current week, or 2nd chance start)
+    # Determine starting week (Week 6 for 2nd Chance, Week 1 for Main)
+    start_week = 6 if pool_slug == "2nd_Chance" else 1
     max_visible_week = max(current_week, max((p["week"] for p in all_picks), default=current_week))
-    visible_weeks = list(range(1, min(22, max_visible_week) + 1))
+    visible_weeks = list(range(start_week, min(22, max_visible_week) + 1))
 
     # Group players by bracket status and sort alphabetically by username
     def sort_players(plist):
