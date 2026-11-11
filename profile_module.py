@@ -50,7 +50,7 @@ def render_profile_view(supabase, user):
                 placeholder="e.g., 5551234567"
             ).classes("w-full mb-2")
 
-            current_carrier = profile.get("carrier") or "None / Do Not Use"
+            current_carrier = profile.get("cell_carrier") or "None / Do Not Use"
             if current_carrier not in CARRIER_GATEWAYS:
                 current_carrier = "None / Do Not Use"
 
@@ -88,7 +88,7 @@ def render_profile_view(supabase, user):
                         "first_name": first_in.value.strip(),
                         "last_name": last_in.value.strip(),
                         "phone_number": clean_phone,
-                        "carrier": chosen_carrier,
+                        "cell_carrier": chosen_carrier,
                         "email_reminders": email_chk.value,
                         "sms_reminders": sms_chk.value,
                     }).eq("id", user_id).execute()
