@@ -16,14 +16,10 @@ def get_current_nfl_week() -> int:
 def get_week_label(w: int) -> str:
     return {19: "Wildcard", 20: "Divisional", 21: "Conference", 22: "Super Bowl"}.get(w, f"Week {w}")
 
-def get_logo_data_uri(team_code: str) -> str:
+def get_logo_url(team_code: str) -> str:
     clean = team_code.replace("_SO", "").strip().upper()
-    path = f"static/{'BYE' if clean == 'BYE' else clean}.svg"
-    if os.path.exists(path):
-        with open(path, "rb") as f:
-            b64 = base64.b64encode(f.read()).decode("utf-8")
-        return f"data:image/svg+xml;base64,{b64}"
-    return ""
+    fname = f"{'BYE' if clean == 'BYE' else clean}.svg"
+    return f"/static/{fname}" if os.path.exists(f"static/{fname}") else ""
 
 def render_history_rail(supabase, all_picks: list):
     ui.label("Your Season Selection History").classes("font-bold text-base mb-1")
@@ -64,8 +60,8 @@ def render_history_rail(supabase, all_picks: list):
 
                 with ui.column().classes(f"min-w-[56px] min-h-[64px] border rounded items-center justify-center p-1 shrink-0 {box_cls}"):
                     ui.label(f"Wk {w}").classes("text-[9px] font-bold opacity-75 leading-none")
-                    if uri := get_logo_data_uri(clean_team):
-                        ui.image(uri).classes("w-6 h-4 object-contain my-0.5")
+                    if url := get_logo_url(clean_team):
+                        ui.html(f'<img src="{url}" class="w-7 h-5 object-contain p-0.5 my-0.5" />')
                     tag = f"{clean_team}{'🎯' if raw_pick.endswith('_SO') else ''}"
                     ui.label(tag).classes("text-[10px] font-extrabold leading-none")
 
@@ -144,16 +140,12 @@ def render_picks_view(supabase, user, pool_slug: str):
                 sel_home = home in draft_picks or (db_pick and db_pick["team_picked"].startswith(home))
                 limit_hit = (len(draft_picks) >= max_picks)
 
-                with ui.card().classes("w-full p-3 border border-gray-200 dark:border-slate-700 shadow-sm"):
+                with ui.card().classes("w-full p-3 border border-slate-300 dark:border-slate-700 shadow-sm"):
                     with ui.row().classes("w-full items-center justify-between gap-2 no-wrap"):
-                        with ui.row().classes("items-center gap-1 shrink-0"):
-                            if uri := get_logo_data_uri(away):
-                                ui.image(uri).classes("w-6 h-4 object-contain")
-                            ui.label("@").classes("text-xs text-gray-400 font-bold")
-                            if uri := get_logo_data_uri(home):
-                                ui.image(uri).classes("w-6 h-4 object-contain")
+                        for idx_t, (team, is_sel) in enumerate([(away, sel_away), (home, sel_home)]):
+                            if idx_t == 1:
+                                ui.label("@").classes("text-xs text-slate-500 dark:text-slate-400 font-black shrink-0")
 
-                        for team, is_sel in [(away, sel_away), (home, sel_home)]:
                             used = team in used_teams
                             disabled = is_locked or is_db_fin or used or (limit_hit and not is_sel)
 
@@ -163,9 +155,22 @@ def render_picks_view(supabase, user, pool_slug: str):
                                     draft_picks.add(t)
                                 matchup_board.refresh()
 
-                            ui.button(f"{team} (Used)" if used else team, on_click=toggle_team, color="primary" if is_sel else "grey-4").props(
-                                f"{'disable' if disabled else ''} unelevated"
-                            ).classes("flex-1 font-bold text-xs")
+                            # High-contrast button styling: bright primary if selected, darker obvious fill if available, muted if disabled
+                            if is_sel:
+                                btn_cls = "flex-1 font-extrabold text-xs bg-blue-600 text-white border-2 border-blue-400 shadow"
+                            elif disabled:
+                                btn_cls = "flex-1 font-bold text-xs bg-slate-100 dark:bg-slate-800/50 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-800 opacity-60"
+                            else:
+                                btn_cls = "flex-1 font-extrabold text-xs bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-900 dark:text-white border border-slate-400 dark:border-slate-500 shadow-sm cursor-pointer"
+
+                            btn_text = f"{team} (Used)" if used else team
+                            logo_u = get_logo_url(team)
+
+                            with ui.button(on_click=toggle_team).props(f"{'disable' if disabled else ''} flat no-caps").classes(btn_cls):
+                                with ui.row().classes("items-center justify-center gap-1.5 no-wrap py-0.5"):
+                                    if logo_u:
+                                        ui.html(f'<img src="{logo_u}" class="w-6 h-4 object-contain p-0.5 shrink-0" />')
+                                    ui.label(btn_text).classes("leading-none")
                     if sel_away or sel_home or db_pick:
                         chosen_team = away if sel_away else home
                         with ui.row().classes("w-full gap-2 mt-2"):
