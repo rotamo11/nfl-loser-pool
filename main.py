@@ -114,9 +114,9 @@ def render_login_box():
 def picks_page():
     render_layout("Picks", lambda user, pool: render_picks_view(supabase, user, pool))
 
-@ui.page("/brackets")
+@ui.page("/overview")
 def overview_page():
-    render_layout("Brackets", lambda user, pool: render_overview_view(supabase, user, pool))
+    render_layout("Overview", lambda user, pool: render_overview_view(supabase, user, pool))
 
 @ui.page("/chat")
 def chat_page():
