@@ -4,6 +4,7 @@ from nicegui import ui, app
 from supabase import create_client, Client
 from picks_module import render_picks_view
 from overview_module import render_overview_view
+from profile_module import render_profile_view
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
@@ -145,13 +146,9 @@ def render_layout(active_page: str, content_builder):
             if not user:
                 render_login_box()
             elif current_tab == "Profile":
-                render_profile_placeholder(user)
+                render_profile_view(supabase, user)
             else:
                 content_builder(user, current_tab)
-
-def render_profile_placeholder(user):
-    ui.label("Player Profile & Alert Settings").classes("text-xl font-bold mb-2")
-    ui.label(f"Logged in as: {user.email}").classes("text-sm opacity-75")
 
 def render_login_box():
     ui.label("Player Login").classes("text-2xl font-bold mb-2")
