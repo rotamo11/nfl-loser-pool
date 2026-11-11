@@ -81,7 +81,7 @@ def render_overview_view(supabase, user, pool_slug: str):
         return sorted(plist, key=lambda r: user_info_map.get(str(r["user_id"]), {}).get("username", "").lower())
 
     losers_bracket = sort_players([r for r in regs_data if r.get("bracket_status") == "Loser Bracket"])
-    second_chance_bracket = sort_players([r for r in regs_data if r.get("bracket_status") == "2nd Chance Bracket"])
+    second_chance_bracket = sort_players([r for r in regs_data if r.get("bracket_status") == "Winner Bracket"])
     eliminated_bracket = sort_players([r for r in regs_data if r.get("bracket_status") == "Eliminated"])
 
     # Summary Counter Strip
@@ -161,6 +161,6 @@ def render_overview_view(supabase, user, pool_slug: str):
                                             ui.label(display_txt).classes("text-[10px] font-extrabold leading-none")
 
     # Render All Active & Eliminated Brackets
-    build_bracket_section("🏅 Loser Bracket (0 Losses)", "green", losers_bracket)
-    build_bracket_section("🥈 2nd Chance Bracket (1 Loss)", "amber", second_chance_bracket)
-    build_bracket_section("❌ Eliminated", "red", eliminated_bracket)
+    build_bracket_section("Loser Bracket (0 Wrong)", "green", losers_bracket)
+    build_bracket_section("Winner Bracket (1 Wrong)", "amber", second_chance_bracket)
+    build_bracket_section("Eliminated", "red", eliminated_bracket)
