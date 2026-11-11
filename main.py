@@ -65,7 +65,7 @@ def render_layout(active_page: str, content_builder):
         with ui.row().classes("w-full max-w-5xl items-stretch justify-between gap-4 no-wrap mt-1"):
             # Desktop-Only Full-Height Left Logo
             if logo_uri:
-                ui.image(logo_uri).classes("hidden md:block w-36 object-contain self-stretch shrink-0 rounded-lg bg-white p-4")
+                ui.image(logo_uri).classes("hidden md:block w-36 object-contain self-stretch shrink-0 rounded-lg bg-white")
 
             # Centered Header Text & Rules
             with ui.column().classes("flex-1 items-center text-center justify-center gap-1"):
