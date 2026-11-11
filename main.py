@@ -77,12 +77,10 @@ def render_layout(active_page: str, content_builder):
                 ui.button("Log Out", on_click=handle_logout).props(f"outline color={btn_color} size=sm")
 
         # 2. Main Header Content Area (Mobile unchanged, Desktop scaled ~1.5x)
-        with ui.row().classes("w-full max-w-10xl items-stretch object-fit: contain; justify-between gap-4 md:gap-6 no-wrap mt-1"):
-            # Desktop-Only Full-Height Left Logo (Uses explicit pixel styling so nothing overrides it)
+        with ui.row().classes("w-full max-w-5xl items-center justify-between gap-4 md:gap-8 no-wrap mt-1"):
+            # Desktop-Only Full-Height Left Logo using native ui.image()
             if logo_url:
-                ui.html(
-                    f'<img src="{logo_url}" style="width: 240px; height: 240px; display: block;" class="rounded-xl" />'
-                ).classes("hidden md:flex items-center justify-center shrink-0")
+                ui.image(logo_url).props("fit=contain").classes("hidden md:block shrink-0 rounded-xl").style("width: 220px; height: 220px;")
 
             # Centered Header Text & Rules
             with ui.column().classes("flex-1 items-center text-center justify-center gap-1 md:gap-2"):
