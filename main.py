@@ -1,6 +1,8 @@
 import os
 from nicegui import ui, app
 from supabase import create_client, Client
+from picks_module import render_picks_view
+from overview_module import render_overview_view
 
 # 1. Initialize Supabase (Set these in Render/Railway Environment Variables)
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "YOUR_SUPABASE_URL")
@@ -110,17 +112,11 @@ def render_login_box():
 # 5. Page Routes
 @ui.page("/")
 def picks_page():
-    def build_picks(user, pool):
-        ui.label(f"Weekly Picks — {pool.replace('_', ' ')}").classes("text-xl font-bold")
-        ui.label("Your mobile-friendly matchup cards will render right here.").classes("text-gray-500 dark:text-gray-400")
-    render_layout("Picks", build_picks)
+    render_layout("Picks", lambda user, pool: render_picks_view(supabase, user, pool))
 
 @ui.page("/overview")
 def overview_page():
-    def build_overview(user, pool):
-        ui.label(f"Standings Overview — {pool.replace('_', ' ')}").classes("text-xl font-bold")
-        ui.label("Your unified scrolling bracket grid will render right here.").classes("text-gray-500 dark:text-gray-400")
-    render_layout("Overview", build_overview)
+    render_layout("Overview", lambda user, pool: render_overview_view(supabase, user, pool))
 
 @ui.page("/chat")
 def chat_page():
