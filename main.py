@@ -77,7 +77,7 @@ def render_layout(active_page: str, content_builder):
                 ui.button("Log Out", on_click=handle_logout).props(f"outline color={btn_color} size=sm")
 
         # 2. Main Header Content Area (Mobile unchanged, Desktop scaled ~1.5x)
-        with ui.row().classes("w-full max-w-5xl items-stretch justify-between gap-4 md:gap-6 no-wrap mt-1"):
+        with ui.row().classes("w-full max-w-5xl items-stretch justify-between gap-2 md:gap-6 no-wrap mt-1"):
             # Desktop-Only Full-Height Left Logo (Uses explicit pixel styling so nothing overrides it)
             if logo_url:
                 ui.html(
