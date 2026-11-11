@@ -65,7 +65,7 @@ def render_layout(active_page: str, content_builder):
         with ui.row().classes("w-full max-w-5xl items-stretch justify-between gap-4 no-wrap mt-1"):
             # Desktop-Only Full-Height Left Logo
             if logo_uri:
-                ui.image(logo_uri).classes("hidden md:block w-36 object-contain self-stretch shrink-0 rounded-lg")
+                ui.image(logo_uri).classes("hidden md:block w-36 object-contain self-stretch shrink-0 rounded-lg bg-white p-4")
 
             # Centered Header Text & Rules
             with ui.column().classes("flex-1 items-center text-center justify-center gap-1"):
@@ -73,7 +73,7 @@ def render_layout(active_page: str, content_builder):
                 with ui.row().classes("items-center justify-center gap-2 no-wrap"):
                     if logo_uri:
                         ui.image(logo_uri).classes("block md:hidden h-9 w-9 object-contain shrink-0 rounded")
-                    ui.label("NFL Loser Pool").classes("text-2xl md:text-3xl font-black tracking-tight bg-white p-4")
+                    ui.label("NFL Loser Pool").classes("text-2xl md:text-3xl font-black tracking-tight")
 
                 # 3-Column Rules Summary
                 with ui.row().classes("w-full justify-center gap-4 md:gap-10 text-xs mt-1"):
