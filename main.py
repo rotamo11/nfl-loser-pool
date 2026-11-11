@@ -5,6 +5,7 @@ from supabase import create_client, Client
 from picks_module import render_picks_view
 from overview_module import render_overview_view
 from profile_module import render_profile_view
+from admin_module import render_admin_view, is_admin_user
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
@@ -131,6 +132,8 @@ def render_layout(active_page: str, content_builder):
             border_sep = "border-white/20" if is_dark else "border-slate-300"
             with ui.row().classes(f"w-full max-w-4xl justify-around items-center py-2 mt-1 border-t {border_sep} text-sm font-bold"):
                 nav_items = [("Picks", "/"), ("Brackets", "/brackets"), ("Chat", "/chat"), ("Rules", "/rules")]
+                if is_admin_user(user):
+                    nav_items.append(("Admin", "/admin"))
                 for label, route in nav_items:
                     is_active = (active_page == label)
                     if is_active:
@@ -187,6 +190,10 @@ def chat_page():
 @ui.page("/rules")
 def rules_page():
     render_layout("Rules", lambda u, p: ui.label("2026 Official Pool Rules").classes("text-xl font-bold"))
+
+@ui.page("/admin")
+def admin_page():
+    render_layout("Admin", lambda user, pool: render_admin_view(supabase, user))
 
 ui.run(
     host="0.0.0.0",
