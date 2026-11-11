@@ -95,15 +95,15 @@ def render_login_box():
         try:
             res = supabase.auth.sign_in_with_password({
                 "email": email_input.value.strip(),
-                "password": pass_input.value
+                "password": pass_input.value.strip()
             })
             if res and res.session:
                 app.storage.user["refresh_token"] = res.session.refresh_token
                 app.storage.user["user_id"] = res.user.id
                 ui.notify("Logged in! Session saved for 7 days.", type="positive")
                 ui.navigate.reload()
-        except Exception:
-            ui.notify("Invalid email or password.", type="negative")
+        except Exception as e:
+            ui.notify(f"Login Error: {str(e)}", type="negative", timeout=8000)
 
     ui.button("Log In", on_click=attempt_login).classes("w-full mt-3 bg-blue-600 text-white")
 
