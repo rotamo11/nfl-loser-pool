@@ -16,14 +16,11 @@ def get_current_nfl_week() -> int:
 def get_week_col_label(w: int) -> str:
     return {19: "WC", 20: "DIV", 21: "CONF", 22: "SB"}.get(w, f"Wk {w}")
 
-def get_logo_data_uri(team_code: str) -> str:
+# Replace get_logo_data_uri at the top of overview_module.py with:
+def get_logo_url(team_code: str) -> str:
     clean = team_code.replace("_SO", "").strip().upper()
-    path = f"static/{'BYE' if clean == 'BYE' else clean}.svg"
-    if os.path.exists(path):
-        with open(path, "rb") as f:
-            b64 = base64.b64encode(f.read()).decode("utf-8")
-        return f"data:image/svg+xml;base64,{b64}"
-    return ""
+    fname = f"{'BYE' if clean == 'BYE' else clean}.svg"
+    return f"/static/{fname}" if os.path.exists(f"static/{fname}") else ""
 
 def render_overview_view(supabase, user, pool_slug: str):
     current_user_id = str(user.id)
@@ -166,12 +163,12 @@ def render_overview_view(supabase, user, pool_slug: str):
                                         else:
                                             cell_cls = "bg-slate-800 text-slate-200 border border-slate-700" if is_dark else "bg-gray-100 text-gray-800"
 
-                                        with ui.row().classes(f"w-full items-center justify-center gap-0.5 px-1 py-0.5 rounded no-wrap {cell_cls}"):
-                                            if uri := get_logo_data_uri(clean_team):
-                                                ui.image(uri).classes("w-4 h-3 object-contain shrink-0")
+                                        with ui.row().classes(f"w-full items-center justify-center gap-1 px-1.5 py-0.5 rounded no-wrap {cell_cls}"):
+                                            if url := get_logo_url(clean_team):
+                                                ui.html(f'<img src="{url}" class="w-5 h-3.5 object-contain p-0.5 shrink-0" />')
                                             display_txt = f"{clean_team}{'🎯' if has_so else ''}"
                                             ui.label(display_txt).classes("text-[10px] font-extrabold leading-none")
 
     build_bracket_section("Loser Bracket (0 Wrong)", "green", losers_bracket)
-    build_bracket_section("WinnerBracket (1 Wrong)", "amber", second_chance_bracket)
+    build_bracket_section("Winner Bracket (1 Wrong)", "amber", second_chance_bracket)
     build_bracket_section("Eliminated", "red", eliminated_bracket)
