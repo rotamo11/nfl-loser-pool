@@ -73,7 +73,7 @@ def render_layout(active_page: str, content_builder):
                 with ui.row().classes("items-center justify-center gap-2 no-wrap"):
                     if logo_uri:
                         ui.image(logo_uri).classes("block md:hidden h-9 w-9 object-contain shrink-0 rounded")
-                    ui.label("NFL Loser Pool").classes("text-2xl md:text-3xl font-black tracking-tight")
+                    ui.label("NFL Loser Pool").classes("text-2xl md:text-3xl font-black tracking-tight bg-white p-4")
 
                 # 3-Column Rules Summary
                 with ui.row().classes("w-full justify-center gap-4 md:gap-10 text-xs mt-1"):
@@ -98,19 +98,6 @@ def render_layout(active_page: str, content_builder):
                     ui.label("74 Players | $1850 Purse ($1110 1st / $555 2nd / $185 3rd)").classes("text-xs font-bold text-blue-200 mt-1")
                     ui.label("Last Year's Losers: S. King ($765) • A. Conley ($382.50) • B. Kazmierski ($127.50)").classes("text-[11px] text-white/80")
 
-            # 3. Top-Right Theme Toggle & Logout Controls
-            with ui.column().classes("items-end justify-between shrink-0"):
-                def toggle_theme():
-                    app.storage.user["dark_mode"] = not dark_mode.value
-                    ui.navigate.reload()
-
-                ui.button(icon="dark_mode" if not is_dark else "light_mode", on_click=toggle_theme).props("flat round color=white")
-
-                if user:
-                    def handle_logout():
-                        app.storage.user.clear()
-                        ui.navigate.to("/")
-                    ui.button("Log Out", on_click=handle_logout).props("outline color=white size=sm")
         # --- 3 TABS: MAIN, 2ND CHANCE, PROFILE ---
         def on_tab_change(e):
             if e.value != app.storage.user["pool"]:
