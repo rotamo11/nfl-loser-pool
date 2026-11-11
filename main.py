@@ -40,36 +40,45 @@ def render_layout(active_page: str, content_builder):
     dark_mode = ui.dark_mode(value=is_dark)
 
     current_tab = app.storage.user["pool"]
-    bg_hex = "#974706" if current_tab == "2nd_Chance" else "#1d3d70"
-    ui.query("body").style(f"background-color: {bg_hex}; margin: 0; padding: 0;")
+    is_2nd = (current_tab == "2nd_Chance")
 
-    # --- SOLID TOP BANNER (Responsive Mobile & Desktop) ---
+    # Pool Accent Colors vs. Light/Dark Theme Backgrounds
+    pool_hex = "#974706" if is_2nd else "#1d3d70"
+    page_bg = "#0f172a" if is_dark else "#f8fafc"
+    ui.query("body").style(f"background-color: {page_bg}; margin: 0; padding: 0;")
+
+    # Adaptive Light/Dark Text & Accent Classes
+    text_main = "text-white" if is_dark else "text-slate-900"
+    text_muted = "text-white/80" if is_dark else "text-slate-600"
+    week_hdr_cls = "text-amber-300" if is_dark else ("text-amber-700" if is_2nd else "text-blue-800")
+    purse_cls = "text-amber-200" if (is_dark and is_2nd) else ("text-blue-200" if is_dark else ("text-amber-800" if is_2nd else "text-blue-900"))
+    btn_color = "white" if is_dark else "dark"
+
     logo_uri = get_logo_uri("nfl-logo-square.png")
 
-    with ui.column().classes("w-full items-center px-3 pt-2 pb-2 text-white"):
+    # --- SOLID TOP BANNER (Matches Light/Dark Theme with Pool Accent Strip) ---
+    with ui.column().classes(f"w-full items-center px-3 pt-2 pb-2 {text_main}").style(f"border-top: 6px solid {pool_hex};"):
+        
         # 1. Top-Right Utility Row (Theme Toggle + Logout side-by-side)
         with ui.row().classes("w-full max-w-5xl justify-end items-center gap-2"):
             def toggle_theme():
                 app.storage.user["dark_mode"] = not dark_mode.value
                 ui.navigate.reload()
 
-            ui.button(icon="dark_mode" if not is_dark else "light_mode", on_click=toggle_theme).props("flat round dense color=white")
+            ui.button(icon="dark_mode" if not is_dark else "light_mode", on_click=toggle_theme).props(f"flat round dense color={btn_color}")
 
             if user:
                 def handle_logout():
                     app.storage.user.clear()
                     ui.navigate.to("/")
-                ui.button("Log Out", on_click=handle_logout).props("outline color=white size=sm")
+                ui.button("Log Out", on_click=handle_logout).props(f"outline color={btn_color} size=sm")
 
-        # 2. Main Header Content Area (Full-width enabled)
+        # 2. Main Header Content Area
         with ui.row().classes("w-full max-w-5xl items-stretch justify-between gap-4 no-wrap mt-1"):
-            # Desktop-Only Full-Height Left Logo
             if logo_uri:
-                ui.image(logo_uri).classes("hidden md:block w-36 object-contain self-stretch shrink-0 rounded-lg bg-white")
+                ui.image(logo_uri).classes("hidden md:block w-36 object-contain self-stretch shrink-0 rounded-lg")
 
-            # Centered Header Text & Rules
             with ui.column().classes("flex-1 items-center text-center justify-center gap-1"):
-                # Mobile-Only Inline Logo + Title Row
                 with ui.row().classes("items-center justify-center gap-2 no-wrap"):
                     if logo_uri:
                         ui.image(logo_uri).classes("block md:hidden h-9 w-9 object-contain shrink-0 rounded")
@@ -78,56 +87,54 @@ def render_layout(active_page: str, content_builder):
                 # 3-Column Rules Summary
                 with ui.row().classes("w-full justify-center gap-4 md:gap-10 text-xs mt-1"):
                     with ui.column().classes("items-center gap-0"):
-                        ui.label("Weeks 1-14").classes("font-extrabold text-amber-300")
+                        ui.label("Weeks 1-14").classes(f"font-extrabold {week_hdr_cls}")
                         ui.label("Pick 1 team to lose")
                     with ui.column().classes("items-center gap-0"):
-                        ui.label("Weeks 15-18").classes("font-extrabold text-amber-300")
+                        ui.label("Weeks 15-18").classes(f"font-extrabold {week_hdr_cls}")
                         ui.label("Pick 2 teams to lose")
                     with ui.column().classes("items-center gap-0"):
-                        ui.label("Playoffs").classes("font-extrabold text-amber-300")
+                        ui.label("Playoffs").classes(f"font-extrabold {week_hdr_cls}")
                         ui.label("Pick ALL losers (repeats allowed)")
 
+                # Deadline Pill Badge styled with active Pool Color
                 ui.label("Weekly Deadline: Noon ET Sunday, or by kickoff of earlier game").classes(
-                    "text-xs font-bold bg-white/15 px-3 py-1 rounded-full mt-1"
-                )
+                    "text-xs font-bold text-white px-3 py-1 rounded-full mt-1"
+                ).style(f"background-color: {pool_hex};")
 
-                if current_tab == "2nd_Chance":
-                    ui.label("26 Players: $650 Purse ($390 for 1st / $195 for 2nd / $65 for 3rd)").classes("text-xs font-bold text-amber-200 mt-1")
-                    ui.label("Last Year's Losers: D. Bobrow ($300) • M. Ellis ($150) • D. Tashima ($50)").classes("text-[11px] text-white/80")
+                if is_2nd:
+                    ui.label("26 Players: $650 Purse ($390 for 1st / $195 for 2nd / $65 for 3rd)").classes(f"text-xs font-bold mt-1 {purse_cls}")
+                    ui.label("Last Year's Losers: D. Bobrow ($300) • M. Ellis ($150) • D. Tashima ($50)").classes(f"text-[11px] {text_muted}")
                 else:
-                    ui.label("74 Players | $1850 Purse ($1110 1st / $555 2nd / $185 3rd)").classes("text-xs font-bold text-blue-200 mt-1")
-                    ui.label("Last Year's Losers: S. King ($765) • A. Conley ($382.50) • B. Kazmierski ($127.50)").classes("text-[11px] text-white/80")
+                    ui.label("74 Players | $1850 Purse ($1110 1st / $555 2nd / $185 3rd)").classes(f"text-xs font-bold mt-1 {purse_cls}")
+                    ui.label("Last Year's Losers: S. King ($765) • A. Conley ($382.50) • B. Kazmierski ($127.50)").classes(f"text-[11px] {text_muted}")
 
-        # --- 3 TABS: MAIN, 2ND CHANCE, PROFILE ---
+        # 3. Tabs & Page Links
         def on_tab_change(e):
             if e.value != app.storage.user["pool"]:
                 app.storage.user["pool"] = e.value
                 ui.navigate.reload()
 
-        with ui.tabs(value=current_tab, on_change=on_tab_change).classes("text-white mt-3"):
+        with ui.tabs(value=current_tab, on_change=on_tab_change).classes(f"{text_main} mt-3").props(f"indicator-color={'amber' if is_2nd else 'primary'}"):
             ui.tab("Main", label="Main")
             ui.tab("2nd_Chance", label="2nd Chance")
             ui.tab("Profile", label="Profile")
 
-        # --- SPREAD-OUT PAGE NAVIGATION LINKS (Hidden when viewing Profile tab) ---
         if current_tab != "Profile":
-            with ui.row().classes("w-full max-w-4xl justify-around items-center py-2 mt-1 border-t border-white/25 text-sm font-bold"):
-                nav_items = [
-                    ("Picks", "/"),
-                    ("Brackets", "/brackets"),
-                    ("Chat", "/chat"),
-                    ("Rules", "/rules"),
-                ]
+            border_sep = "border-white/20" if is_dark else "border-slate-300"
+            with ui.row().classes(f"w-full max-w-4xl justify-around items-center py-2 mt-1 border-t {border_sep} text-sm font-bold"):
+                nav_items = [("Picks", "/"), ("Brackets", "/brackets"), ("Chat", "/chat"), ("Rules", "/rules")]
                 for label, route in nav_items:
                     is_active = (active_page == label)
-                    cls = "text-amber-300 underline underline-offset-4" if is_active else "text-white/85 hover:text-white"
+                    if is_active:
+                        cls = "text-amber-400 underline underline-offset-4" if is_dark else ("text-amber-700 underline underline-offset-4" if is_2nd else "text-blue-700 underline underline-offset-4")
+                    else:
+                        cls = "text-white/80 hover:text-white" if is_dark else "text-slate-600 hover:text-slate-900"
                     ui.link(label, route).classes(f"no-underline {cls}")
 
-    # --- MAIN CONTENT CONTAINER (Explicitly switches between white and dark slate) ---
-    card_theme = "bg-slate-900 text-white border border-slate-700" if is_dark else "bg-white text-slate-900"
-
+    # --- MAIN CONTENT CONTAINER (White in Light Mode, Dark Slate in Dark Mode, Pool Border) ---
+    card_theme = "bg-slate-900 text-white" if is_dark else "bg-white text-slate-900"
     with ui.column().classes("w-full items-center px-3 pb-8 pt-2"):
-        with ui.card().classes(f"w-full max-w-5xl p-5 rounded-xl shadow-xl {card_theme}"):
+        with ui.card().classes(f"w-full max-w-5xl p-5 rounded-xl shadow-xl {card_theme}").style(f"border-top: 4px solid {pool_hex};"):
             if not user:
                 render_login_box()
             elif current_tab == "Profile":
