@@ -44,31 +44,31 @@ def render_profile_view(supabase, user):
                 first_in = ui.input("First Name", value=profile.get("first_name") or "").classes("flex-1")
                 last_in = ui.input("Last Name", value=profile.get("last_name") or "").classes("flex-1")
 
-phone_in = ui.input(
-    "10-Digit Cell Phone (Numbers Only)",
-    value=profile.get("cell_phone") or "",
-    placeholder="e.g., 5551234567"
-).classes("w-full mb-2")
-
-current_carrier = profile.get("cell_carrier") or "None / Do Not Use"
-if current_carrier not in CARRIER_GATEWAYS:
-    current_carrier = "None / Do Not Use"
-
-carrier_sel = ui.select(
-    options=list(CARRIER_GATEWAYS.keys()),
-    value=current_carrier,
-    label="Mobile Wireless Carrier (For Free SMS Reminders)"
-).classes("w-full mb-3")
-
-ui.label("Automated Reminder Channels:").classes("text-xs font-bold opacity-80 mt-1")
-email_chk = ui.checkbox(
-    "Send Thursday Noon & Sunday 9 AM ET Email Reminders",
-    value=bool(profile.get("alert_email", True))
-)
-sms_chk = ui.checkbox(
-    "Send Thursday Noon & Sunday 9 AM ET Text (SMS) Reminders",
-    value=bool(profile.get("alert_sms", False))
-)
+            phone_in = ui.input(
+                "10-Digit Cell Phone (Numbers Only)",
+                value=profile.get("cell_phone") or "",
+                placeholder="e.g., 5551234567"
+            ).classes("w-full mb-2")
+            
+            current_carrier = profile.get("cell_carrier") or "None / Do Not Use"
+            if current_carrier not in CARRIER_GATEWAYS:
+                current_carrier = "None / Do Not Use"
+            
+            carrier_sel = ui.select(
+                options=list(CARRIER_GATEWAYS.keys()),
+                value=current_carrier,
+                label="Mobile Wireless Carrier (For Free SMS Reminders)"
+            ).classes("w-full mb-3")
+            
+            ui.label("Automated Reminder Channels:").classes("text-xs font-bold opacity-80 mt-1")
+            email_chk = ui.checkbox(
+                "Send Thursday Noon & Sunday 9 AM ET Email Reminders",
+                value=bool(profile.get("alert_email", True))
+            )
+            sms_chk = ui.checkbox(
+                "Send Thursday Noon & Sunday 9 AM ET Text (SMS) Reminders",
+                value=bool(profile.get("alert_sms", False))
+            )
             def save_profile_settings():
                 clean_user = username_in.value.strip()
                 clean_phone = re.sub(r"\D", "", phone_in.value or "")
