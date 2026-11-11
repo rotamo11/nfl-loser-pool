@@ -9,12 +9,15 @@ SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-def get_logo_uri(filename: str) -> str:
-    for path in [f"static/{filename}", filename]:
-        if os.path.exists(path):
-            with open(path, "rb") as f:
-                b64 = base64.b64encode(f.read()).decode("utf-8")
-            return f"data:image/png;base64,{b64}"
+# 1. Add this right after initializing Supabase in main.py
+if os.path.exists("static"):
+    app.add_static_files("/static", "static")
+
+def get_static_logo_url(filename: str) -> str:
+    if os.path.exists(f"static/{filename}"):
+        return f"/static/{filename}"
+    if os.path.exists(filename):
+        return f"/{filename}"
     return ""
 
 def get_authenticated_user():
@@ -54,7 +57,7 @@ def render_layout(active_page: str, content_builder):
     purse_cls = "text-amber-200" if (is_dark and is_2nd) else ("text-blue-200" if is_dark else ("text-amber-800" if is_2nd else "text-blue-900"))
     btn_color = "white" if is_dark else "dark"
 
-    logo_uri = get_logo_uri("nfl-logo-square.png")
+    logo_url = get_static_logo_url("nfl-logo-square.png")
 
     # --- SOLID TOP BANNER (Matches Light/Dark Theme with Pool Accent Strip) ---
     with ui.column().classes(f"w-full items-center px-3 pt-2 pb-2 {text_main}").style(f"border-top: 6px solid {pool_hex};"):
@@ -75,13 +78,13 @@ def render_layout(active_page: str, content_builder):
 
         # 2. Main Header Content Area
         with ui.row().classes("w-full max-w-5xl items-stretch justify-between gap-4 no-wrap mt-1"):
-            if logo_uri:
-                ui.image(logo_uri).classes("hidden md:block w-36 object-contain self-stretch shrink-0 rounded-lg")
+            if logo_url:
+                ui.html(f'<img src="{logo_url}" class="hidden md:block w-36 max-h-44 object-contain p-1 self-center shrink-0 rounded-lg" />')
 
             with ui.column().classes("flex-1 items-center text-center justify-center gap-1"):
                 with ui.row().classes("items-center justify-center gap-2 no-wrap"):
-                    if logo_uri:
-                        ui.image(logo_uri).classes("block md:hidden h-9 w-9 object-contain shrink-0 rounded")
+                    if logo_url:
+                        ui.html(f'<img src="{logo_url}" class="block md:hidden h-9 w-9 object-contain p-0.5 shrink-0 rounded" />')
                     ui.label("NFL Loser Pool").classes("text-2xl md:text-3xl font-black tracking-tight")
 
                 # 3-Column Rules Summary
