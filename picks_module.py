@@ -75,11 +75,14 @@ def render_picks_view(supabase, user, pool_slug: str):
     if "selected_week" not in app.storage.user:
         app.storage.user["selected_week"] = current_week
 
+    # 1. Verify Enrollment & Bracket Status
     reg_res = supabase.table("tournament_registrations").select("*").eq("user_id", user_id).eq("game_type", pool_slug).execute().data
-    if not reg_res or not reg_res.get("is_enrolled", False):
+    active_reg = reg_res[0] if (isinstance(reg_res, list) and len(reg_res) > 0) else {}
+
+    if not active_reg or not active_reg.get("is_enrolled", False):
         ui.label(f"Not Enrolled in {pool_slug.replace('_', ' ')}.").classes("text-red-500 font-bold text-lg")
         return
-    if reg_res.get("bracket_status") == "Eliminated":
+    if active_reg.get("bracket_status") == "Eliminated":
         ui.label("You have been eliminated from this pool. View standings in Overview.").classes("text-red-500 font-bold")
         return
 
