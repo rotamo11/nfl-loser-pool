@@ -132,7 +132,7 @@ def render_layout(active_page: str, content_builder):
             border_sep = "border-white/20" if is_dark else "border-slate-300"
             with ui.row().classes(f"w-full max-w-4xl justify-around items-center py-2 mt-1 border-t {border_sep} text-sm font-bold"):
                 nav_items = [("Picks", "/"), ("Brackets", "/brackets"), ("Chat", "/chat"), ("Rules", "/rules")]
-                if is_admin_user(user):
+                if is_admin_user(supabase, user):
                     nav_items.append(("Admin", "/admin"))
                 for label, route in nav_items:
                     is_active = (active_page == label)
