@@ -83,7 +83,7 @@ def render_picks_view(supabase, user, pool_slug: str):
         ui.label(f"Not Enrolled in {pool_slug.replace('_', ' ')}.").classes("text-red-500 font-bold text-lg")
         return
     if active_reg.get("bracket_status") == "Eliminated":
-        ui.label("You have been eliminated from this pool. View standings in Overview.").classes("text-red-500 font-bold")
+        ui.label("You have been eliminated from this pool but can still view the Brackets page.").classes("text-red-500 font-bold")
         return
 
     draft_picks = set()
