@@ -57,7 +57,7 @@ def render_layout(active_page: str, content_builder):
     purse_cls = "text-amber-200" if (is_dark and is_2nd) else ("text-blue-200" if is_dark else ("text-amber-800" if is_2nd else "text-blue-900"))
     btn_color = "white" if is_dark else "dark"
 
-    logo_url = get_static_logo_url("nfl-logo-square.png")
+    logo_url = get_static_logo_url("loser-logo.png")
 
     # --- SOLID TOP BANNER (Matches Light/Dark Theme with Pool Accent Strip) ---
     with ui.column().classes(f"w-full items-center px-3 pt-2 pb-2 {text_main}").style(f"border-top: 6px solid {pool_hex};"):
