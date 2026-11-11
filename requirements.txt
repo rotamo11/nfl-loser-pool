@@ -1,4 +1,2 @@
-streamlit
-supabase
-requests
-extra-streamlit-components>=0.1.71
+nicegui>=2.0.0
+supabase>=2.0.0
