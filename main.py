@@ -1,15 +1,22 @@
 import os
+import base64
 from nicegui import ui, app
 from supabase import create_client, Client
 from picks_module import render_picks_view
 from overview_module import render_overview_view
 
-# 1. Initialize Supabase (Set these in Render/Railway Environment Variables)
-SUPABASE_URL = os.environ.get("SUPABASE_URL", "YOUR_SUPABASE_URL")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "YOUR_SUPABASE_KEY")
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# 2. Persistent Login Restoration Helper
+def get_logo_uri(filename: str) -> str:
+    path = f"static/{filename}"
+    if os.path.exists(path):
+        with open(path, "rb") as f:
+            b64 = base64.b64encode(f.read()).decode("utf-8")
+        return f"data:image/png;base64,{b64}"
+    return ""
+
 def get_authenticated_user():
     refresh_token = app.storage.user.get("refresh_token")
     if not refresh_token:
@@ -17,7 +24,6 @@ def get_authenticated_user():
     try:
         res = supabase.auth.refresh_session(refresh_token)
         if res and res.user and res.session:
-            # Rotate and save the fresh 7-day refresh token automatically
             app.storage.user["refresh_token"] = res.session.refresh_token
             app.storage.user["user_id"] = res.user.id
             return res.user
@@ -25,74 +31,114 @@ def get_authenticated_user():
         app.storage.user.clear()
     return None
 
-# 3. Shared Top Navigation & Dynamic Theme Layout
 def render_layout(active_page: str, content_builder):
     user = get_authenticated_user()
-    
-    # Default pool state persisted in user storage
     if "pool" not in app.storage.user:
         app.storage.user["pool"] = "Main"
-        
-    # Dark mode preference persisted in user storage
-    dark_mode = ui.dark_mode(value=app.storage.user.get("dark_mode", False))
 
-    def apply_pool_theme(pool_name: str):
-        app.storage.user["pool"] = pool_name
-        bg_hex = "#1d3d70" if pool_name == "Main" else "#974706"
-        ui.query("body").style(f"background-color: {bg_hex}; transition: background-color 0.3s;")
+    is_dark = app.storage.user.get("dark_mode", False)
+    dark_mode = ui.dark_mode(value=is_dark)
 
-    # Apply initial background color on page load
-    apply_pool_theme(app.storage.user["pool"])
+    current_tab = app.storage.user["pool"]
+    bg_hex = "#974706" if current_tab == "2nd_Chance" else "#1d3d70"
+    ui.query("body").style(f"background-color: {bg_hex}; margin: 0; padding: 0;")
 
-    # --- TOP NAVIGATION HEADER ---
-    with ui.header().classes("bg-transparent shadow-none px-4 pt-3 pb-0 flex flex-col items-center"):
-        with ui.row().classes("w-full max-w-5xl items-center justify-between"):
-            ui.label("🏈 2026 NFL Loser Pool").classes("text-white text-xl font-black tracking-tight")
+    # --- SOLID TOP BANNER (No overlap when scrolling) ---
+    with ui.column().classes("w-full items-center px-3 pt-4 pb-2 text-white"):
+        with ui.row().classes("w-full max-w-5xl items-stretch justify-between gap-3 no-wrap"):
             
-            with ui.row().classes("items-center gap-2"):
-                # Light / Dark Content Theme Toggle
+            # 1. Full-Height Square Logo on Top Left
+            logo_uri = get_logo_uri("nfl-logo-square.png")
+            if logo_uri:
+                ui.image(logo_uri).classes("w-24 md:w-32 object-contain self-stretch shrink-0 rounded-lg")
+
+            # 2. Centered Title, Rules Grid, Deadline, & Purse History
+            with ui.column().classes("flex-1 items-center text-center justify-center gap-1"):
+                ui.label("NFL Loser Pool").classes("text-2xl md:text-3xl font-black tracking-tight")
+
+                # 3-Column Rules Summary
+                with ui.row().classes("w-full justify-center gap-4 md:gap-8 text-xs mt-1"):
+                    with ui.column().classes("items-center gap-0"):
+                        ui.label("Weeks 1-14").classes("font-extrabold text-amber-300")
+                        ui.label("Pick 1 team to lose")
+                    with ui.column().classes("items-center gap-0"):
+                        ui.label("Weeks 15-18").classes("font-extrabold text-amber-300")
+                        ui.label("Pick 2 teams to lose")
+                    with ui.column().classes("items-center gap-0"):
+                        ui.label("Playoffs").classes("font-extrabold text-amber-300")
+                        ui.label("Pick ALL losers (repeats allowed)")
+
+                ui.label("Weekly Deadline: Noon ET Sunday, or by kickoff of earlier game").classes(
+                    "text-xs font-bold bg-white/15 px-3 py-1 rounded-full mt-1"
+                )
+
+                # Dynamic Purse & History Strip
+                if current_tab == "2nd_Chance":
+                    ui.label("26 Players: $650 Purse ($390 for 1st / $195 for 2nd / $65 for 3rd)").classes("text-xs font-bold text-amber-200 mt-1")
+                    ui.label("Last Year's Losers: D. Bobrow ($300) • M. Ellis ($150) • D. Tashima ($50)").classes("text-[11px] text-white/80")
+                else:
+                    ui.label("74 Players | $1850 Purse ($1110 1st / $555 2nd / $185 3rd)").classes("text-xs font-bold text-blue-200 mt-1")
+                    ui.label("Last Year's Losers: S. King ($765) • A. Conley ($382.50) • B. Kazmierski ($127.50)").classes("text-[11px] text-white/80")
+
+            # 3. Top-Right Theme Toggle & Logout Controls
+            with ui.column().classes("items-end justify-between shrink-0"):
                 def toggle_theme():
-                    dark_mode.toggle()
-                    app.storage.user["dark_mode"] = dark_mode.value
-                ui.button(icon="contrast", on_click=toggle_theme).props("flat round color=white")
-                
+                    app.storage.user["dark_mode"] = not dark_mode.value
+                    ui.navigate.reload()
+
+                ui.button(icon="dark_mode" if not is_dark else "light_mode", on_click=toggle_theme).props("flat round color=white")
+
                 if user:
                     def handle_logout():
                         app.storage.user.clear()
                         ui.navigate.to("/")
                     ui.button("Log Out", on_click=handle_logout).props("outline color=white size=sm")
+        # --- 3 TABS: MAIN, 2ND CHANCE, PROFILE ---
+        def on_tab_change(e):
+            if e.value != app.storage.user["pool"]:
+                app.storage.user["pool"] = e.value
+                ui.navigate.reload()
 
-        # Main vs. 2nd Chance Tabs
-        with ui.tabs(value=app.storage.user["pool"], on_change=lambda e: (apply_pool_theme(e.value), ui.navigate.reload())).classes("text-white mt-2") as pool_tabs:
-            ui.tab("Main", label="Main Pool")
+        with ui.tabs(value=current_tab, on_change=on_tab_change).classes("text-white mt-3"):
+            ui.tab("Main", label="Main")
             ui.tab("2nd_Chance", label="2nd Chance")
+            ui.tab("Profile", label="Profile")
 
-        # Horizontal Page Navigation Links Spread Below Tabs
-        with ui.row().classes("w-full max-w-5xl justify-center gap-4 py-2 border-t border-white/20 text-sm font-semibold"):
-            nav_items = [
-                ("Picks", "/"),
-                ("Overview", "/overview"),
-                ("Chat", "/chat"),
-                ("Rules", "/rules"),
-            ]
-            for label, route in nav_items:
-                style = "text-amber-300 underline" if active_page == label else "text-white/80 hover:text-white"
-                ui.link(label, route).classes(f"no-underline {style}")
+        # --- SPREAD-OUT PAGE NAVIGATION LINKS (Hidden when viewing Profile tab) ---
+        if current_tab != "Profile":
+            with ui.row().classes("w-full max-w-4xl justify-around items-center py-2 mt-1 border-t border-white/25 text-sm font-bold"):
+                nav_items = [
+                    ("Picks", "/"),
+                    ("Brackets", "/brackets"),
+                    ("Chat", "/chat"),
+                    ("Rules", "/rules"),
+                ]
+                for label, route in nav_items:
+                    is_active = (active_page == label)
+                    cls = "text-amber-300 underline underline-offset-4" if is_active else "text-white/85 hover:text-white"
+                    ui.link(label, route).classes(f"no-underline {cls}")
 
-    # --- MAIN CONTENT CARD (White in Light Mode, Dark Slate in Dark Mode) ---
-    with ui.column().classes("w-full items-center px-3 py-4"):
-        with ui.card().classes("w-full max-w-5xl p-5 rounded-xl shadow-lg bg-white dark:bg-slate-900"):
+    # --- MAIN CONTENT CONTAINER (Explicitly switches between white and dark slate) ---
+    card_theme = "bg-slate-900 text-white border border-slate-700" if is_dark else "bg-white text-slate-900"
+
+    with ui.column().classes("w-full items-center px-3 pb-8 pt-2"):
+        with ui.card().classes(f"w-full max-w-5xl p-5 rounded-xl shadow-xl {card_theme}"):
             if not user:
                 render_login_box()
+            elif current_tab == "Profile":
+                render_profile_placeholder(user)
             else:
-                content_builder(user, app.storage.user["pool"])
+                content_builder(user, current_tab)
 
-# 4. Native Login Card
+def render_profile_placeholder(user):
+    ui.label("Player Profile & Alert Settings").classes("text-xl font-bold mb-2")
+    ui.label(f"Logged in as: {user.email}").classes("text-sm opacity-75")
+
 def render_login_box():
     ui.label("Player Login").classes("text-2xl font-bold mb-2")
     email_input = ui.input("Email Address").classes("w-full")
     pass_input = ui.input("Password", password=True, password_toggle_button=True).classes("w-full")
-    
+
     def attempt_login():
         try:
             res = supabase.auth.sign_in_with_password({
@@ -107,16 +153,16 @@ def render_login_box():
         except Exception as e:
             ui.notify(f"Login Error: {str(e)}", type="negative", timeout=8000)
 
-    ui.button("Log In", on_click=attempt_login).classes("w-full mt-3 bg-blue-600 text-white")
+    ui.button("Log In", on_click=attempt_login).classes("w-full mt-3 bg-blue-600 text-white font-bold")
 
-# 5. Page Routes
+# --- PAGE ROUTES ---
 @ui.page("/")
 def picks_page():
     render_layout("Picks", lambda user, pool: render_picks_view(supabase, user, pool))
 
-@ui.page("/overview")
-def overview_page():
-    render_layout("Overview", lambda user, pool: render_overview_view(supabase, user, pool))
+@ui.page("/brackets")
+def brackets_page():
+    render_layout("Brackets", lambda user, pool: render_overview_view(supabase, user, pool))
 
 @ui.page("/chat")
 def chat_page():
@@ -126,7 +172,6 @@ def chat_page():
 def rules_page():
     render_layout("Rules", lambda u, p: ui.label("2026 Official Pool Rules").classes("text-xl font-bold"))
 
-# 6. Start App (storage_secret encrypts the browser cookie!)
 ui.run(
     host="0.0.0.0",
     port=int(os.environ.get("PORT", 8080)),
