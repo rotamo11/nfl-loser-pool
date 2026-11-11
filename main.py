@@ -76,40 +76,44 @@ def render_layout(active_page: str, content_builder):
                     ui.navigate.to("/")
                 ui.button("Log Out", on_click=handle_logout).props(f"outline color={btn_color} size=sm")
 
-        # 2. Main Header Content Area
-        with ui.row().classes("w-full max-w-5xl items-stretch justify-between gap-4 no-wrap mt-1"):
+        # 2. Main Header Content Area (Mobile unchanged, Desktop scaled ~2x)
+        with ui.row().classes("w-full max-w-6xl items-stretch justify-between gap-4 md:gap-8 no-wrap mt-1 md:mt-2"):
+            # Desktop-Only Full-Height Left Logo (Scaled up to w-56 / max-h-72)
             if logo_url:
-                ui.html(f'<img src="{logo_url}" class="hidden md:block w-36 max-h-44 object-contain p-1 self-center shrink-0 rounded-lg" />')
+                ui.html(f'<img src="{logo_url}" class="hidden md:block w-56 max-h-72 object-contain p-2 self-center shrink-0 rounded-xl" />')
 
-            with ui.column().classes("flex-1 items-center text-center justify-center gap-1"):
+            # Centered Header Text & Rules
+            with ui.column().classes("flex-1 items-center text-center justify-center gap-1 md:gap-3"):
+                # Title Row (Mobile text-2xl unchanged, Desktop scaled to md:text-5xl)
                 with ui.row().classes("items-center justify-center gap-2 no-wrap"):
                     if logo_url:
                         ui.html(f'<img src="{logo_url}" class="block md:hidden h-9 w-9 object-contain p-0.5 shrink-0 rounded" />')
-                    ui.label("NFL Loser Pool").classes("text-2xl md:text-3xl font-black tracking-tight")
+                    ui.label("NFL Loser Pool").classes("text-2xl md:text-5xl font-black tracking-tight")
 
-                # 3-Column Rules Summary
-                with ui.row().classes("w-full justify-center gap-4 md:gap-10 text-xs mt-1"):
-                    with ui.column().classes("items-center gap-0"):
+                # 3-Column Rules Summary (Mobile text-xs unchanged, Desktop scaled to md:text-lg)
+                with ui.row().classes("w-full justify-center gap-4 md:gap-12 text-xs md:text-lg mt-1 md:mt-2"):
+                    with ui.column().classes("items-center gap-0 md:gap-1"):
                         ui.label("Weeks 1-14").classes(f"font-extrabold {week_hdr_cls}")
                         ui.label("Pick 1 team to lose")
-                    with ui.column().classes("items-center gap-0"):
+                    with ui.column().classes("items-center gap-0 md:gap-1"):
                         ui.label("Weeks 15-18").classes(f"font-extrabold {week_hdr_cls}")
                         ui.label("Pick 2 teams to lose")
-                    with ui.column().classes("items-center gap-0"):
+                    with ui.column().classes("items-center gap-0 md:gap-1"):
                         ui.label("Playoffs").classes(f"font-extrabold {week_hdr_cls}")
                         ui.label("Pick ALL losers (repeats allowed)")
 
-                # Deadline Pill Badge styled with active Pool Color
+                # Deadline Pill Badge (Mobile text-xs unchanged, Desktop scaled to md:text-base)
                 ui.label("Weekly Deadline: Noon ET Sunday, or by kickoff of earlier game").classes(
-                    "text-xs font-bold text-white px-3 py-1 rounded-full mt-1"
+                    "text-xs md:text-base font-bold text-white px-3 md:px-6 py-1 md:py-2 rounded-full mt-1 md:mt-2"
                 ).style(f"background-color: {pool_hex};")
 
+                # Purse & Last Year's Losers (Mobile text-xs/11px unchanged, Desktop scaled to md:text-lg/base)
                 if is_2nd:
-                    ui.label("26 Players: $650 Purse ($390 for 1st / $195 for 2nd / $65 for 3rd)").classes(f"text-xs font-bold mt-1 {purse_cls}")
-                    ui.label("Last Year's Losers: D. Bobrow ($300) • M. Ellis ($150) • D. Tashima ($50)").classes(f"text-[11px] {text_muted}")
+                    ui.label("26 Players: $650 Purse ($390 for 1st / $195 for 2nd / $65 for 3rd)").classes(f"text-xs md:text-lg font-bold mt-1 md:mt-2 {purse_cls}")
+                    ui.label("Last Year's Losers: D. Bobrow ($300) • M. Ellis ($150) • D. Tashima ($50)").classes(f"text-[11px] md:text-base {text_muted}")
                 else:
-                    ui.label("74 Players | $1850 Purse ($1110 1st / $555 2nd / $185 3rd)").classes(f"text-xs font-bold mt-1 {purse_cls}")
-                    ui.label("Last Year's Losers: S. King ($765) • A. Conley ($382.50) • B. Kazmierski ($127.50)").classes(f"text-[11px] {text_muted}")
+                    ui.label("74 Players | $1850 Purse ($1110 1st / $555 2nd / $185 3rd)").classes(f"text-xs md:text-lg font-bold mt-1 md:mt-2 {purse_cls}")
+                    ui.label("Last Year's Losers: S. King ($765) • A. Conley ($382.50) • B. Kazmierski ($127.50)").classes(f"text-[11px] md:text-base {text_muted}")
 
         # 3. Tabs & Page Links
         def on_tab_change(e):
