@@ -6,6 +6,8 @@ from picks_module import render_picks_view
 from overview_module import render_overview_view
 from profile_module import render_profile_view
 from admin_module import render_admin_view, is_admin_user
+from chat_module import render_chat_view
+from rules_module import render_rules_view
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
@@ -185,11 +187,11 @@ def brackets_page():
 
 @ui.page("/chat")
 def chat_page():
-    render_layout("Chat", lambda u, p: ui.label("League Trash Talk & Chat").classes("text-xl font-bold"))
+    render_layout("Chat", lambda user, pool: render_chat_view(supabase, user, pool))
 
 @ui.page("/rules")
 def rules_page():
-    render_layout("Rules", lambda u, p: ui.label("2026 Official Pool Rules").classes("text-xl font-bold"))
+    render_layout("Rules", lambda user, pool: render_rules_view(pool))
 
 @ui.page("/admin")
 def admin_page():
