@@ -6,7 +6,7 @@ from picks_module import render_picks_view
 from overview_module import render_overview_view
 from profile_module import render_profile_view
 from admin_module import render_admin_view, is_admin_user
-from chat_module import render_chat_view
+from chat_module import render_chat_view, get_unread_chat_count
 from rules_module import render_rules_view
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
@@ -130,19 +130,30 @@ def render_layout(active_page: str, content_builder):
             ui.tab("2nd_Chance", label="2nd Chance")
             ui.tab("Profile", label="Profile")
 
+# 2. Replace the navigation links loop inside render_layout in main.py with:
         if current_tab != "Profile":
             border_sep = "border-white/20" if is_dark else "border-slate-300"
+            unread_chat = get_unread_chat_count(supabase, user) if active_page != "Chat" else 0
+
             with ui.row().classes(f"w-full max-w-4xl justify-around items-center py-2 mt-1 border-t {border_sep} text-sm font-bold"):
                 nav_items = [("Picks", "/"), ("Brackets", "/brackets"), ("Chat", "/chat"), ("Rules", "/rules")]
                 if is_admin_user(supabase, user):
                     nav_items.append(("Admin", "/admin"))
+
                 for label, route in nav_items:
                     is_active = (active_page == label)
                     if is_active:
                         cls = "text-amber-400 underline underline-offset-4" if is_dark else ("text-amber-700 underline underline-offset-4" if is_2nd else "text-blue-700 underline underline-offset-4")
                     else:
                         cls = "text-white/80 hover:text-white" if is_dark else "text-slate-600 hover:text-slate-900"
-                    ui.link(label, route).classes(f"no-underline {cls}")
+
+                    with ui.row().classes("items-center gap-1 no-wrap"):
+                        ui.link(label, route).classes(f"no-underline {cls}")
+                        if label == "Chat" and unread_chat > 0:
+                            badge_txt = "9+" if unread_chat > 9 else str(unread_chat)
+                            ui.label(badge_txt).classes(
+                                "bg-red-600 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full leading-tight shadow-sm"
+                            )
 
     # --- MAIN CONTENT CONTAINER (White in Light Mode, Dark Slate in Dark Mode, Pool Border) ---
     card_theme = "bg-slate-900 text-white" if is_dark else "bg-white text-slate-900"
