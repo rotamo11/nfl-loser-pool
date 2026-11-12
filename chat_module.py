@@ -5,6 +5,20 @@ from admin_module import is_admin_user
 
 ET_ZONE = ZoneInfo("America/New_York")
 
+# Add this helper function right below ET_ZONE in chat_module.py
+def get_unread_chat_count(supabase, user) -> int:
+    if not user:
+        return 0
+    try:
+        last_read = app.storage.user.get("last_read_chat_ts")
+        query = supabase.table("chat_messages").select("id, created_at").neq("user_id", str(user.id))
+        if last_read:
+            query = query.gt("created_at", last_read)
+        rows = query.execute().data or []
+        return len(rows)
+    except Exception:
+        return 0
+
 def render_chat_view(supabase, user, pool_slug: str):
     user_id = str(user.id)
     admin_flag = is_admin_user(supabase, user)
@@ -30,6 +44,10 @@ def render_chat_view(supabase, user, pool_slug: str):
         if not msgs:
             ui.label("No messages yet. Start the trash talk below!").classes("text-sm opacity-70 italic py-4")
             return
+
+        newest_ts = msgs[-1].get("created_at")
+        if newest_ts:
+            app.storage.user["last_read_chat_ts"] = newest_ts
 
         with ui.scroll_area().classes("w-full h-96 p-3 rounded-lg border border-slate-200 dark:border-slate-700"):
             with ui.column().classes("w-full gap-2.5"):
