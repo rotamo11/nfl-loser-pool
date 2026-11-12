@@ -90,7 +90,7 @@ def render_layout(active_page: str, content_builder):
                 with ui.row().classes("items-center justify-center gap-2 no-wrap"):
                     if logo_url:
                         ui.html(f'<img src="{logo_url}" class="block md:hidden h-9 w-9 object-contain p-0.5 shrink-0 rounded" />')
-                    ui.label("NFL Loser Pool").classes("text-2xl md:text-4xl font-black tracking-tight")
+                    ui.label("NFL Loser Pool").classes("text-1.5xl md:text-4xl font-black tracking-tight")
 
                 # 3-Column Rules Summary (Mobile text-xs unchanged, Desktop scaled to md:text-sm)
                 with ui.row().classes("w-full justify-center gap-4 md:gap-10 text-xs md:text-sm mt-1"):
