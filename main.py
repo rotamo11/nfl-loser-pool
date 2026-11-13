@@ -55,9 +55,40 @@ def get_authenticated_user():
         app.storage.user.clear()
     return None
 
+def resolve_default_pool(user) -> str:
+    if not user:
+        return "Main"
+    try:
+        uid = str(user.id)
+        regs = supabase.table("tournament_registrations").select("game_type, is_enrolled, bracket_status").eq("user_id", uid).execute().data or []
+        reg_map = {r["game_type"]: r for r in regs}
+
+        sc_reg = reg_map.get("2nd_Chance")
+        is_sc_enrolled = bool(sc_reg and sc_reg.get("is_enrolled", False))
+
+        main_reg = reg_map.get("Main")
+        is_main_active = bool(
+            main_reg
+            and main_reg.get("is_enrolled", False)
+            and main_reg.get("bracket_status") != "Eliminated"
+        )
+
+        # Land on 2nd Chance ONLY if enrolled in 2nd Chance AND (eliminated or not enrolled in Main)
+        if is_sc_enrolled and not is_main_active:
+            return "2nd_Chance"
+    except Exception:
+        pass
+    return "Main"
+
 def render_layout(active_page: str, content_builder):
     user = get_authenticated_user()
-    if "pool" not in app.storage.user:
+    uid_str = str(user.id) if user else None
+
+    # Re-evaluate default pool once on fresh login or when switching masquerade targets
+    if uid_str and app.storage.user.get("pool_initialized_for") != uid_str:
+        app.storage.user["pool"] = resolve_default_pool(user)
+        app.storage.user["pool_initialized_for"] = uid_str
+    elif "pool" not in app.storage.user:
         app.storage.user["pool"] = "Main"
 
     is_dark = app.storage.user.get("dark_mode", False)
