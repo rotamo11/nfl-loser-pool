@@ -73,7 +73,8 @@ def render_picks_view(supabase, user, pool_slug: str):
 
     # 1. Fetch Player Username & Pool Registrations (for Status & Active Count Header)
     u_res = supabase.table("users").select("username").eq("id", user_id).execute().data
-    current_user_name = u_res.get("username") if (isinstance(u_res, list) and len(u_res) > 0 and u_res.get("username")) else "Player"
+    user_row = u_res[0] if (isinstance(u_res, list) and len(u_res) > 0) else {}
+    current_user_name = user_row.get("username") or "Player"
 
     pool_regs = (
         supabase.table("tournament_registrations")
