@@ -5,13 +5,15 @@ from admin_module import is_admin_user
 
 ET_ZONE = ZoneInfo("America/New_York")
 
-# Add this helper function right below ET_ZONE in chat_module.py
 def get_unread_chat_count(supabase, user) -> int:
     if not user:
         return 0
     try:
-        last_read = app.storage.user.get("last_read_chat_ts")
-        query = supabase.table("pool_chat").select("id, created_at").neq("user_id", str(user.id))
+        uid = str(user.id)
+        u_res = supabase.table("users").select("last_read_chat_at").eq("id", uid).execute().data
+        last_read = u_res[0].get("last_read_chat_at") if (isinstance(u_res, list) and len(u_res) > 0) else None
+
+        query = supabase.table("pool_chat").select("id").neq("user_id", uid)
         if last_read:
             query = query.gt("created_at", last_read)
         rows = query.execute().data or []
@@ -45,9 +47,9 @@ def render_chat_view(supabase, user, pool_slug: str):
             ui.label("No messages yet. Start the trash talk below!").classes("text-sm opacity-70 italic py-4")
             return
 
-        newest_ts = msgs[-1].get("created_at")
+        newest_ts = msgs[-1].get("created_at") if msgs else datetime.datetime.now(datetime.timezone.utc).isoformat()
         if newest_ts:
-            app.storage.user["last_read_chat_ts"] = newest_ts
+            supabase.table("users").update({"last_read_chat_at": newest_ts}).eq("id", user_id).execute()
 
         with ui.scroll_area().classes("w-full h-96 p-3 rounded-lg border border-slate-200 dark:border-slate-700"):
             with ui.column().classes("w-full gap-2.5"):
