@@ -27,6 +27,11 @@ def get_static_logo_url(filename: str) -> str:
         return f"/{filename}"
     return ""
 
+class MasqueradeUser:
+    def __init__(self, uid: str, email: str = ""):
+        self.id = uid
+        self.email = email
+
 def get_authenticated_user():
     refresh_token = app.storage.user.get("refresh_token")
     if not refresh_token:
@@ -35,7 +40,16 @@ def get_authenticated_user():
         res = supabase_auth.auth.refresh_session(refresh_token)
         if res and res.user and res.session:
             app.storage.user["refresh_token"] = res.session.refresh_token
-            app.storage.user["user_id"] = res.user.id
+            app.storage.user["real_user_id"] = str(res.user.id)
+
+            # Check if an admin is actively masquerading as another player
+            masq_uid = app.storage.user.get("masquerade_uid")
+            if masq_uid:
+                u_row = supabase.table("users").select("email").eq("id", masq_uid).execute().data
+                m_email = u_row[0].get("email", "") if u_row else ""
+                return MasqueradeUser(masq_uid, m_email)
+
+            app.storage.user["user_id"] = str(res.user.id)
             return res.user
     except Exception:
         app.storage.user.clear()
@@ -69,6 +83,18 @@ def render_layout(active_page: str, content_builder):
     # --- SOLID TOP BANNER (Matches Light/Dark Theme with Pool Accent Strip) ---
     with ui.column().classes(f"w-full items-center px-3 pt-2 pb-2 {text_main}").style(f"border-top: 6px solid {pool_hex};"):
         
+        # 0. Active Masquerade Restore Banner (Visible only while impersonating a player)
+        if app.storage.user.get("masquerade_uid"):
+            masq_name = app.storage.user.get("masquerade_name", "Player")
+            with ui.row().classes("w-full max-w-5xl items-center justify-between bg-purple-700 text-white px-4 py-1.5 rounded-lg mb-2 shadow"):
+                ui.label(f"Masquerading as: {masq_name}").classes("text-xs md:text-sm font-extrabold")
+                def exit_masquerade():
+                    app.storage.user.pop("masquerade_uid", None)
+                    app.storage.user.pop("masquerade_name", None)
+                    ui.notify("Restored Commissioner session.", type="info")
+                    ui.navigate.to("/admin")
+                ui.button("Exit Masquerade", on_click=exit_masquerade).props("unelevated dense size=sm color=white text-color=purple-9").classes("font-bold px-2")
+
         # 1. Top-Right Utility Row (Theme Toggle + Logout side-by-side)
         with ui.row().classes("w-full max-w-5xl justify-end items-center gap-2"):
             def toggle_theme():
@@ -95,7 +121,7 @@ def render_layout(active_page: str, content_builder):
                 with ui.row().classes("items-center justify-center gap-2 no-wrap"):
                     if logo_url:
                         ui.html(f'<img src="{logo_url}" class="block md:hidden h-9 w-9 object-contain p-0.5 shrink-0 rounded" />')
-                    ui.label("NFL Loser Pool").classes("text-1.5xl md:text-4xl font-black tracking-tight")
+                    ui.label("NFL Loser Pool").classes("text-1.5xl md:text-3xl font-black tracking-tight")
 
                 # 3-Column Rules Summary (Mobile text-xs unchanged, Desktop scaled to md:text-sm)
                 with ui.row().classes("w-full justify-center gap-4 md:gap-10 text-xs md:text-sm mt-1"):
