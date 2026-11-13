@@ -97,7 +97,7 @@ def render_overview_view(supabase, user, pool_slug: str):
     }
     default_sel_w = app.storage.user["selected_week"] if app.storage.user["selected_week"] in week_opts else current_week
 
-    with ui.row().classes("w-full items-center gap-4 mb-3 flex-wrap"):
+    with ui.row().classes("w-full items-center justify-between mb-3 flex-wrap"):
         dist_week_sel = ui.select(week_opts, value=default_sel_w, label="Target (Wed-Tue)").classes("w-52")
         admin_reveal_chk = ui.checkbox("Show All Picks (Admin)", value=False) if admin_flag else None
 
