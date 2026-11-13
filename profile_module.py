@@ -82,7 +82,7 @@ def render_profile_view(supabase, user):
                     return
 
                 try:
-                    supabase.table("users").update({
+                    supabase_auth.table("users").update({
                         "username": clean_user,
                         "first_name": first_in.value.strip(),
                         "last_name": last_in.value.strip(),
@@ -126,7 +126,7 @@ def render_profile_view(supabase, user):
                     return
 
                 try:
-                    supabase.auth.update_user({"password": p1})
+                    supabase_auth.auth.update_user({"password": p1})
                     supabase.table("users").update({"first_login_complete": True}).eq("id", user_id).execute()
                     new_pwd.value = ""
                     confirm_pwd.value = ""
