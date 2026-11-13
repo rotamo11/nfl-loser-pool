@@ -16,21 +16,20 @@ def render_rules_view(pool_slug: str):
         ("2. Deadlines & Auto-Locks", [
             "**Standard Deadline:** Sunday at **12:00 PM ET**.",
             "**Early Games (Thursday, Friday, Saturday, International):** Picks involving an early game lock at that specific game's kickoff and automatically finalize.",
-            "**Confirmed vs. Finalized:** A **Confirmed** pick is saved to the database, remains editable until kickoff, and keeps opponents' current-week picks hidden. A **Finalized** pick is permanently locked and reveals opponents' picks for that week.",
+            "**Confirmed vs. Finalized:** A **Confirmed** pick is saved to the database, remains editable until that game's deadline, and keeps opponents' current-week picks hidden. A **Finalized** pick is permanently locked and immediately reveals opponents' picks for that week.",
         ]),
         ("3. Elimination & Bracket Format", [
             "**Main Pool (Double Elimination):** Everyone starts in the **Loser Bracket** (0 wrong). Your first incorrect pick moves you to the **Winner Bracket** (1 wrong). A second incorrect pick eliminates you.",
             "**2nd Chance Pool (Single Elimination):** Begins in Week 6. One incorrect pick immediately eliminates you.",
-            "**Ties:** A tie counts as an incorrect pick (wrong).",
         ]),
         ("4. Season BYE & Shutout Bonus", [
-            "**One Season BYE:** Each player receives **1 BYE** per pool, which can either be used during the regular season (Weeks 1–18) or the playoffs. Using your BYE safely advances you without requiring a pick. Please note that a BYE only covers a single matchup; during multi-matchup weeks, you must still pick a loser for the remaining games.",
+            "**Season BYE:** Each player receives **1 BYE** per pool, which can either be used during the regular season (Weeks 1–18) or the playoffs. Using your BYE safely advances you without requiring a pick. Please note that a BYE only covers a single matchup; during multi-matchup weeks, you must still pick a loser for the remaining games.",
             "**Shutout Bonus (🎯):** If the team you pick to lose is shut out (scores 0 points), the Commissioner awards a **Shutout Bonus**, unlocking that team so you can pick them to lose **one more time** later in the season.",
         ]),
         ("5. Entry Fees & Payout Breakdown", [
             "**Main Pool ($25 Entry • 74 Players • $1,850 Purse):** 1st Place: **$1,110** (60%) • 2nd Place: **$555** (30%) • 3rd Place: **$185** (10%).",
             "**2nd Chance Pool ($25 Entry • 26 Players • $650 Purse):** 1st Place: **$390** (60%) • 2nd Place: **$195** (30%) • 3rd Place: **$65** (10%).",
-            "**Tiebreakers:** If multiple players are eliminated in the same final week, the remaining prize money is split evenly unless broken by the following tiebreakers. To avoid splitting prizes among qualifying players, tiebreakers are applied in this order:",
+            "**Tiebreakers:** If multiple players are eliminated in the same week, the remaining prize money is split evenly unless broken by the following tiebreakers in this order:",
             [
                 "**Fewest Wrong Picks:** The player with fewer incorrect picks across the entire season wins.",
                 "**Unused Bye:** A player who did not use their bye wins over a player who used theirs.",
