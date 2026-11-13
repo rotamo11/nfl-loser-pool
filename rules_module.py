@@ -30,14 +30,15 @@ def render_rules_view(pool_slug: str):
         ("5. Entry Fees & Payout Breakdown", [
             "**Main Pool ($25 Entry • 74 Players • $1,850 Purse):** 1st Place: **$1,110** (60%) • 2nd Place: **$555** (30%) • 3rd Place: **$185** (10%).",
             "**2nd Chance Pool ($25 Entry • 26 Players • $650 Purse):** 1st Place: **$390** (60%) • 2nd Place: **$195** (30%) • 3rd Place: **$65** (10%).",
-            "**Tiebreakers:** If multiple players are eliminated in the same final week, the remaining prize money is split evenly unless broken by the following tiebreakers. To avoid splitting prizes among qualifying players, tiebreakers are applied in this order:", [
+            "**Tiebreakers:** If multiple players are eliminated in the same final week, the remaining prize money is split evenly unless broken by the following tiebreakers. To avoid splitting prizes among qualifying players, tiebreakers are applied in this order:",
+            [
                 "**Fewest Wrong Picks:** The player with fewer incorrect picks across the entire season wins.",
                 "**Unused Bye:** A player who did not use their bye wins over a player who used theirs.",
                 "**Continue Head-to-Head:** Tied players continue picking head-to-head until a winner is determined for as long as there are games remaining in the season.",
                 "**Player Agreement:** Tied players may agree to settle the tie privately (such as making a side bet or voluntarily agreeing to split the winnings).",
                 "**Super Bowl Combined Points:** The player whose prediction is closest to the final combined score of the Super Bowl without going over wins (if all tied players go over, the player closest to the final total wins).",
                 "**Even Split:** If the Super Bowl concludes and the tie is still unbroken, the remaining prize money is split evenly.",
-            ]
+            ],
         ]),
     ]
 
@@ -46,4 +47,9 @@ def render_rules_view(pool_slug: str):
             with ui.card().classes("w-full p-4 border border-slate-200 dark:border-slate-700 shadow-none"):
                 ui.label(title).classes("text-base font-extrabold mb-1.5")
                 for b in bullets:
-                    ui.markdown(f"- {b}").classes("text-xs md:text-sm leading-relaxed my-0.5")
+                    if isinstance(b, list):
+                        with ui.column().classes("w-full pl-6 gap-1 my-1"):
+                            for sub_b in b:
+                                ui.markdown(f"- {sub_b}").classes("text-xs md:text-sm leading-relaxed my-0")
+                    else:
+                        ui.markdown(f"- {b}").classes("text-xs md:text-sm leading-relaxed my-0.5")
