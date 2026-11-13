@@ -1,6 +1,6 @@
 import csv
 import io
-from nicegui import ui
+from nicegui import ui, app
 from picks_module import get_current_nfl_week, get_week_label
 
 CARRIER_OPTIONS = [
@@ -26,7 +26,7 @@ def render_admin_view(supabase, user):
         return
 
     current_week = get_current_nfl_week()
-    ui.label("🛠️ Commissioner Control Console").classes("text-2xl font-black mb-3")
+    ui.label("Commissioner Control Console").classes("text-2xl font-black mb-3")
 
     # --- POOL SUMMARY METRICS ---
     regs = supabase.table("tournament_registrations").select("*").eq("is_enrolled", True).execute().data or []
@@ -49,8 +49,9 @@ def render_admin_view(supabase, user):
 
     with ui.tabs().classes("w-full") as admin_tabs:
         t_score = ui.tab("Score Games")
-        t_roster = ui.tab("League Rosters & Payments")
+        t_roster = ui.tab("Player Management")
         t_csv = ui.tab("CSV Import")
+        t_masq = ui.tab("Masquerade")
 
     with ui.tab_panels(admin_tabs, value=t_score).classes("w-full bg-transparent"):
         # ================================================================
@@ -341,3 +342,36 @@ def render_admin_view(supabase, user):
                     ui.notify(f"CSV Error: {str(err)}", type="negative", timeout=8000)
 
             ui.upload(on_upload=handle_csv_upload, auto_upload=True).props("accept=.csv").classes("w-full max-w-md")
+
+        # ================================================================
+        # TAB 4: DEVELOPER MASQUERADE MODE
+        # ================================================================
+        with ui.tab_panel(t_masq).classes("px-0"):
+            ui.label("Assume Player Identity").classes("text-base font-extrabold mb-1")
+            ui.label("Test picks, brackets, and notifications as any player without needing their password.").classes("text-xs opacity-75 mb-3")
+
+            all_users = supabase.table("users").select("id, username, first_name, last_name, email").execute().data or []
+            all_users = sorted(all_users, key=lambda u: (u.get("username") or "").lower())
+
+            user_choices = {
+                str(u["id"]): f"{u.get('username') or 'Unknown'} ({u.get('first_name') or ''} {u.get('last_name') or ''})".strip()
+                for u in all_users
+                if str(u["id"]) != str(user.id)
+            }
+
+            if not user_choices:
+                ui.label("No other player accounts found.").classes("text-sm opacity-70")
+            else:
+                target_sel = ui.select(user_choices, label="Select Player to Impersonate").classes("w-full max-w-md mb-3")
+
+                def start_masquerade():
+                    chosen_uid = target_sel.value
+                    if not chosen_uid:
+                        ui.notify("Select a player first.", type="warning")
+                        return
+                    app.storage.user["masquerade_uid"] = chosen_uid
+                    app.storage.user["masquerade_name"] = user_choices[chosen_uid]
+                    ui.notify(f"Switched to {user_choices[chosen_uid]}!", type="positive")
+                    ui.navigate.to("/")
+
+                ui.button("Assume Selected Identity", icon="switch_account", on_click=start_masquerade, color="purple").classes("font-bold")
