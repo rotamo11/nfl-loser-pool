@@ -11,7 +11,7 @@ def get_unread_chat_count(supabase, user) -> int:
         return 0
     try:
         last_read = app.storage.user.get("last_read_chat_ts")
-        query = supabase.table("chat_messages").select("id, created_at").neq("user_id", str(user.id))
+        query = supabase.table("pool_chat").select("id, created_at").neq("user_id", str(user.id))
         if last_read:
             query = query.gt("created_at", last_read)
         rows = query.execute().data or []
@@ -36,7 +36,7 @@ def render_chat_view(supabase, user, pool_slug: str):
     def message_feed():
         # Fetch recent 100 messages (global or filtered by pool if game_type column exists)
         try:
-            msgs = supabase.table("chat_messages").select("*").order("created_at", desc=False).limit(100).execute().data or []
+            msgs = supabase.table("pool_chat").select("*").order("created_at", desc=False).limit(100).execute().data or []
         except Exception as e:
             ui.label(f"Error loading chat: {str(e)}").classes("text-red-500 text-xs")
             return
@@ -79,7 +79,7 @@ def render_chat_view(supabase, user, pool_slug: str):
                                     ui.label(time_str).classes("text-[10px] opacity-70")
                                 if admin_flag or is_mine:
                                     def del_msg(mid=m_id):
-                                        supabase.table("chat_messages").delete().eq("id", mid).execute()
+                                        supabase.table("pool_chat").delete().eq("id", mid).execute()
                                         message_feed.refresh()
                                     ui.button(icon="delete", on_click=del_msg).props("flat round dense size=xs color=red-4")
 
@@ -96,7 +96,7 @@ def render_chat_view(supabase, user, pool_slug: str):
             if not txt:
                 return
             try:
-                supabase.table("chat_messages").insert({
+                supabase.table("pool_chat").insert({
                     "user_id": user_id,
                     "username": my_username,
                     "message": txt,
