@@ -262,7 +262,7 @@ def chat_page():
 
 @ui.page("/rules")
 def rules_page():
-    render_layout("Rules", lambda user, pool: render_rules_view(pool))
+    render_layout("Rules & Links", lambda user, pool: render_rules_view(pool))
 
 @ui.page("/admin")
 def admin_page():
