@@ -3,7 +3,7 @@ from nicegui import ui
 def render_rules_view(pool_slug: str):
     is_2nd = (pool_slug == "2nd_Chance")
 
-    ui.label("2026 Official NFL Loser Pool Rules").classes("text-2xl font-black mb-1")
+    ui.label("2026 Official NFL Loser Pool Rules & Helpful Links").classes("text-2xl font-black mb-1")
     ui.label("Pick team(s) you think will LOSE each week. If they win or tie, it is considered a wrong pick.").classes("text-sm font-semibold opacity-80 mb-4")
 
     sections = [
@@ -11,12 +11,13 @@ def render_rules_view(pool_slug: str):
             "**Weeks 1–14:** Pick **1 team** to lose each week.",
             "**Weeks 15–18:** Pick **2 teams** to lose each week.",
             "**Playoffs (Wildcard through Super Bowl):** Pick **ALL losers** for every playoff game each week (repeats allowed).",
-            "**No Repeat Picks (Regular Season):** During Weeks 1–18, you cannot pick the same team twice unless you earned a Shutout Bonus on that team.",
+            "**No Repeat Picks (Regular Season):** During Weeks 1–18, you cannot pick the same team twice unless you earned a Shutout Bonus on that team or if they're determined to be the default pick (see Subission Failures below).",
         ]),
-        ("2. Deadlines & Auto-Locks", [
+        ("2. Deadlines, Auto-Locks, & Submission Failures", [
             "**Standard Deadline:** Sunday at **12:00 PM ET**.",
             "**Early Games (Thursday, Friday, Saturday, International):** Picks involving an early game lock at that specific game's kickoff and automatically finalize.",
             "**Confirmed vs. Finalized:** A **Confirmed** pick is saved to the database, remains editable until that game's deadline, and keeps opponents' current-week picks hidden. A **Finalized** pick is permanently locked and immediately reveals opponents' picks for that week.",
+            "**Submission Failures:** If you fail to submit a pick before the deadline, your BYE will be used automatically if available. Otherwise, you will be assigned the highest remaining favorite that has not yet played according to ESPN Odds, with the ESPN Football Power Index used to determine the higher ranked team to break any ties. As a result, an auto-assigned team will be allowed as a repeat pick if they are the highest-favored and top-ranked available option.",
         ]),
         ("3. Elimination & Bracket Format", [
             "**Main Pool (Double Elimination):** Everyone starts in the **Loser Bracket** (0 wrong). Your first incorrect pick moves you to the **Winner Bracket** (1 wrong). A second incorrect pick eliminates you.",
@@ -38,6 +39,11 @@ def render_rules_view(pool_slug: str):
                 "**Super Bowl Combined Points:** The player whose prediction is closest to the final combined score of the Super Bowl without going over wins (if all tied players go over, the player closest to the final total wins).",
                 "**Even Split:** If the Super Bowl concludes and the tie is still unbroken, the remaining prize money is split evenly.",
             ],
+        ]),
+        ("6. Helpful Links", [
+            "**ESPN NFL Schedule Grid:** http://www.espn.com/nfl/schedulegrid",
+            "**ESPN Odds:** https://www.espn.com/nfl/odds",
+            "**ESPN Power Index:** https://www.espn.com/nfl/fpi",
         ]),
     ]
 
