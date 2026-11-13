@@ -196,7 +196,7 @@ def render_layout(active_page: str, content_builder):
             unread_chat = get_unread_chat_count(supabase, user) if active_page != "Chat" else 0
 
             with ui.row().classes(f"w-full max-w-4xl justify-around items-center py-2 mt-1 border-t {border_sep} text-sm font-bold"):
-                nav_items = [("Picks", "/"), ("Brackets", "/brackets"), ("Chat", "/chat"), ("Rules", "/rules")]
+                nav_items = [("Picks", "/"), ("Brackets", "/brackets"), ("Chat", "/chat"), ("Rules & Links", "/rules")]
                 if is_admin_user(supabase, user):
                     nav_items.append(("Admin", "/admin"))
 
