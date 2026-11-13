@@ -138,7 +138,30 @@ def render_admin_view(supabase, user):
         # TAB 2: USERS, FULL PROFILE EDITOR, DELETE & ROSTER MANAGEMENT
         # ================================================================
         with ui.tab_panel(t_roster).classes("px-0"):
-            pool_filter = ui.select(["Main", "2nd_Chance"], value="Main", label="Manage Pool Roster").classes("w-48 mb-3")
+            with ui.row().classes("w-full items-center gap-3 mb-3 flex-wrap"):
+                pool_filter = ui.select(["Main", "2nd_Chance"], value="Main", label="Pool").classes("w-36")
+                enroll_filter = ui.select(["All", "Enrolled", "Not Enrolled"], value="All", label="Enrollment").classes("w-36")
+                paid_filter = ui.select(["All", "Paid", "Not Paid"], value="All", label="Payment").classes("w-36")
+                bracket_filter = ui.select(
+                    ["All", "Loser Bracket", "Winner Bracket", "Eliminated"],
+                    value="All",
+                    label="Bracket Status"
+                ).classes("w-44")
+
+            def on_pool_change():
+                if pool_filter.value == "2nd_Chance":
+                    bracket_filter.options = ["All", "Loser Bracket", "Eliminated"]
+                    if bracket_filter.value == "Winner Bracket":
+                        bracket_filter.value = "All"
+                else:
+                    bracket_filter.options = ["All", "Loser Bracket", "Winner Bracket", "Eliminated"]
+                bracket_filter.update()
+                roster_list.refresh()
+
+            pool_filter.on_value_change(on_pool_change)
+            enroll_filter.on_value_change(lambda: roster_list.refresh())
+            paid_filter.on_value_change(lambda: roster_list.refresh())
+            bracket_filter.on_value_change(lambda: roster_list.refresh())
 
             @ui.refreshable
             def roster_list():
@@ -148,6 +171,30 @@ def render_admin_view(supabase, user):
                 reg_by_uid = {str(r["user_id"]): r for r in pool_regs}
 
                 status_opts = ["Loser Bracket", "Eliminated"] if pool_filter.value == "2nd_Chance" else ["Loser Bracket", "Winner Bracket", "Eliminated"]
+
+                # Apply the 3 active filter dropdowns
+                filtered_users = []
+                for u in users:
+                    r = reg_by_uid.get(str(u["id"]))
+                    is_enr = bool(r.get("is_enrolled")) if r else False
+                    is_pd = bool(r.get("is_paid")) if r else False
+                    b_stat = (r.get("bracket_status") or "Loser Bracket") if r else "Not Enrolled"
+
+                    if enroll_filter.value == "Enrolled" and not is_enr:
+                        continue
+                    if enroll_filter.value == "Not Enrolled" and is_enr:
+                        continue
+                    if paid_filter.value == "Paid" and not is_pd:
+                        continue
+                    if paid_filter.value == "Not Paid" and is_pd:
+                        continue
+                    if bracket_filter.value != "All":
+                        if not r or b_stat != bracket_filter.value:
+                            continue
+
+                    filtered_users.append(u)
+
+                ui.label(f"Showing {len(filtered_users)} of {len(users)} users").classes("text-xs font-bold opacity-70 mb-2")
 
                 def open_user_editor(u_row: dict):
                     uid = str(u_row["id"])
@@ -218,7 +265,7 @@ def render_admin_view(supabase, user):
                                 ui.button("Save Changes", on_click=save_user_edits, color="primary")
                     dlg.open()
 
-                for u in users:
+                for u in filtered_users:
                     uid = str(u["id"])
                     uname = u.get("username") or "Unknown"
                     uemail = u.get("email") or "No email"
@@ -235,23 +282,23 @@ def render_admin_view(supabase, user):
                                         ui.badge("ADMIN", color="purple").classes("text-[10px] font-bold")
                                     ui.button("Edit / Delete", on_click=lambda u_obj=u: open_user_editor(u_obj)).props("dense outline size=xs color=primary")
 
-                                ui.label(f"{uemail}").classes("text-xs opacity-80 truncate")
-                                ui.label(f"{uid}").classes("text-[10px] font-mono opacity-60 truncate select-all")
+                                ui.label(f"📧 {uemail}").classes("text-xs opacity-80 truncate")
+                                ui.label(f"🆔 {uid}").classes("text-[10px] font-mono opacity-60 truncate select-all")
                                 if unotes:
-                                    ui.label(f"{unotes}").classes("text-xs text-amber-700 dark:text-amber-300 italic mt-0.5")
+                                    ui.label(f"📝 {unotes}").classes("text-xs text-amber-700 dark:text-amber-300 italic mt-0.5")
 
                             if r:
                                 with ui.row().classes("items-center gap-2 shrink-0"):
                                     ui.checkbox("Enrolled", value=bool(r.get("is_enrolled")),
-                                                on_change=lambda e, rid=r["id"]: supabase.table("tournament_registrations").update({"is_enrolled": e.value}).eq("id", rid).execute()).props("dense")
+                                                on_change=lambda e, rid=r["id"]: (supabase.table("tournament_registrations").update({"is_enrolled": e.value}).eq("id", rid).execute(), roster_list.refresh())).props("dense")
                                     ui.checkbox("Paid", value=bool(r.get("is_paid")),
-                                                on_change=lambda e, rid=r["id"]: supabase.table("tournament_registrations").update({"is_paid": e.value}).eq("id", rid).execute()).props("dense")
+                                                on_change=lambda e, rid=r["id"]: (supabase.table("tournament_registrations").update({"is_paid": e.value}).eq("id", rid).execute(), roster_list.refresh())).props("dense")
                                     cur_st = r.get("bracket_status") if r.get("bracket_status") in status_opts else "Loser Bracket"
                                     ui.select(status_opts, value=cur_st,
-                                              on_change=lambda e, rid=r["id"]: supabase.table("tournament_registrations").update({"bracket_status": e.value}).eq("id", rid).execute()).props("dense outlined").classes("w-36 text-xs")
+                                              on_change=lambda e, rid=r["id"]: (supabase.table("tournament_registrations").update({"bracket_status": e.value}).eq("id", rid).execute(), roster_list.refresh())).props("dense outlined").classes("w-36 text-xs")
 
-            pool_filter.on_value_change(lambda: roster_list.refresh())
             roster_list()
+
         # ================================================================
         # TAB 3: CSV HISTORICAL PICK UPLOADER (Accounts for game_type)
         # ================================================================
