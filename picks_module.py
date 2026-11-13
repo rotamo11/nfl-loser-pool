@@ -66,20 +66,38 @@ def render_history_rail(supabase, all_picks: list):
                     ui.label(tag).classes("text-[10px] font-extrabold leading-none")
 
 def render_picks_view(supabase, user, pool_slug: str):
-    user_id = user.id
+    user_id = str(user.id)
     current_week = get_current_nfl_week()
     if "selected_week" not in app.storage.user:
         app.storage.user["selected_week"] = current_week
 
-    # 1. Verify Enrollment & Bracket Status
-    reg_res = supabase.table("tournament_registrations").select("*").eq("user_id", user_id).eq("game_type", pool_slug).execute().data
-    active_reg = reg_res[0] if (isinstance(reg_res, list) and len(reg_res) > 0) else {}
+    # 1. Fetch Player Username & Pool Registrations (for Status & Active Count Header)
+    u_res = supabase.table("users").select("username").eq("id", user_id).execute().data
+    current_user_name = u_res.get("username") if (isinstance(u_res, list) and len(u_res) > 0 and u_res.get("username")) else "Player"
 
+    pool_regs = (
+        supabase.table("tournament_registrations")
+        .select("*")
+        .eq("game_type", pool_slug)
+        .eq("is_enrolled", True)
+        .execute()
+        .data or []
+    )
+    active_reg = next((r for r in pool_regs if str(r["user_id"]) == user_id), None)
+    current_status = active_reg.get("bracket_status", "Not Enrolled") if active_reg else "Not Enrolled"
+    active_total = sum(1 for r in pool_regs if r.get("bracket_status") != "Eliminated")
+
+    # 2. Render Status & Remaining Active Badge Bar (Matches Brackets Page)
+    with ui.row().classes("w-full items-center justify-between mb-4 pb-2 border-b border-gray-200 dark:border-slate-700"):
+        ui.label(f"Status for {current_user_name}: {current_status}").classes("text-lg md:text-xl font-black")
+        ui.badge(f"Remaining Active: {active_total} / {len(pool_regs)}", color="primary").classes("text-xs font-bold px-2 py-1")
+
+    # 3. Verify Enrollment & Bracket Status
     if not active_reg or not active_reg.get("is_enrolled", False):
         ui.label(f"Not Enrolled in {pool_slug.replace('_', ' ')}.").classes("text-red-500 font-bold text-lg")
         return
-    if active_reg.get("bracket_status") == "Eliminated":
-        ui.label("You have been eliminated from this pool but can still view the Brackets page.").classes("text-red-500 font-bold")
+    if current_status == "Eliminated":
+        ui.label("You have been eliminated from this pool. View standings in Brackets.").classes("text-red-500 font-bold")
         return
 
     draft_picks = set()
