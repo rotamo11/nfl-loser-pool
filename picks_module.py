@@ -306,5 +306,5 @@ def render_picks_view(supabase, user, pool_slug: str):
         draft_picks.clear()
         matchup_board.refresh()
 
-    ui.select(week_opts, value=app.storage.user["selected_week"], label="Target (Starts Wed)", on_change=change_week).classes("w-48 mb-3")
+    ui.select(week_opts, value=app.storage.user["selected_week"], label="Target (Wed-Tue)", on_change=change_week).classes("w-48 mb-3")
     matchup_board()
