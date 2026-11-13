@@ -78,10 +78,17 @@ def render_chat_view(supabase, user, pool_slug: str):
                                 if time_str:
                                     ui.label(time_str).classes("text-[10px] opacity-70")
                                 if admin_flag or is_mine:
-                                    def del_msg(mid=m_id):
-                                        supabase.table("pool_chat").delete().eq("id", mid).execute()
-                                        message_feed.refresh()
-                                    ui.button(icon="delete", on_click=del_msg).props("flat round dense size=xs color=red-4")
+                                    def make_delete_handler(msg_id):
+                                        def handler():
+                                            try:
+                                                supabase.table("pool_chat").delete().eq("id", msg_id).execute()
+                                                ui.notify("Message deleted.", type="info")
+                                                message_feed.refresh()
+                                            except Exception as err:
+                                                ui.notify(f"Delete failed: {str(err)}", type="negative")
+                                        return handler
+                                
+                                    ui.button(icon="delete", on_click=make_delete_handler(m_id)).props("flat round dense size=xs color=red-4")
 
                         ui.label(body).classes("text-sm whitespace-pre-wrap break-words")
 
