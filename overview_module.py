@@ -94,6 +94,65 @@ def render_overview_view(supabase, user, pool_slug: str):
         ui.label(f"Status for {current_user_name}: {current_status}").classes("text-lg md:text-xl font-black")
         ui.badge(f"Remaining Active: {active_total} / {len(regs_data)}", color="primary").classes("text-xs font-bold px-2 py-1")
 
+    # ====================================================================
+    # WEEKLY PICK DISTRIBUTION (Bracket-Independent, BYE First, Count Desc, Alpha)
+    # ====================================================================
+    from collections import Counter
+
+    dist_week_opts = {w: get_week_col_label(w) for w in visible_weeks}
+    default_dist_week = current_week if current_week in dist_week_opts else visible_weeks[-1]
+    dist_week_sel = ui.select(dist_week_opts, value=default_dist_week, label="Distribution Week").classes("w-40 mb-2")
+
+    @ui.refreshable
+    def render_pick_distribution():
+        target_w = dist_week_sel.value
+        week_passed = (target_w < current_week)
+        viewer_locked = (target_w in viewer_finalized_weeks)
+
+        if not (week_passed or viewer_locked):
+            ui.label(f"🔒 Lock in your {get_week_col_label(target_w)} pick on the Picks page to unlock this week's pick distribution.").classes(
+                "text-xs font-semibold opacity-75 italic py-2"
+            )
+            return
+
+        # Count all picks across every bracket for the selected week (normalize _SO suffix)
+        enrolled_ids = {str(r["user_id"]) for r in regs_data}
+        week_team_counts = Counter()
+        for p in all_picks:
+            if str(p["user_id"]) in enrolled_ids and p["week"] == target_w:
+                clean_t = p["team_picked"].replace("_SO", "").strip().upper()
+                if clean_t:
+                    week_team_counts[clean_t] += 1
+
+        if not week_team_counts:
+            ui.label("No picks logged for this week yet.").classes("text-xs opacity-70 italic py-1")
+            return
+
+        # Sort rule: 1) BYE first, 2) Highest count descending, 3) Alphabetical ascending
+        sorted_dist = sorted(
+            week_team_counts.items(),
+            key=lambda item: (0 if item[0] == "BYE" else 1, -item[1], item[0])
+        )
+
+        total_logged = sum(week_team_counts.values())
+        card_bg = "bg-slate-800/60 border-slate-700" if is_dark else "bg-slate-50 border-slate-200"
+
+        with ui.row().classes("w-full flex-wrap gap-2 my-2"):
+            for team_code, count in sorted_dist:
+                pct = round((count / total_logged) * 100)
+                with ui.row().classes(f"items-center gap-1.5 px-2.5 py-1.5 rounded-lg border {card_bg} no-wrap"):
+                    if url := get_logo_url(team_code):
+                        ui.html(f'<img src="{url}" class="w-5 h-3.5 object-contain p-0.5 shrink-0" />')
+                    ui.label(team_code).classes("text-xs font-extrabold")
+                    ui.badge(f"{count} ({pct}%)", color="primary" if team_code != "BYE" else "positive").classes("text-[10px] font-bold")
+
+    with ui.card().classes("w-full p-3 mb-4 border border-slate-200 dark:border-slate-700 shadow-none"):
+        with ui.row().classes("w-full items-center justify-between"):
+            ui.label("📊 Weekly Pick Distribution (All Brackets)").classes("text-sm font-extrabold")
+        render_pick_distribution()
+
+    dist_week_sel.on_value_change(lambda: render_pick_distribution.refresh())
+
     def build_bracket_section(title: str, badge_color: str, players: list):
         if not players:
             return
