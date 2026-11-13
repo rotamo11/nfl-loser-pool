@@ -78,8 +78,8 @@ def render_overview_view(supabase, user, pool_slug: str):
     def sort_players(plist):
         return sorted(plist, key=lambda r: user_info_map.get(str(r["user_id"]), {}).get("username", "").lower())
 
-    losers_bracket = sort_players([r for r in regs_data if r.get("bracket_status") == "Loser Bracket"])
-    second_chance_bracket = sort_players([r for r in regs_data if r.get("bracket_status") == "Winner Bracket"])
+    loser_bracket = sort_players([r for r in regs_data if r.get("bracket_status") == "Loser Bracket"])
+    winner_bracket = sort_players([r for r in regs_data if r.get("bracket_status") == "Winner Bracket"])
     eliminated_bracket = sort_players([r for r in regs_data if r.get("bracket_status") == "Eliminated"])
 
     is_dark = app.storage.user.get("dark_mode", False)
@@ -89,7 +89,7 @@ def render_overview_view(supabase, user, pool_slug: str):
     current_reg = next((r for r in regs_data if str(r["user_id"]) == current_user_id), None)
     current_status = current_reg.get("bracket_status", "Not Enrolled") if current_reg else "Not Enrolled"
 
-    active_total = len(losers_bracket) + len(second_chance_bracket)
+    active_total = len(loser_bracket) + len(winner_bracket)
     with ui.row().classes("w-full items-center justify-between mb-4 pb-2 border-b border-gray-200 dark:border-slate-700"):
         ui.label(f"Status for {current_user_name}: {current_status}").classes("text-lg md:text-xl font-black")
         ui.badge(f"Remaining Active: {active_total} / {len(regs_data)}", color="primary").classes("text-xs font-bold px-2 py-1")
@@ -170,6 +170,6 @@ def render_overview_view(supabase, user, pool_slug: str):
                                             display_txt = f"{clean_team}{'🎯' if has_so else ''}"
                                             ui.label(display_txt).classes("text-[10px] font-extrabold leading-none")
 
-    build_bracket_section("Loser Bracket (0 Wrong)", "green", losers_bracket)
-    build_bracket_section("Winner Bracket (1 Wrong)", "amber", second_chance_bracket)
+    build_bracket_section("Loser Bracket (0 Wrong)", "green", loser_bracket)
+    build_bracket_section("Winner Bracket (1 Wrong)", "amber", winner_bracket)
     build_bracket_section("Eliminated", "red", eliminated_bracket)
