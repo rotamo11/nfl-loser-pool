@@ -10,8 +10,11 @@ from chat_module import render_chat_view, get_unread_chat_count
 from rules_module import render_rules_view
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "") # Your public anon key (used for user auth)
+SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", SUPABASE_KEY) # Secret key for DB writes/deletes
+
+supabase_auth: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
 # 1. Add this right after initializing Supabase in main.py
 if os.path.exists("static"):
@@ -29,7 +32,7 @@ def get_authenticated_user():
     if not refresh_token:
         return None
     try:
-        res = supabase.auth.refresh_session(refresh_token)
+        res = supabase_auth.auth.refresh_session(refresh_token)
         if res and res.user and res.session:
             app.storage.user["refresh_token"] = res.session.refresh_token
             app.storage.user["user_id"] = res.user.id
@@ -173,7 +176,7 @@ def render_login_box():
 
     def attempt_login():
         try:
-            res = supabase.auth.sign_in_with_password({
+            res = supabase_auth.auth.sign_in_with_password({
                 "email": email_input.value.strip(),
                 "password": pass_input.value.strip()
             })
