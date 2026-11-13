@@ -245,6 +245,10 @@ def render_login_box():
         except Exception as e:
             ui.notify(f"Login Error: {str(e)}", type="negative", timeout=8000)
 
+    # Trigger login when pressing Enter in either input box
+    email_input.on("keydown.enter", attempt_login)
+    pass_input.on("keydown.enter", attempt_login)
+
     ui.button("Log In", on_click=attempt_login).classes("w-full mt-3 bg-blue-600 text-white font-bold")
 
 # --- PAGE ROUTES ---
