@@ -149,7 +149,7 @@ def render_picks_view(supabase, user, pool_slug: str):
                         sunday_noon -= datetime.timedelta(days=1)
                     if target_week == current_week and dt_et < sunday_noon:
                         is_early = True
-                    time_label = dt_et.strftime("%A %-m/%-d/%y %-I:%M %p ET")
+                    time_label = dt_et.strftime("%a %-m/%-d/%y %-I:%M %p ET")
 
                 db_pick = next((p for p in week_picks if p["team_picked"].replace("_SO", "").upper() in [away, home]), None)
                 is_db_conf = db_pick and db_pick["pick_state"] == "Confirmed"
