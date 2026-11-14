@@ -1,60 +1,129 @@
-# background_cron_reminders.py
-import datetime
 import os
+import re
 import smtplib
-from email.mime.text import MIMEText
+import datetime
+from email.message import EmailMessage
+from zoneinfo import ZoneInfo
 from supabase import create_client, Client
 
-# Initialize database connections safely
-URL, KEY = os.environ.get("SUPABASE_URL"), os.environ.get("SUPABASE_KEY")
-if not URL or not KEY: exit(1)
-supabase: Client = create_client(URL, KEY)
+ET_ZONE = ZoneInfo("America/New_York")
+SEASON_START_WEDNESDAY = datetime.datetime(2026, 9, 9, 0, 0, 0, tzinfo=ET_ZONE)
 
-# Configure free email server parameters (Gmail SMTP Example)
-EMAIL_SENDER = os.environ.get("LEAGUE_EMAIL")     # e.g., pool.commish@gmail.com
-EMAIL_PASSWORD = os.environ.get("LEAGUE_APP_PWD") # 16-character Google App Password
+CARRIER_GATEWAYS = {
+    "AT&T": "txt.att.net",
+    "Verizon": "vtext.com",
+    "T-Mobile": "tmomail.net",
+    "Sprint": "://sprintpcs.com",
+    "Boost Mobile": "://myboostmobile.com",
+    "Cricket Wireless": "sms.cricketwireless.net",
+    "MetroPCS": "mymetropcs.com",
+    "US Cellular": "email.uscc.net",
+    "Virgin Mobile": "vmobl.com",
+    "Google Fi": "://google.com",
+    "Xfinity Mobile": "vtext.com",
+    "Visible": "vtext.com",
+    "Mint Mobile": "tmomail.net",
+}
 
-# Reckon Target active pool game week segment parameters
-START = datetime.datetime(2026, 9, 9, 0, 0, 0)
-current_week = 1 if datetime.datetime.now() < START else min(22, ((datetime.datetime.now() - START).days // 7) + 1)
+def get_current_nfl_week() -> int:
+    now_et = datetime.datetime.now(ET_ZONE)
+    if now_et < SEASON_START_WEDNESDAY:
+        return 1
+    return min(22, ((now_et - SEASON_START_WEDNESDAY).days // 7) + 1)
 
-def send_free_message(recipient_email, subject, body_text):
-    if not EMAIL_SENDER or not EMAIL_PASSWORD: return
-    try:
-        msg = MIMEText(body_text)
-        msg['Subject'] = subject
-        msg['From'] = EMAIL_SENDER
-        msg['To'] = recipient_email
-        
-        with smtplib.SMTP_SSL('://gmail.com', 465) as server:
-            server.login(EMAIL_SENDER, EMAIL_PASSWORD)
-            server.sendmail(EMAIL_SENDER, [recipient_email], msg.as_string())
-    except Exception as e: print(f"Mail Exception: {e}")
+def get_required_picks(week: int, matches_count: int) -> int:
+    if week <= 14:
+        return 1
+    if week <= 18:
+        return 2
+    return max(1, matches_count)
 
-# Process deadline verification alerts across active tracks
-for game_slug in ["Main", "2nd_Chance"]:
-    active = supabase.table("tournament_registrations").select("user_id").eq("game_type", game_slug).eq("is_enrolled", True).neq("bracket_status", "Eliminated").execute().data
-    picks = supabase.table("user_picks").select("user_id, pick_state").eq("game_type", game_slug).eq("week", current_week).execute().data
-    
-    safe_uids = {p["user_id"] for p in picks if p.get("pick_state") in ["Confirmed", "Finalized"]}
-    late_uids = [r["user_id"] for r in active if r["user_id"] not in safe_uids]
-    
-    if late_uids:
-        late_users = supabase.table("users").select("email", "cell_phone", "cell_carrier", "alert_email", "alert_sms").in_("id", late_uids).execute().data
-        
-        for u in late_users:
-            subject = f"🏈 NFL Loser Pool: Week {current_week} Pick Deadline Alert!"
-            body = f"Attention Player!\n\nOur league board shows you have not locked or confirmed your loser selection for Week {current_week} yet. Get your pick in before the deadline crashes!\n\nPortal: https://streamlit.app"
-            
-            # 🚀 Route free standard email
-            if u.get("alert_email", True) and u.get("email"):
-                send_free_message(u["email"], subject, body)
-                
-            # 🚀 Route free SMS via Carrier Gateway
-            if u.get("alert_sms", False) and u.get("cell_phone") and u.get("cell_carrier"):
-                clean_phone = "".join(filter(str.isdigit, u["cell_phone"]))
-                carrier_domains = {"Verizon": "vtext.com", "AT&T": "txt.att.net", "T-Mobile": "tmomail.net", "Sprint": "://sprintpcs.com"}
-                domain = carrier_domains.get(u["cell_carrier"])
-                if domain and len(clean_phone) == 10:
-                    sms_gateway_email = f"{clean_phone}@{domain}"
-                    send_free_message(sms_gateway_email, "⏰ DEADLINE ALERT", body)
+def send_smtp_message(smtp_user: str, smtp_pass: str, to_addr: str, subject: str, body: str):
+    msg = EmailMessage()
+    msg["From"] = smtp_user
+    msg["To"] = to_addr
+    if subject:
+        msg["Subject"] = subject
+    msg.set_content(body)
+
+    with smtplib.SMTP_SSL("://gmail.com", 465) as server:
+        server.login(smtp_user, smtp_pass)
+        server.send_message(msg)
+
+def main():
+    supabase_url = os.environ["SUPABASE_URL"]
+    supabase_key = os.environ.get("SUPABASE_SERVICE_KEY") or os.environ["SUPABASE_KEY"]
+    smtp_user = os.environ["SMTP_USER"]
+    smtp_pass = os.environ["SMTP_PASS"]
+    app_url = os.environ.get("APP_URL", "https://railway.app")
+
+    supabase: Client = create_client(supabase_url, supabase_key)
+    current_week = get_current_nfl_week()
+
+    # Fetch users, active registrations, current week picks, and schedule count
+    users = supabase.table("users").select(
+        "id, username, email, cell_phone, cell_carrier, alert_email, alert_sms"
+    ).execute().data or []
+    user_map = {str(u["id"]): u for u in users}
+
+    regs = supabase.table("tournament_registrations").select(
+        "user_id, game_type, is_enrolled, bracket_status"
+    ).eq("is_enrolled", True).neq("bracket_status", "Eliminated").execute().data or []
+
+    week_picks = supabase.table("user_picks").select(
+        "user_id, game_type, pick_state"
+    ).eq("week", current_week).execute().data or []
+
+    matches = supabase.table("nfl_schedule").select("id").eq("week", current_week).execute().data or []
+    required_count = get_required_picks(current_week, len(matches))
+
+    # Track missing pools per user
+    missing_by_user = {}
+    for r in regs:
+        uid = str(r["user_id"])
+        gtype = r["game_type"]
+        user_week_picks = [p for p in week_picks if str(p["user_id"]) == uid and p["game_type"] == gtype]
+        if len(user_week_picks) < required_count:
+            missing_by_user.setdefault(uid, []).append(gtype.replace("_", " "))
+
+    sent_emails, sent_sms = 0, 0
+    for uid, missing_pools in missing_by_user.items():
+        u = user_map.get(uid)
+        if not u:
+            continue
+
+        uname = u.get("username") or "Player"
+        pools_label = " & ".join(missing_pools)
+
+        # 1. Email Reminder
+        if u.get("alert_email") and u.get("email"):
+            subj = f"NFL Loser Pool Reminder: Week {current_week} Pick Needed ({pools_label})"
+            body = (
+                f"Hey {uname},\n\n"
+                f"You still need to submit your Week {current_week} pick(s) for: {pools_label}.\n"
+                f"Weekly Deadline: Sunday at 12:00 PM ET (or kickoff of an earlier game).\n\n"
+                f"Submit your pick now: {app_url}\n"
+            )
+            try:
+                send_smtp_message(smtp_user, smtp_pass, u["email"], subj, body)
+                sent_emails += 1
+            except Exception as e:
+                print(f"Email failed for {uname}: {e}")
+
+        # 2. SMS Gateway Reminder
+        if u.get("alert_sms"):
+            digits = re.sub(r"\D", "", u.get("cell_phone") or "")
+            gateway = CARRIER_GATEWAYS.get(u.get("cell_carrier") or "")
+            if len(digits) == 10 and gateway:
+                sms_addr = f"{digits}@{gateway}"
+                sms_body = f"NFL Loser Pool: Week {current_week} pick needed for {pools_label} before Sun 12pm ET! {app_url}"
+                try:
+                    send_smtp_message(smtp_user, smtp_pass, sms_addr, "", sms_body)
+                    sent_sms += 1
+                except Exception as e:
+                    print(f"SMS failed for {uname}: {e}")
+
+    print(f"Week {current_week} reminders complete: {sent_emails} emails, {sent_sms} texts sent.")
+
+if __name__ == "__main__":
+    main()
