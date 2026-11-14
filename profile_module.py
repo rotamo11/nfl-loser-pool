@@ -39,6 +39,10 @@ def render_profile_view(supabase, user):
 
             def on_theme_toggle(e):
                 app.storage.user["dark_mode"] = e.value
+                try:
+                    supabase.table("users").update({"dark_mode": e.value}).eq("id", user_id).execute()
+                except Exception:
+                    pass
                 ui.navigate.reload()
 
             ui.switch("Dark Mode", value=is_dark, on_change=on_theme_toggle).classes("font-bold")
