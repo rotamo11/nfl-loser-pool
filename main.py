@@ -126,21 +126,16 @@ def render_layout(active_page: str, content_builder):
                     ui.navigate.to("/admin")
                 ui.button("Exit Masquerade", on_click=exit_masquerade).props("unelevated dense size=sm color=white text-color=purple-9").classes("font-bold px-2")
 
-        # 1. Single Top Row: Left Spacer | Centered Logo + Title | Right Theme & Logout
-        with ui.element("div").classes("w-full max-w-5xl items-center mt-1").style(
-            "display: grid; grid-template-columns: 1fr auto 1fr; gap: 0.5rem;"
-        ):
-            # Left Column: Empty spacer on mobile (balances right buttons so title stays dead-center)
-            ui.element("div").classes("hidden sm:block")
-
-            # Center Column: Inline Logo + NFL Loser Pool Title (Left-aligned on tiny screens, centered on sm+)
-            with ui.row().classes("items-center justify-start sm:justify-center gap-2 no-wrap col-span-2 sm:col-span-1"):
+        # 1. Single Top Row: Dead-Center Logo + Title on Desktop, Right-Pinned Controls
+        with ui.row().classes("w-full max-w-5xl relative items-center justify-between md:justify-center mt-1 min-h-[48px] no-wrap"):
+            # Center Group: Logo + NFL Loser Pool Title (Left-aligned on phones, dead-center on md+)
+            with ui.row().classes("items-center justify-center gap-2 no-wrap"):
                 if logo_url:
                     ui.html(f'<img src="{logo_url}" class="h-9 w-9 md:h-12 md:w-12 object-contain p-0.5 shrink-0 rounded" />')
                 ui.label("NFL Loser Pool").classes("text-xl sm:text-2xl md:text-4xl font-black tracking-tight whitespace-nowrap")
 
-            # Right Column: Theme Toggle + Log Out Button Side-by-Side
-            with ui.row().classes("justify-end items-center gap-1.5 no-wrap"):
+            # Right Group: Theme Toggle + Log Out Button (Pinned to right edge on desktop)
+            with ui.row().classes("items-center gap-1.5 no-wrap md:absolute md:right-0"):
                 def toggle_theme():
                     app.storage.user["dark_mode"] = not dark_mode.value
                     ui.navigate.reload()
