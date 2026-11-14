@@ -148,6 +148,10 @@ def render_admin_view(supabase, user):
                     value="All",
                     label="Bracket Status"
                 ).classes("w-44")
+                search_input = ui.input(
+                    label="Search Name / Username / Email",
+                    placeholder="Type to filter..."
+                ).props("clearable").classes("flex-1 min-w-[200px]")
 
             def on_pool_change():
                 if pool_filter.value == "2nd_Chance":
@@ -163,6 +167,7 @@ def render_admin_view(supabase, user):
             enroll_filter.on_value_change(lambda: roster_list.refresh())
             paid_filter.on_value_change(lambda: roster_list.refresh())
             bracket_filter.on_value_change(lambda: roster_list.refresh())
+            search_input.on_value_change(lambda: roster_list.refresh())
 
             @ui.refreshable
             def roster_list():
@@ -172,8 +177,9 @@ def render_admin_view(supabase, user):
                 reg_by_uid = {str(r["user_id"]): r for r in pool_regs}
 
                 status_opts = ["Loser Bracket", "Eliminated"] if pool_filter.value == "2nd_Chance" else ["Loser Bracket", "Winner Bracket", "Eliminated"]
+                query_txt = (search_input.value or "").strip().lower()
 
-                # Apply the 3 active filter dropdowns
+                # Apply the 3 dropdown filters + live text search
                 filtered_users = []
                 for u in users:
                     r = reg_by_uid.get(str(u["id"]))
@@ -191,6 +197,16 @@ def render_admin_view(supabase, user):
                         continue
                     if bracket_filter.value != "All":
                         if not r or b_stat != bracket_filter.value:
+                            continue
+
+                    if query_txt:
+                        searchable_blob = " ".join([
+                            u.get("username") or "",
+                            u.get("first_name") or "",
+                            u.get("last_name") or "",
+                            u.get("email") or "",
+                        ]).lower()
+                        if query_txt not in searchable_blob:
                             continue
 
                     filtered_users.append(u)
