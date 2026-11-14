@@ -117,7 +117,7 @@ def render_overview_view(supabase, user, pool_slug: str):
             viewer_locked = (target_w in viewer_finalized_weeks)
 
             if not (week_passed or viewer_locked or admin_override):
-                ui.label(f"🔒 Lock in your {get_week_full_label(target_w)} pick on the Picks page to unlock this week's distribution.").classes(
+                ui.label(f"🔒 Finalize your {get_week_full_label(target_w)} pick on the Picks page to unlock this week's distribution.  Players eliminated or not enrolled can view once the deadline passes.").classes(
                     "text-xs font-semibold opacity-75 italic py-1"
                 )
             else:
