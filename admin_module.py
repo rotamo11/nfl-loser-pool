@@ -42,7 +42,7 @@ def render_admin_view(supabase, user):
             ui.label(f"Loser Bracket: {m_loser}  |  Winner Bracket: {m_winner}  |  Eliminated: {m_elim}").classes("text-xs font-bold mt-1")
 
         with ui.card().classes("p-3 border border-amber-500/40 shadow-none"):
-            ui.label("2nd Chance Summary (Single Elimination)").classes("font-extrabold text-sm text-amber-600 dark:text-amber-400")
+            ui.label("2nd Chance Summary").classes("font-extrabold text-sm text-amber-600 dark:text-amber-400")
             sc_loser = sum(1 for r in sc_regs if r.get("bracket_status") == "Loser Bracket")
             sc_elim = sum(1 for r in sc_regs if r.get("bracket_status") == "Eliminated")
             ui.label(f"Loser Bracket: {sc_loser}  |  Eliminated: {sc_elim}").classes("text-xs font-bold mt-1")
@@ -149,7 +149,7 @@ def render_admin_view(supabase, user):
                     label="Bracket Status"
                 ).classes("w-44")
                 search_input = ui.input(
-                    label="Search Name / Username / Email / ID / Notes",
+                    label="Search Name/Username/Email/ID/Notes",
                     placeholder="Type to filter..."
                 ).props("clearable").classes("flex-1 min-w-[200px]")
 
