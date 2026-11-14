@@ -1,5 +1,5 @@
 import re
-from nicegui import ui
+from nicegui import ui, app
 
 # Supported US Carrier Email-to-SMS Gateways
 CARRIER_GATEWAYS = {
@@ -28,6 +28,20 @@ def render_profile_view(supabase, user):
 
     ui.label("Player Profile & Notification Settings").classes("text-xl font-black mb-1")
     ui.label(f"Account Email: {user.email}").classes("text-xs opacity-70 mb-4")
+
+    # --- TOP SECTION: APPEARANCE / THEME PREFERENCE ---
+    is_dark = app.storage.user.get("dark_mode", False)
+    with ui.card().classes("w-full p-4 mb-4 border border-slate-300 dark:border-slate-700 shadow-none"):
+        with ui.row().classes("w-full items-center justify-between gap-2"):
+            with ui.column().classes("gap-0"):
+                ui.label("Appearance & Display Theme").classes("text-base font-extrabold")
+                ui.label("Switch between Light and Dark mode for content cards.").classes("text-xs opacity-75")
+
+            def on_theme_toggle(e):
+                app.storage.user["dark_mode"] = e.value
+                ui.navigate.reload()
+
+            ui.switch("Dark Mode", value=is_dark, on_change=on_theme_toggle).classes("font-bold")
 
     with ui.grid().classes("w-full grid-cols-1 md:grid-cols-2 gap-6"):
         
@@ -135,3 +149,12 @@ def render_profile_view(supabase, user):
                     ui.notify(f"Password update failed: {str(e)}", type="negative")
 
             ui.button("Update Password", on_click=update_password, color="secondary").classes("w-full mt-2 font-bold")
+
+    # --- BOTTOM SECTION: SIGN OUT ---
+    ui.separator().classes("my-6")
+    with ui.row().classes("w-full justify-end"):
+        def handle_logout():
+            app.storage.user.clear()
+            ui.navigate.to("/")
+
+        ui.button("Log Out", icon="logout", on_click=handle_logout, color="red").props("outline").classes("font-bold px-6")
