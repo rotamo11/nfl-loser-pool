@@ -135,23 +135,47 @@ def render_overview_view(supabase, user, pool_slug: str):
                     sorted_dist = sorted(week_team_counts.items(), key=lambda item: (0 if item[0] == "BYE" else 1, -item[1], item[0]))
                     total_logged = sum(week_team_counts.values())
 
-                    with ui.row().classes("w-full flex-wrap gap-2 mt-1"):
+                    sorted_dist = sorted(week_team_counts.items(), key=lambda item: (0 if item[0] == "BYE" else 1, -item[1], item[0]))
+                    total_logged = sum(week_team_counts.values())
+
+                    # Responsive grid: 5 per row on phones, up to 15 stretched evenly across desktop
+                    ui.add_head_html("""
+                        <style>
+                            .dist-grid-15 {
+                                display: grid;
+                                grid-template-columns: repeat(5, minmax(0, 1fr));
+                                gap: 0.35rem;
+                                width: 100%;
+                            }
+                            @media (min-width: 640px) {
+                                .dist-grid-15 { grid-template-columns: repeat(8, minmax(0, 1fr)); }
+                            }
+                            @media (min-width: 1024px) {
+                                .dist-grid-15 { grid-template-columns: repeat(15, minmax(0, 1fr)); }
+                            }
+                        </style>
+                    """)
+
+                    with ui.element("div").classes("dist-grid-15 mt-2"):
                         for team_code, count in sorted_dist:
                             pct = round((count / total_logged) * 100)
                             outcome = team_week_outcomes.get((target_w, team_code))
 
                             if outcome == "Correct" or team_code == "BYE":
-                                pill_cls = "bg-emerald-500/20 text-emerald-300 border-emerald-500/40" if is_dark else "bg-emerald-500/20 text-emerald-800 border-emerald-500/40"
+                                card_cls = "bg-emerald-500/20 text-emerald-300 border-emerald-500/40" if is_dark else "bg-emerald-500/20 text-emerald-800 border-emerald-500/40"
                             elif outcome == "Incorrect":
-                                pill_cls = "bg-red-500/20 text-red-300 border-red-500/40" if is_dark else "bg-red-500/20 text-red-800 border-red-500/40"
+                                card_cls = "bg-red-500/20 text-red-300 border-red-500/40" if is_dark else "bg-red-500/20 text-red-800 border-red-500/40"
                             else:
-                                pill_cls = "bg-slate-800/60 border-slate-700" if is_dark else "bg-slate-50 border-slate-200"
+                                card_cls = "bg-slate-800/60 border-slate-700" if is_dark else "bg-slate-50 border-slate-200"
 
-                            with ui.row().classes(f"items-center gap-1.5 px-2.5 py-1.5 rounded-lg border {pill_cls} no-wrap"):
+                            # Vertical card layout: Logo -> Team Code -> Count
+                            with ui.column().classes(f"w-full items-center justify-center py-1.5 px-1 rounded-lg border {card_cls} gap-0.5 text-center"):
                                 if url := get_logo_url(team_code):
-                                    ui.html(f'<img src="{url}" class="w-5 h-3.5 object-contain p-0.5 shrink-0" />')
-                                ui.label(team_code).classes("text-xs font-extrabold")
-                                ui.badge(f"{count}", color="primary" if team_code != "BYE" else "positive").classes("text-[10px] font-bold")
+                                    ui.html(f'<img src="{url}" class="w-6 h-4 object-contain p-0.5 shrink-0" />')
+                                ui.label(team_code).classes("text-[11px] font-black leading-tight")
+                                ui.label(f"{count}").classes("text-[11px] font-extrabold opacity-85 leading-none")
+                                with ui.tooltip():
+                                    ui.label(f"{team_code}: {count} pick{'s' if count != 1 else ''} ({pct}%)")
 
         # ================================================================
         # BRACKET TABLES
