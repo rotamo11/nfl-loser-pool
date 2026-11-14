@@ -3,6 +3,7 @@ import re
 import smtplib
 import datetime
 from email.message import EmailMessage
+from email.utils import formataddr
 from zoneinfo import ZoneInfo
 from supabase import create_client, Client
 
@@ -44,7 +45,7 @@ def send_smtp_message(smtp_user: str, smtp_pass: str, to_addr: str, subject: str
     clean_to = to_addr.strip()
 
     msg = EmailMessage()
-    msg["From"] = clean_user
+    msg["From"] = formataddr(("NFL Loser Pool", clean_user))
     msg["To"] = clean_to
     if subject:
         msg["Subject"] = subject
@@ -105,9 +106,9 @@ def main():
             subj = f"NFL Loser Pool Reminder: Week {current_week} Pick Needed ({pools_label})"
             body = (
                 f"Hey {uname},\n\n"
-                f"You still need to submit your Week {current_week} pick(s) for: {pools_label}.\n"
-                f"Weekly Deadline: Sunday at 12:00 PM ET (or kickoff of an earlier game).\n\n"
-                f"Submit your pick now: {app_url}\n"
+                f"You still need to submit your Week {current_week} pick(s) for: {pools_label}.\n\n"
+                f"Weekly Deadline: Sunday at 12:00 PM ET (or by kickoff of an earlier game).\n\n"
+                f"Submit your pick now:\n{app_url}\n"
             )
             try:
                 send_smtp_message(smtp_user, smtp_pass, u["email"], subj, body)
@@ -116,15 +117,18 @@ def main():
                 print(f"Email failed for {uname}: {e}")
 
         # 2. SMS Gateway Reminder
-        if u.get("alert_sms"):
+        if u.get("alert_sms") and u.get("email"):
             digits = re.sub(r"\D", "", u.get("cell_phone") or "")
             gateway = CARRIER_GATEWAYS.get(u.get("cell_carrier") or "")
             if len(digits) == 10 and gateway:
                 sms_addr = f"{digits}@{gateway}"
-                sms_body = f"NFL Loser Pool: Week {current_week} pick needed for {pools_label} before Sun 12pm ET! {app_url}"
+                sms_body = f"NFL Loser Pool: Week {current_week} pick needed for {pools_label} before Sun 12pm ET!" #removed {app_url}
+                subj = f"SMS TEST"
+                body = f"{sms_addr}\n{sms_body}
                 try:
                     send_smtp_message(smtp_user, smtp_pass, sms_addr, "", sms_body)
                     sent_sms += 1
+                    send_smtp_message(smtp_user, smtp_pass, u["email"], subj, body)
                 except Exception as e:
                     print(f"SMS failed for {uname}: {e}")
 
