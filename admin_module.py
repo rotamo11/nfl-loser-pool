@@ -1,6 +1,6 @@
 import csv
 import io
-from nicegui import ui, app
+from nicegui import ui, app, run
 from picks_module import get_current_nfl_week, get_week_label, get_logo_url
 
 CARRIER_OPTIONS = [
@@ -96,28 +96,28 @@ def render_admin_view(supabase, user):
                         f'{home}</span>'
                     ) if home_url else f'<span class="font-extrabold">{home}</span>'
 
-                    radio_options = [
-                        {"label": "PENDING", "value": "PENDING"},
-                        {"label": f'{away_html}<span class="ml-2 text-slate-400 font-black">@</span>', "value": away},
-                        {"label": home_html, "value": home},
-                        {"label": "TIE", "value": "TIE"},
-                    ]
+                    radio_options = {
+                        "PENDING": "PENDING",
+                        away: f'{away_html}<span class="ml-2 text-slate-400 font-black">@</span>',
+                        home: home_html,
+                        "TIE": "TIE",
+                    }
 
                     with ui.card().classes("w-full p-2.5 mb-2 border border-slate-300 dark:border-slate-700 shadow-none"):
                         with ui.row().classes("w-full items-center justify-between gap-2 flex-wrap"):
                             rad = ui.radio(
                                 options=radio_options,
-                                value=db_loser if db_loser in ["PENDING", away, home, "TIE"] else "PENDING"
+                                value=db_loser if db_loser in radio_options else "PENDING"
                             ).props("inline dense options-html").classes("text-xs")
                             chk = ui.checkbox("🎯 SO", value=db_so).props("dense").classes("text-xs font-bold shrink-0")
                             controls[mid] = {"away": away, "home": home, "rad": rad, "chk": chk}
 
-                def process_dual_pool_scores():
+                def run_db_scoring_batch(week_num, snapshot):
                     losers_set, winners_set, shutouts_set, ties_set = set(), set(), set(), set()
 
-                    for mid, item in controls.items():
-                        res_val = item["rad"].value
-                        so_val = item["chk"].value
+                    for mid, item in snapshot.items():
+                        res_val = item["res_val"]
+                        so_val = item["so_val"]
                         supabase.table("nfl_schedule").update({
                             "winner": None if res_val == "PENDING" else res_val,
                             "is_shutout": so_val
@@ -132,7 +132,7 @@ def render_admin_view(supabase, user):
                             if so_val:
                                 shutouts_set.add(res_val)
 
-                    week_picks = supabase.table("user_picks").select("*").eq("week", w_num).execute().data or []
+                    week_picks = supabase.table("user_picks").select("*").eq("week", week_num).execute().data or []
                     for p in week_picks:
                         raw_t = p["team_picked"].upper()
                         base_t = raw_t.replace("_SO", "")
@@ -156,9 +156,34 @@ def render_admin_view(supabase, user):
                             new_status = "Loser Bracket" if losses == 0 else ("Winner Bracket" if losses == 1 else "Eliminated")
                         supabase.table("tournament_registrations").update({"bracket_status": new_status}).eq("id", r["id"]).execute()
 
-                    ui.notify(f"Week {w_num} scored & brackets updated for BOTH pools!", type="positive")
+                async def process_dual_pool_scores():
+                    save_btn.props("loading")
+                    progress_notif = ui.notification(
+                        f"⏳ Saving Week {w_num} results & recalculating Main and 2nd Chance brackets...",
+                        spinner=True,
+                        timeout=None,
+                        type="info"
+                    )
+                    try:
+                        # Capture current radio/checkbox values safely on the UI thread
+                        snapshot = {
+                            mid: {"away": item["away"], "home": item["home"], "res_val": item["rad"].value, "so_val": item["chk"].value}
+                            for mid, item in controls.items()
+                        }
+                        await run.io_bound(run_db_scoring_batch, w_num, snapshot)
+                        progress_notif.message = f"Week {w_num} scored & brackets updated for BOTH pools!"
+                        progress_notif.spinner = False
+                        progress_notif.type = "positive"
+                        progress_notif.timeout = 4.0
+                    except Exception as err:
+                        progress_notif.message = f"Error scoring Week {w_num}: {str(err)}"
+                        progress_notif.spinner = False
+                        progress_notif.type = "negative"
+                        progress_notif.timeout = 8.0
+                    finally:
+                        save_btn.props(remove="loading")
 
-                ui.button("Save & Process Both Pools", on_click=process_dual_pool_scores, color="primary").classes("w-full mt-3 font-bold")
+                save_btn = ui.button("Save & Process Both Pools", on_click=process_dual_pool_scores, color="primary").classes("w-full mt-3 font-bold")
 
             sel_week.on_value_change(lambda: scoring_form.refresh())
             scoring_form()
