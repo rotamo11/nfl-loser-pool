@@ -97,6 +97,9 @@ def render_admin_view(supabase, user):
                     with ui.card().classes("w-full p-2.5 mb-2 border border-slate-300 dark:border-slate-700 shadow-none"):
                         with ui.row().classes("w-full items-center justify-between gap-2 flex-wrap"):
                             with ui.row().classes("items-center gap-2.5 flex-wrap"):
+                                # Day, Short Date, & Time placed first before the PENDING button
+                                ui.label(f"{time_label}").classes("text-xs font-semibold opacity-75 w-40 shrink-0")
+
                                 opt_buttons = {}
 
                                 def make_selector(choice_val, btns_dict, holder):
@@ -126,9 +129,6 @@ def render_admin_view(supabase, user):
 
                                     opt_buttons[opt_val] = opt_box
                                     opt_box.on("click", make_selector(opt_val, opt_buttons, state_holder))
-
-                                # Day, Short Date, & Time placed right next to the TIE button
-                                ui.label(f"{time_label}").classes("text-xs font-semibold opacity-75 ml-1")
 
                             chk = ui.checkbox("🎯 SO", value=db_so).props("dense").classes("text-xs font-bold shrink-0")
                             controls[mid] = {"away": away, "home": home, "state": state_holder, "chk": chk}
