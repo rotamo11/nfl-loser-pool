@@ -179,50 +179,72 @@ def render_layout(active_page: str, content_builder):
                     ui.label("74 Players | $1850 Purse ($1110 1st / $555 2nd / $185 3rd)").classes(f"text-xs md:text-base font-bold mt-1 {purse_cls}")
                     ui.label("Last Year's Losers: S. King ($765) • A. Conley ($382.50) • B. Kazmierski ($127.50)").classes(f"text-[11px] md:text-sm {text_muted}")
 
-        # 3. Tabs & Page Links
-        def on_tab_change(e):
-            if e.value != app.storage.user["pool"]:
-                app.storage.user["pool"] = e.value
+        # 3. 50/50 Split Primary Pool Selector Bar (Main vs. 2nd Chance)
+        def select_pool(target_pool: str):
+            if app.storage.user.get("pool") != target_pool:
+                app.storage.user["pool"] = target_pool
                 ui.navigate.reload()
 
-        with ui.tabs(value=current_tab, on_change=on_tab_change).classes(f"{text_main} mt-3").props(f"indicator-color={'amber' if is_2nd else 'primary'}"):
-            ui.tab("Main", label="Main")
-            ui.tab("2nd_Chance", label="2nd Chance")
-            ui.tab("Profile", label="Profile")
+        border_bar = "border-slate-700" if is_dark else "border-slate-300"
+        inactive_txt = "text-slate-200 hover:bg-white/10" if is_dark else "text-slate-700 hover:bg-slate-200/70"
 
-# 2. Replace the navigation links loop inside render_layout in main.py with:
-        if current_tab != "Profile":
-            border_sep = "border-white/20" if is_dark else "border-slate-300"
-            unread_chat = get_unread_chat_count(supabase, user) if active_page != "Chat" else 0
+        with ui.row().classes(f"w-full max-w-5xl mt-3 rounded-lg overflow-hidden border {border_bar} gap-0 no-wrap"):
+            # Left Half: Main Pool (#1d3d70 when active)
+            main_active = (current_tab == "Main")
+            main_cls = "flex-1 py-2.5 text-center font-black text-sm md:text-base cursor-pointer select-none transition-colors " + (
+                "text-white" if main_active else f"bg-transparent {inactive_txt}"
+            )
+            main_el = ui.label("Main").classes(main_cls)
+            if main_active:
+                main_el.style("background-color: #1d3d70;")
+            main_el.on("click", lambda: select_pool("Main"))
 
-            with ui.row().classes(f"w-full max-w-4xl justify-around items-center py-2 mt-1 border-t {border_sep} text-sm font-bold"):
-                nav_items = [("Picks", "/"), ("Brackets", "/brackets"), ("Chat", "/chat"), ("Rules & Links", "/rules")]
-                if is_admin_user(supabase, user):
-                    nav_items.append(("Admin", "/admin"))
+            # Right Half: 2nd Chance Pool (#974706 when active)
+            sc_active = (current_tab == "2nd_Chance")
+            sc_cls = "flex-1 py-2.5 text-center font-black text-sm md:text-base cursor-pointer select-none transition-colors " + (
+                "text-white" if sc_active else f"bg-transparent {inactive_txt}"
+            )
+            sc_el = ui.label("2nd Chance").classes(sc_cls)
+            if sc_active:
+                sc_el.style("background-color: #974706;")
+            sc_el.on("click", lambda: select_pool("2nd_Chance"))
 
-                for label, route in nav_items:
-                    is_active = (active_page == label)
-                    if is_active:
-                        cls = "text-amber-400 underline underline-offset-4" if is_dark else ("text-amber-700 underline underline-offset-4" if is_2nd else "text-blue-700 underline underline-offset-4")
-                    else:
-                        cls = "text-white/80 hover:text-white" if is_dark else "text-slate-600 hover:text-slate-900"
+        # 4. Unified Page Navigation Row (Picks, Brackets, Chat, Rules, Profile, [Admin])
+        unread_chat = get_unread_chat_count(supabase, user) if active_page != "Chat" else 0
+        with ui.row().classes("w-full max-w-5xl justify-around items-center py-2.5 mt-1 text-xs md:text-sm font-bold flex-wrap gap-2"):
+            nav_items = [
+                ("Picks", "/"),
+                ("Brackets", "/brackets"),
+                ("Chat", "/chat"),
+                ("Rules", "/rules"),
+                ("Profile", "/profile"),
+            ]
+            if is_admin_user(supabase, user):
+                nav_items.append(("Admin", "/admin"))
 
-                    with ui.row().classes("items-center gap-1 no-wrap"):
-                        ui.link(label, route).classes(f"no-underline {cls}")
-                        if label == "Chat" and unread_chat > 0:
-                            badge_txt = "9+" if unread_chat > 9 else str(unread_chat)
-                            ui.label(badge_txt).classes(
-                                "bg-red-600 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full leading-tight shadow-sm"
-                            )
+            for label, route in nav_items:
+                is_active = (active_page == label)
+                if is_active:
+                    cls = "text-amber-400 underline underline-offset-4" if is_dark else (
+                        "text-amber-700 underline underline-offset-4" if is_2nd else "text-blue-700 underline underline-offset-4"
+                    )
+                else:
+                    cls = "text-white/80 hover:text-white" if is_dark else "text-slate-600 hover:text-slate-900"
 
-    # --- MAIN CONTENT CONTAINER (White in Light Mode, Dark Slate in Dark Mode, Pool Border) ---
+                with ui.row().classes("items-center gap-1 no-wrap"):
+                    ui.link(label, route).classes(f"no-underline {cls}")
+                    if label == "Chat" and unread_chat > 0:
+                        badge_txt = "9+" if unread_chat > 9 else str(unread_chat)
+                        ui.label(badge_txt).classes(
+                            "bg-red-600 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full leading-tight shadow-sm"
+                        )
+
+    # --- MAIN CONTENT CONTAINER ---
     card_theme = "bg-slate-900 text-white" if is_dark else "bg-white text-slate-900"
-    with ui.column().classes("w-full items-center px-3 pb-8 pt-2"):
+    with ui.column().classes("w-full items-center px-3 pb-8 pt-1"):
         with ui.card().classes(f"w-full max-w-5xl p-5 rounded-xl shadow-xl {card_theme}").style(f"border-top: 4px solid {pool_hex};"):
             if not user:
                 render_login_box()
-            elif current_tab == "Profile":
-                render_profile_view(supabase, user)
             else:
                 content_builder(user, current_tab)
 
@@ -267,6 +289,10 @@ def chat_page():
 @ui.page("/rules")
 def rules_page():
     render_layout("Rules & Links", lambda user, pool: render_rules_view(pool))
+
+@ui.page("/profile")
+def profile_page():
+    render_layout("Profile", lambda user, pool: render_profile_view(supabase, user))
 
 @ui.page("/admin")
 def admin_page():
