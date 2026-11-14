@@ -124,7 +124,7 @@ def main():
                 sms_addr = f"{digits}@{gateway}"
                 sms_body = f"NFL Loser Pool: Week {current_week} pick needed for {pools_label} before Sun 12pm ET!" #removed {app_url}
                 subj = f"SMS TEST"
-                body = f"{sms_addr}\n{sms_body}
+                body = f"{sms_addr}\n{sms_body}"
                 try:
                     send_smtp_message(smtp_user, smtp_pass, sms_addr, "", sms_body)
                     sent_sms += 1
