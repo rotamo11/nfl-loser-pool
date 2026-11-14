@@ -1,5 +1,6 @@
 name: Weekly Missing Pick Deadline Reminders
 on:
+  workflow_dispatch:
   schedule:
     - cron: '0 16 * * 4'  # Thursday 12:00 PM ET (16:00 UTC)
     - cron: '0 13 * * 0'  # Sunday 9:00 AM ET (13:00 UTC)
