@@ -1,7 +1,7 @@
 import csv
 import io
 from nicegui import ui, app
-from picks_module import get_current_nfl_week, get_week_label
+from picks_module import get_current_nfl_week, get_week_label, get_logo_url
 
 CARRIER_OPTIONS = [
     "None / Do Not Use", "AT&T", "Verizon", "T-Mobile", "Sprint",
@@ -59,7 +59,10 @@ def render_admin_view(supabase, user):
         # ================================================================
         with ui.tab_panel(t_score).classes("px-0"):
             week_opts = {w: get_week_label(w) for w in range(1, 23)}
-            sel_week = ui.select(week_opts, value=current_week, label="Select Week to Score").classes("w-48 mb-3")
+            sel_week = ui.select(week_opts, value=current_week, label="Select Week to Score").classes("w-48 mb-1")
+            ui.label("Select the LOSER of each matchup (or tie) and select SO if it was a shutout.").classes(
+                "text-xs font-semibold opacity-75 mb-3"
+            )
 
             @ui.refreshable
             def scoring_form():
@@ -78,10 +81,34 @@ def render_admin_view(supabase, user):
                     db_loser = m.get("winner") or "PENDING"
                     db_so = bool(m.get("is_shutout", False))
 
+                    away_url = get_logo_url(away)
+                    home_url = get_logo_url(home)
+
+                    away_html = (
+                        f'<span class="inline-flex items-center gap-1 font-extrabold">'
+                        f'<img src="{away_url}" style="width:20px; height:14px; object-fit:contain;" />'
+                        f'{away}</span>'
+                    ) if away_url else f'<span class="font-extrabold">{away}</span>'
+
+                    home_html = (
+                        f'<span class="inline-flex items-center gap-1 font-extrabold">'
+                        f'<img src="{home_url}" style="width:20px; height:14px; object-fit:contain;" />'
+                        f'{home}</span>'
+                    ) if home_url else f'<span class="font-extrabold">{home}</span>'
+
+                    radio_options = [
+                        {"label": "PENDING", "value": "PENDING"},
+                        {"label": f'{away_html}<span class="ml-2 text-slate-400 font-black">@</span>', "value": away},
+                        {"label": home_html, "value": home},
+                        {"label": "TIE", "value": "TIE"},
+                    ]
+
                     with ui.card().classes("w-full p-2.5 mb-2 border border-slate-300 dark:border-slate-700 shadow-none"):
-                        ui.label(f"{away} @ {home}").classes("text-xs font-extrabold mb-1")
-                        with ui.row().classes("w-full items-center justify-between gap-2 no-wrap"):
-                            rad = ui.radio(["PENDING", away, home, "TIE"], value=db_loser if db_loser in ["PENDING", away, home, "TIE"] else "PENDING").props("inline dense").classes("text-xs")
+                        with ui.row().classes("w-full items-center justify-between gap-2 flex-wrap"):
+                            rad = ui.radio(
+                                options=radio_options,
+                                value=db_loser if db_loser in ["PENDING", away, home, "TIE"] else "PENDING"
+                            ).props("inline dense options-html").classes("text-xs")
                             chk = ui.checkbox("🎯 SO", value=db_so).props("dense").classes("text-xs font-bold shrink-0")
                             controls[mid] = {"away": away, "home": home, "rad": rad, "chk": chk}
 
@@ -322,7 +349,7 @@ def render_admin_view(supabase, user):
         # TAB 3: CSV HISTORICAL PICK UPLOADER (Accounts for game_type)
         # ================================================================
         with ui.tab_panel(t_csv).classes("px-0"):
-            ui.label("Upload Historical Picks CSV").classes("text-base font-extrabold mb-1")
+            ui.label("Upload Picks CSV").classes("text-base font-extrabold mb-1")
             ui.label("Required columns: game_type, username, week, team_picked, pick_state").classes("text-xs opacity-75 mb-3")
 
             def handle_csv_upload(e):
