@@ -39,8 +39,8 @@ def get_required_picks(week: int, matches_count: int) -> int:
     return max(1, matches_count)
 
 def send_smtp_message(smtp_user: str, smtp_pass: str, to_addr: str, subject: str, body: str):
-    smtp_host = (os.environ.get("SMTP_HOST") or "://gmail.com").strip()
-    smtp_port = int(os.environ.get("SMTP_PORT") or 465)
+    smtp_host = "://gmail.com"
+    smtp_port = 465
 
     msg = EmailMessage()
     msg["From"] = smtp_user.strip()
@@ -58,7 +58,7 @@ def main():
     supabase_key = os.environ.get("SUPABASE_SERVICE_KEY") or os.environ["SUPABASE_KEY"]
     smtp_user = os.environ["SMTP_USER"]
     smtp_pass = os.environ["SMTP_PASS"]
-    app_url = os.environ.get("APP_URL", "https://railway.app")
+    app_url = os.environ.get("APP_URL", "https://nfl-loser-pool-production.up.railway.app/")
 
     supabase: Client = create_client(supabase_url, supabase_key)
     current_week = get_current_nfl_week()
