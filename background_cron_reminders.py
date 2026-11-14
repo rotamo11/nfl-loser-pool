@@ -39,9 +39,6 @@ def get_required_picks(week: int, matches_count: int) -> int:
     return max(1, matches_count)
 
 def send_smtp_message(smtp_user: str, smtp_pass: str, to_addr: str, subject: str, body: str):
-    smtp_host = "://gmail.com"
-    smtp_port = 465
-
     msg = EmailMessage()
     msg["From"] = smtp_user.strip()
     msg["To"] = to_addr.strip()
@@ -49,7 +46,8 @@ def send_smtp_message(smtp_user: str, smtp_pass: str, to_addr: str, subject: str
         msg["Subject"] = subject
     msg.set_content(body)
 
-    with smtplib.SMTP_SSL(smtp_host, smtp_port) as server:
+    # Connect directly to Gmail's SMTP server on port 465
+    with smtplib.SMTP_SSL("://gmail.com", 465) as server:
         server.login(smtp_user.strip(), smtp_pass.strip())
         server.send_message(msg)
 
