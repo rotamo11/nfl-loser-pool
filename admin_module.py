@@ -2,6 +2,10 @@ import csv
 import io
 from nicegui import ui, app, run
 from picks_module import get_current_nfl_week, get_week_label, get_logo_url
+import datetime
+from zoneinfo import ZoneInfo
+
+ET_ZONE = ZoneInfo("America/New_York")
 
 CARRIER_OPTIONS = [
     "None / Do Not Use", "AT&T", "Verizon", "T-Mobile", "Sprint",
@@ -82,12 +86,17 @@ def render_admin_view(supabase, user):
                     db_so = bool(m.get("is_shutout", False))
                     init_val = db_loser if db_loser in ["PENDING", away, home, "TIE"] else "PENDING"
 
-                    # Simple state holder matching .value interface for process_dual_pool_scores()
+                    time_label = "TBD"
+                    if kickoff_raw := m.get("kickoff_time"):
+                        dt_naive = datetime.datetime.fromisoformat(str(kickoff_raw).replace(" ", "T")[:19])
+                        dt_et = dt_naive.replace(tzinfo=ET_ZONE)
+                        time_label = dt_et.strftime("%a %-m/%-d/%y %-I:%M %p ET")
+
                     state_holder = {"value": init_val}
 
                     with ui.card().classes("w-full p-2.5 mb-2 border border-slate-300 dark:border-slate-700 shadow-none"):
                         with ui.row().classes("w-full items-center justify-between gap-2 flex-wrap"):
-                            with ui.row().classes("items-center gap-3 flex-wrap"):
+                            with ui.row().classes("items-center gap-2.5 flex-wrap"):
                                 opt_buttons = {}
 
                                 def make_selector(choice_val, btns_dict, holder):
@@ -117,6 +126,9 @@ def render_admin_view(supabase, user):
 
                                     opt_buttons[opt_val] = opt_box
                                     opt_box.on("click", make_selector(opt_val, opt_buttons, state_holder))
+
+                                # Day, Short Date, & Time placed right next to the TIE button
+                                ui.label(f"{time_label}").classes("text-xs font-semibold opacity-75 ml-1")
 
                             chk = ui.checkbox("🎯 SO", value=db_so).props("dense").classes("text-xs font-bold shrink-0")
                             controls[mid] = {"away": away, "home": home, "state": state_holder, "chk": chk}
