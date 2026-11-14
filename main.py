@@ -126,27 +126,11 @@ def render_layout(active_page: str, content_builder):
                     ui.navigate.to("/admin")
                 ui.button("Exit Masquerade", on_click=exit_masquerade).props("unelevated dense size=sm color=white text-color=purple-9").classes("font-bold px-2")
 
-        # 1. Single Top Row: Dead-Center Logo + Title on Desktop, Right-Pinned Controls
-        with ui.row().classes("w-full max-w-5xl relative items-center justify-between md:justify-center mt-1 min-h-[48px] no-wrap"):
-            # Center Group: Logo + NFL Loser Pool Title (Left-aligned on phones, dead-center on md+)
-            with ui.row().classes("items-center justify-center gap-2 no-wrap"):
-                if logo_url:
-                    ui.html(f'<img src="{logo_url}" class="h-9 w-9 md:h-12 md:w-12 object-contain p-0.5 shrink-0 rounded" />')
-                ui.label("NFL Loser Pool").classes("text-xl sm:text-2xl md:text-4xl font-black tracking-tight whitespace-nowrap")
-
-            # Right Group: Theme Toggle + Log Out Button (Pinned to right edge on desktop)
-            with ui.row().classes("items-center gap-1.5 no-wrap md:absolute md:right-0"):
-                def toggle_theme():
-                    app.storage.user["dark_mode"] = not dark_mode.value
-                    ui.navigate.reload()
-
-                ui.button(icon="dark_mode" if not is_dark else "light_mode", on_click=toggle_theme).props(f"flat round dense color={btn_color}")
-
-                if user:
-                    def handle_logout():
-                        app.storage.user.clear()
-                        ui.navigate.to("/")
-                    ui.button("Log Out", on_click=handle_logout).props(f"outline color={btn_color} size=sm").classes("whitespace-nowrap")
+        # 1. Single Top Row: Centered Logo + Title across Mobile & Desktop
+        with ui.row().classes("w-full max-w-5xl items-center justify-center gap-2.5 mt-1 no-wrap"):
+            if logo_url:
+                ui.html(f'<img src="{logo_url}" class="h-10 w-10 md:h-12 md:w-12 object-contain p-0.5 shrink-0 rounded" />')
+            ui.label("NFL Loser Pool").classes("text-2xl sm:text-3xl md:text-4xl font-black tracking-tight whitespace-nowrap")
 
         # 2. Centered Rules Summary, Deadline Pill, & Purse History
         with ui.column().classes("w-full max-w-5xl items-center text-center justify-center gap-1 md:gap-2 mt-2"):
