@@ -127,7 +127,7 @@ def render_picks_view(supabase, user, pool_slug: str):
             if p["pick_state"] in ["Finalized", "Correct", "Incorrect"]:
                 ui.label(f"🔒 Finalized Pick: {p['team_picked']}").classes("w-full p-3 rounded bg-green-100 text-green-900 font-bold mb-2")
             elif p["pick_state"] == "Confirmed":
-                ui.label(f"📋 Confirmed Pick (Editable): {p['team_picked']}").classes("w-full p-3 rounded bg-blue-100 text-blue-900 font-bold mb-2")
+                ui.label(f"Confirmed Pick (Editable): {p['team_picked']}").classes("w-full p-3 rounded bg-blue-100 text-blue-900 font-bold mb-2")
 
         raw_matches = supabase.table("nfl_schedule").select("*").eq("week", target_week).execute().data or []
         matches = sorted(raw_matches, key=lambda m: (0, str(m["kickoff_time"]), m["id"]) if m.get("kickoff_time") else (1, "", m["id"]))
@@ -166,7 +166,8 @@ def render_picks_view(supabase, user, pool_slug: str):
                                 ui.label("@").classes("text-xs text-slate-500 dark:text-slate-400 font-black shrink-0")
 
                             used = team in used_teams
-                            disabled = is_locked or is_db_fin or used or (limit_hit and not is_sel)
+                            # Lock out ALL other matchups once the player finalizes their pick(s) for the week
+                            disabled = is_locked or is_week_finalized or is_db_fin or used or (limit_hit and not is_sel)
 
                             def toggle_team(t=team, active=is_sel):
                                 draft_picks.clear() if max_picks == 1 else draft_picks.discard(t)
@@ -251,7 +252,7 @@ def render_picks_view(supabase, user, pool_slug: str):
         bye_used_prior = any(p["team_picked"].upper() == "BYE" and p["week"] != target_week for p in all_picks)
         db_bye_this_week = next((p for p in week_picks if p["team_picked"].upper() == "BYE"), None)
         bye_finalized_this_week = db_bye_this_week and db_bye_this_week["pick_state"] in ["Finalized", "Correct", "Incorrect"]
-        past_week_locked = (target_week < current_week)
+        bye_disabled = (target_week < current_week) or is_week_finalized
 
         if bye_finalized_this_week:
             ui.button("🔒 BYE Finalized for This Week", color="green").props("disable unelevated").classes("w-full font-bold")
@@ -270,7 +271,7 @@ def render_picks_view(supabase, user, pool_slug: str):
                     matchup_board.refresh()
 
                 ui.button("Confirm BYE" if not db_bye_this_week else "✓ BYE Confirmed", on_click=confirm_bye,
-                          color="primary" if db_bye_this_week else "blue-3").props(f"{'disable' if past_week_locked else ''} unelevated").classes("flex-1 font-bold")
+                          color="primary" if db_bye_this_week else "blue-3").props(f"{'disable' if bye_disabled else ''} unelevated").classes("flex-1 font-bold")
 
                 def open_bye_finalize():
                     with ui.dialog() as dlg, ui.card():
@@ -291,14 +292,14 @@ def render_picks_view(supabase, user, pool_slug: str):
                             ui.button("Yes, Finalize BYE", on_click=lock_bye, color="green")
                     dlg.open()
 
-                ui.button("Finalize BYE", on_click=open_bye_finalize, color="green-3").props(f"{'disable' if past_week_locked else ''} unelevated").classes("flex-1 font-bold")
+                ui.button("Finalize BYE", on_click=open_bye_finalize, color="green-3").props(f"{'disable' if bye_disabled else ''} unelevated").classes("flex-1 font-bold")
 
                 if db_bye_this_week:
                     def clear_bye():
                         supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", pool_slug).eq("week", target_week).execute()
                         ui.notify("BYE selection removed.", type="info")
                         matchup_board.refresh()
-                    ui.button("Reset BYE", on_click=clear_bye, color="red-3").props(f"{'disable' if past_week_locked else ''} unelevated").classes("flex-1 font-bold")
+                    ui.button("Reset BYE", on_click=clear_bye, color="red-3").props(f"{'disable' if bye_disabled else ''} unelevated").classes("flex-1 font-bold")
 
     week_opts = {w: f"{get_week_label(w)} (current)" if w == current_week else get_week_label(w) for w in range(1, 23)}
     def change_week(e):
