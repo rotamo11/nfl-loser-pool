@@ -149,7 +149,7 @@ def render_admin_view(supabase, user):
                     label="Bracket Status"
                 ).classes("w-44")
                 search_input = ui.input(
-                    label="Search Name / Username / Email",
+                    label="Search Name / Username / Email / ID / Notes",
                     placeholder="Type to filter..."
                 ).props("clearable").classes("flex-1 min-w-[200px]")
 
@@ -201,10 +201,12 @@ def render_admin_view(supabase, user):
 
                     if query_txt:
                         searchable_blob = " ".join([
+                            str(u.get("id") or ""),
                             u.get("username") or "",
                             u.get("first_name") or "",
                             u.get("last_name") or "",
                             u.get("email") or "",
+                            u.get("notes") or "",
                         ]).lower()
                         if query_txt not in searchable_blob:
                             continue
@@ -299,10 +301,10 @@ def render_admin_view(supabase, user):
                                         ui.badge("ADMIN", color="purple").classes("text-[10px] font-bold")
                                     ui.button("Edit / Delete", on_click=lambda u_obj=u: open_user_editor(u_obj)).props("dense outline size=xs color=primary")
 
-                                ui.label(f"📧 {uemail}").classes("text-xs opacity-80 truncate")
-                                ui.label(f"🆔 {uid}").classes("text-[10px] font-mono opacity-60 truncate select-all")
+                                ui.label(f"Email: {uemail}").classes("text-xs opacity-80 truncate")
+                                ui.label(f"ID: {uid}").classes("text-[10px] font-mono opacity-60 truncate select-all")
                                 if unotes:
-                                    ui.label(f"📝 {unotes}").classes("text-xs text-amber-700 dark:text-amber-300 italic mt-0.5")
+                                    ui.label(f"Notes: {unotes}").classes("text-xs text-amber-700 dark:text-amber-300 italic mt-0.5")
 
                             if r:
                                 with ui.row().classes("items-center gap-2 shrink-0"):
