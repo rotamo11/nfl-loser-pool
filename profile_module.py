@@ -154,7 +154,9 @@ def render_profile_view(supabase, user):
     ui.separator().classes("my-6")
     with ui.row().classes("w-full justify-end"):
         def handle_logout():
+            saved_theme = app.storage.user.get("dark_mode", False)
             app.storage.user.clear()
+            app.storage.user["dark_mode"] = saved_theme
             ui.navigate.to("/")
 
         ui.button("Log Out", icon="logout", on_click=handle_logout, color="red").props("outline").classes("font-bold px-6")
