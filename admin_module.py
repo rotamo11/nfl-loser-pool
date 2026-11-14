@@ -80,37 +80,46 @@ def render_admin_view(supabase, user):
                     away, home = m["away_team"].upper(), m["home_team"].upper()
                     db_loser = m.get("winner") or "PENDING"
                     db_so = bool(m.get("is_shutout", False))
+                    init_val = db_loser if db_loser in ["PENDING", away, home, "TIE"] else "PENDING"
 
-                    away_url = get_logo_url(away)
-                    home_url = get_logo_url(home)
-
-                    away_html = (
-                        f'<span class="inline-flex items-center gap-1 font-extrabold">'
-                        f'<img src="{away_url}" style="width:20px; height:14px; object-fit:contain;" />'
-                        f'{away}</span>'
-                    ) if away_url else f'<span class="font-extrabold">{away}</span>'
-
-                    home_html = (
-                        f'<span class="inline-flex items-center gap-1 font-extrabold">'
-                        f'<img src="{home_url}" style="width:20px; height:14px; object-fit:contain;" />'
-                        f'{home}</span>'
-                    ) if home_url else f'<span class="font-extrabold">{home}</span>'
-
-                    radio_options = {
-                        "PENDING": "PENDING",
-                        away: f'{away_html}<span class="ml-2 text-slate-400 font-black">@</span>',
-                        home: home_html,
-                        "TIE": "TIE",
-                    }
+                    # Simple state holder matching .value interface for process_dual_pool_scores()
+                    state_holder = {"value": init_val}
 
                     with ui.card().classes("w-full p-2.5 mb-2 border border-slate-300 dark:border-slate-700 shadow-none"):
                         with ui.row().classes("w-full items-center justify-between gap-2 flex-wrap"):
-                            rad = ui.radio(
-                                options=radio_options,
-                                value=db_loser if db_loser in radio_options else "PENDING"
-                            ).props("inline dense options-html").classes("text-xs")
+                            with ui.row().classes("items-center gap-3 flex-wrap"):
+                                opt_buttons = {}
+
+                                def make_selector(choice_val, btns_dict, holder):
+                                    def select_opt():
+                                        holder["value"] = choice_val
+                                        for k, b in btns_dict.items():
+                                            if k == choice_val:
+                                                b.classes(remove="opacity-60 border-slate-300 dark:border-slate-700", add="bg-blue-600 text-white border-blue-500 shadow-sm")
+                                            else:
+                                                b.classes(remove="bg-blue-600 text-white border-blue-500 shadow-sm", add="opacity-60 border-slate-300 dark:border-slate-700")
+                                    return select_opt
+
+                                for idx_opt, opt_val in enumerate(["PENDING", away, home, "TIE"]):
+                                    if idx_opt == 2:
+                                        ui.label("@").classes("text-xs font-black text-slate-400")
+
+                                    is_active = (opt_val == init_val)
+                                    base_cls = "px-2.5 py-1 rounded-md border text-xs font-extrabold cursor-pointer transition-all " + (
+                                        "bg-blue-600 text-white border-blue-500 shadow-sm" if is_active else "opacity-60 border-slate-300 dark:border-slate-700"
+                                    )
+
+                                    with ui.row().classes(f"items-center gap-1.5 no-wrap {base_cls}") as opt_box:
+                                        if opt_val in [away, home]:
+                                            if logo_u := get_logo_url(opt_val):
+                                                ui.html(f'<img src="{logo_u}" class="w-5 h-3.5 object-contain shrink-0" />')
+                                        ui.label(opt_val).classes("leading-none")
+
+                                    opt_buttons[opt_val] = opt_box
+                                    opt_box.on("click", make_selector(opt_val, opt_buttons, state_holder))
+
                             chk = ui.checkbox("🎯 SO", value=db_so).props("dense").classes("text-xs font-bold shrink-0")
-                            controls[mid] = {"away": away, "home": home, "rad": rad, "chk": chk}
+                            controls[mid] = {"away": away, "home": home, "state": state_holder, "chk": chk}
 
                 def run_db_scoring_batch(week_num, snapshot):
                     losers_set, winners_set, shutouts_set, ties_set = set(), set(), set(), set()
@@ -167,7 +176,7 @@ def render_admin_view(supabase, user):
                     try:
                         # Capture current radio/checkbox values safely on the UI thread
                         snapshot = {
-                            mid: {"away": item["away"], "home": item["home"], "res_val": item["rad"].value, "so_val": item["chk"].value}
+                            mid: {"away": item["away"], "home": item["home"], "res_val": item["state"]["value"], "so_val": item["chk"].value}
                             for mid, item in controls.items()
                         }
                         await run.io_bound(run_db_scoring_batch, w_num, snapshot)
