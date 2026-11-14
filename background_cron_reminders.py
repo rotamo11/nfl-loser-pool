@@ -13,13 +13,13 @@ CARRIER_GATEWAYS = {
     "AT&T": "txt.att.net",
     "Verizon": "vtext.com",
     "T-Mobile": "tmomail.net",
-    "Sprint": "://sprintpcs.com",
-    "Boost Mobile": "://myboostmobile.com",
+    "Sprint": "messaging.sprintpcs.com",
+    "Boost Mobile": "sms.myboostmobile.com",
     "Cricket Wireless": "sms.cricketwireless.net",
     "MetroPCS": "mymetropcs.com",
     "US Cellular": "email.uscc.net",
     "Virgin Mobile": "vmobl.com",
-    "Google Fi": "://google.com",
+    "Google Fi": "msg.fi.google.com",
     "Xfinity Mobile": "vtext.com",
     "Visible": "vtext.com",
     "Mint Mobile": "tmomail.net",
@@ -39,16 +39,20 @@ def get_required_picks(week: int, matches_count: int) -> int:
     return max(1, matches_count)
 
 def send_smtp_message(smtp_user: str, smtp_pass: str, to_addr: str, subject: str, body: str):
+    clean_user = smtp_user.strip()
+    clean_pass = smtp_pass.replace(" ", "").strip()
+    clean_to = to_addr.strip()
+
     msg = EmailMessage()
-    msg["From"] = smtp_user.strip()
-    msg["To"] = to_addr.strip()
+    msg["From"] = clean_user
+    msg["To"] = clean_to
     if subject:
         msg["Subject"] = subject
     msg.set_content(body)
 
     # Connect directly to Gmail's SMTP server on port 465
-    with smtplib.SMTP_SSL("://gmail.com", 465) as server:
-        server.login(smtp_user.strip(), smtp_pass.strip())
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465, local_hostname="localhost", timeout=15) as server:
+        server.login(clean_user, clean_pass)
         server.send_message(msg)
 
 def main():
