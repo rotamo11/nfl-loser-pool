@@ -126,58 +126,56 @@ def render_layout(active_page: str, content_builder):
                     ui.navigate.to("/admin")
                 ui.button("Exit Masquerade", on_click=exit_masquerade).props("unelevated dense size=sm color=white text-color=purple-9").classes("font-bold px-2")
 
-        # 1. Top-Right Utility Row (Theme Toggle + Logout side-by-side)
-        with ui.row().classes("w-full max-w-5xl justify-end items-center gap-2"):
-            def toggle_theme():
-                app.storage.user["dark_mode"] = not dark_mode.value
-                ui.navigate.reload()
+        # 1. Single Top Row: Left Spacer | Centered Logo + Title | Right Theme & Logout
+        with ui.element("div").classes("w-full max-w-5xl items-center mt-1").style(
+            "display: grid; grid-template-columns: 1fr auto 1fr; gap: 0.5rem;"
+        ):
+            # Left Column: Empty spacer on mobile (balances right buttons so title stays dead-center)
+            ui.element("div").classes("hidden sm:block")
 
-            ui.button(icon="dark_mode" if not is_dark else "light_mode", on_click=toggle_theme).props(f"flat round dense color={btn_color}")
+            # Center Column: Inline Logo + NFL Loser Pool Title (Left-aligned on tiny screens, centered on sm+)
+            with ui.row().classes("items-center justify-start sm:justify-center gap-2 no-wrap col-span-2 sm:col-span-1"):
+                if logo_url:
+                    ui.html(f'<img src="{logo_url}" class="h-9 w-9 md:h-12 md:w-12 object-contain p-0.5 shrink-0 rounded" />')
+                ui.label("NFL Loser Pool").classes("text-xl sm:text-2xl md:text-4xl font-black tracking-tight whitespace-nowrap")
 
-            if user:
-                def handle_logout():
-                    app.storage.user.clear()
-                    ui.navigate.to("/")
-                ui.button("Log Out", on_click=handle_logout).props(f"outline color={btn_color} size=sm")
+            # Right Column: Theme Toggle + Log Out Button Side-by-Side
+            with ui.row().classes("justify-end items-center gap-1.5 no-wrap"):
+                def toggle_theme():
+                    app.storage.user["dark_mode"] = not dark_mode.value
+                    ui.navigate.reload()
 
-        # 2. Main Header Content Area (Mobile unchanged, Desktop scaled ~1.5x)
-        with ui.row().classes("w-full max-w-5xl items-center justify-between gap-4 md:gap-8 no-wrap mt-1"):
-            # Desktop-Only Full-Height Left Logo using native ui.image()
-            if logo_url:
-                ui.image(logo_url).props("fit=contain").classes("hidden md:block shrink-0 rounded-xl").style("width: 220px; height: 220px;")
+                ui.button(icon="dark_mode" if not is_dark else "light_mode", on_click=toggle_theme).props(f"flat round dense color={btn_color}")
 
-            # Centered Header Text & Rules
-            with ui.column().classes("flex-1 items-center text-center justify-center gap-1 md:gap-2"):
-                # Title Row (Mobile text-2xl unchanged, Desktop scaled to md:text-4xl)
-                with ui.row().classes("items-center justify-center gap-2 no-wrap"):
-                    if logo_url:
-                        ui.html(f'<img src="{logo_url}" class="block md:hidden h-9 w-9 object-contain p-0.5 shrink-0 rounded" />')
-                    ui.label("NFL Loser Pool").classes("text-3xl md:text-3xl font-black tracking-tight")
+                if user:
+                    def handle_logout():
+                        app.storage.user.clear()
+                        ui.navigate.to("/")
+                    ui.button("Log Out", on_click=handle_logout).props(f"outline color={btn_color} size=sm").classes("whitespace-nowrap")
 
-                # 3-Column Rules Summary (Mobile text-xs unchanged, Desktop scaled to md:text-sm)
-                with ui.row().classes("w-full justify-center gap-4 md:gap-10 text-xs md:text-sm mt-1"):
-                    with ui.column().classes("items-center gap-0 md:gap-0.5"):
-                        ui.label("Weeks 1-14").classes(f"font-extrabold {week_hdr_cls}")
-                        ui.label("Pick 1 team to lose")
-                    with ui.column().classes("items-center gap-0 md:gap-0.5"):
-                        ui.label("Weeks 15-18").classes(f"font-extrabold {week_hdr_cls}")
-                        ui.label("Pick 2 teams to lose")
-                    with ui.column().classes("items-center gap-0 md:gap-0.5"):
-                        ui.label("Playoffs").classes(f"font-extrabold {week_hdr_cls}")
-                        ui.label("Pick ALL losers (repeats allowed)")
+        # 2. Centered Rules Summary, Deadline Pill, & Purse History
+        with ui.column().classes("w-full max-w-5xl items-center text-center justify-center gap-1 md:gap-2 mt-2"):
+            with ui.row().classes("w-full justify-center gap-4 md:gap-10 text-xs md:text-sm"):
+                with ui.column().classes("items-center gap-0 md:gap-0.5"):
+                    ui.label("Weeks 1-14").classes(f"font-extrabold {week_hdr_cls}")
+                    ui.label("Pick 1 team to lose")
+                with ui.column().classes("items-center gap-0 md:gap-0.5"):
+                    ui.label("Weeks 15-18").classes(f"font-extrabold {week_hdr_cls}")
+                    ui.label("Pick 2 teams to lose")
+                with ui.column().classes("items-center gap-0 md:gap-0.5"):
+                    ui.label("Playoffs").classes(f"font-extrabold {week_hdr_cls}")
+                    ui.label("Pick ALL losers (repeats allowed)")
 
-                # Deadline Pill Badge (Mobile text-xs unchanged, Desktop scaled to md:text-sm)
-                ui.label("Weekly Deadline: Noon ET Sunday, or by kickoff of earlier game").classes(
-                    "text-xs md:text-sm font-bold text-white px-3 md:px-5 py-1 md:py-1.5 rounded-full mt-1"
-                ).style(f"background-color: {pool_hex};")
+            ui.label("Weekly Deadline: Noon ET Sunday, or by kickoff of earlier game").classes(
+                "text-xs md:text-sm font-bold text-white px-3 md:px-5 py-1 md:py-1.5 rounded-full mt-1"
+            ).style(f"background-color: {pool_hex};")
 
-                # Purse & Last Year's Losers (Mobile text-xs/11px unchanged, Desktop scaled to md:text-base/sm)
-                if is_2nd:
-                    ui.label("26 Players: $650 Purse ($390 for 1st / $195 for 2nd / $65 for 3rd)").classes(f"text-xs md:text-base font-bold mt-1 {purse_cls}")
-                    ui.label("Last Year's Losers: D. Bobrow ($300) • M. Ellis ($150) • D. Tashima ($50)").classes(f"text-[11px] md:text-sm {text_muted}")
-                else:
-                    ui.label("74 Players | $1850 Purse ($1110 1st / $555 2nd / $185 3rd)").classes(f"text-xs md:text-base font-bold mt-1 {purse_cls}")
-                    ui.label("Last Year's Losers: S. King ($765) • A. Conley ($382.50) • B. Kazmierski ($127.50)").classes(f"text-[11px] md:text-sm {text_muted}")
+            if is_2nd:
+                ui.label("26 Players: $650 Purse ($390 for 1st / $195 for 2nd / $65 for 3rd)").classes(f"text-xs md:text-base font-bold mt-1 {purse_cls}")
+                ui.label("Last Year's Losers: D. Bobrow ($300) • M. Ellis ($150) • D. Tashima ($50)").classes(f"text-[11px] md:text-sm {text_muted}")
+            else:
+                ui.label("74 Players | $1850 Purse ($1110 1st / $555 2nd / $185 3rd)").classes(f"text-xs md:text-base font-bold mt-1 {purse_cls}")
+                ui.label("Last Year's Losers: S. King ($765) • A. Conley ($382.50) • B. Kazmierski ($127.50)").classes(f"text-[11px] md:text-sm {text_muted}")
 
         # 3. 50/50 Split Primary Pool Selector Bar (Main vs. 2nd Chance)
         def select_pool(target_pool: str):
