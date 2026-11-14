@@ -50,6 +50,10 @@ def get_authenticated_user():
                 return MasqueradeUser(masq_uid, m_email)
 
             app.storage.user["user_id"] = str(res.user.id)
+            if "dark_mode" not in app.storage.user:
+                u_row = supabase.table("users").select("dark_mode").eq("id", str(res.user.id)).execute().data
+                if u_row and isinstance(u_row, list) and len(u_row) > 0:
+                    app.storage.user["dark_mode"] = bool(u_row[0].get("dark_mode", False))
             return res.user
     except Exception:
         app.storage.user.clear()
@@ -238,7 +242,13 @@ def render_login_box():
             })
             if res and res.session:
                 app.storage.user["refresh_token"] = res.session.refresh_token
-                app.storage.user["user_id"] = res.user.id
+                app.storage.user["user_id"] = str(res.user.id)
+
+                # Load user's saved theme preference from Supabase into the persistent cookie
+                u_row = supabase.table("users").select("dark_mode").eq("id", str(res.user.id)).execute().data
+                if u_row and isinstance(u_row, list) and len(u_row) > 0:
+                    app.storage.user["dark_mode"] = bool(u_row[0].get("dark_mode", False))
+
                 ui.notify("Logged in! Session saved for 7 days.", type="positive")
                 ui.navigate.reload()
         except Exception as e:
