@@ -1,119 +1,116 @@
 import datetime
 from zoneinfo import ZoneInfo
 from nicegui import ui, app
-from admin_module import is_admin_user
 
 ET_ZONE = ZoneInfo("America/New_York")
 
-def get_unread_chat_count(supabase, user) -> int:
-    if not user:
-        return 0
+def format_chat_timestamp(iso_str: str) -> str:
+    if not iso_str:
+        return ""
     try:
-        uid = str(user.id)
-        u_res = supabase.table("users").select("last_read_chat_at").eq("id", uid).execute().data
-        last_read = u_res[0].get("last_read_chat_at") if (isinstance(u_res, list) and len(u_res) > 0) else None
-
-        query = supabase.table("pool_chat").select("id").neq("user_id", uid)
-        if last_read:
-            query = query.gt("created_at", last_read)
-        rows = query.execute().data or []
-        return len(rows)
+        dt_utc = datetime.datetime.fromisoformat(str(iso_str).replace("Z", "+00:00"))
+        if dt_utc.tzinfo is None:
+            dt_utc = dt_utc.replace(tzinfo=datetime.timezone.utc)
+        dt_et = dt_utc.astimezone(ET_ZONE)
+        return dt_et.strftime("%a %-m/%-d %-I:%M %p ET")
     except Exception:
-        return 0
+        return ""
 
-def render_chat_view(supabase, user, pool_slug: str):
-    user_id = str(user.id)
-    admin_flag = is_admin_user(supabase, user)
+def render_chat_view(supabase, user):
+    current_user_id = str(user.id)
     is_dark = app.storage.user.get("dark_mode", False)
 
-    # Fetch display username
-    u_res = supabase.table("users").select("username").eq("id", user_id).execute().data
-    my_username = u_res[0].get("username") if (isinstance(u_res, list) and len(u_res) > 0) else "Player"
+    # Safely fetch current user's username and admin flag
+    u_rows = supabase.table("users").select("username, is_admin").eq("id", current_user_id).execute().data or []
+    first_u = next(iter(u_rows), {})
+    current_username = first_u.get("username") or "Player"
+    is_admin = bool(first_u.get("is_admin", False))
 
-    with ui.row().classes("w-full items-center justify-between mb-3 pb-2 border-b border-slate-200 dark:border-slate-700"):
-        ui.label("💬 League Chat & Trash Talk").classes("text-xl font-black")
+    # Mark chat as read upon opening
+    def mark_chat_read():
+        try:
+            now_utc = datetime.datetime.now(datetime.timezone.utc).isoformat()
+            supabase.table("users").update({"last_read_chat_at": now_utc}).eq("id", current_user_id).execute()
+        except Exception:
+            pass
+
+    mark_chat_read()
+
+    with ui.row().classes("w-full items-center justify-between mb-3"):
+        with ui.column().classes("gap-0"):
+            ui.label("💬 League Trash Talk & Chat").classes("text-xl font-black")
+            ui.label("Open to all Main & 2nd Chance players.").classes("text-xs opacity-70")
         ui.button("Refresh", icon="refresh", on_click=lambda: message_feed.refresh()).props("flat dense size=sm")
+
+    box_bg = "bg-slate-950/60 border-slate-700" if is_dark else "bg-slate-50 border-slate-200"
 
     @ui.refreshable
     def message_feed():
-        # Fetch recent 100 messages (global or filtered by pool if game_type column exists)
-        try:
-            msgs = supabase.table("pool_chat").select("*").order("created_at", desc=False).limit(100).execute().data or []
-        except Exception as e:
-            ui.label(f"Error loading chat: {str(e)}").classes("text-red-500 text-xs")
-            return
+        mark_chat_read()
+        msgs = (
+            supabase.table("pool_chat")
+            .select("*")
+            .order("created_at", desc=True)
+            .limit(75)
+            .execute()
+            .data or []
+        )
+        msgs = list(reversed(msgs))
 
-        if not msgs:
-            ui.label("No messages yet. Start the trash talk below!").classes("text-sm opacity-70 italic py-4")
-            return
-
-        newest_ts = msgs[-1].get("created_at") if msgs else datetime.datetime.now(datetime.timezone.utc).isoformat()
-        if newest_ts:
-            supabase.table("users").update({"last_read_chat_at": newest_ts}).eq("id", user_id).execute()
-
-        with ui.scroll_area().classes("w-full h-96 p-3 rounded-lg border border-slate-200 dark:border-slate-700"):
-            with ui.column().classes("w-full gap-2.5"):
+        with ui.scroll_area().classes(f"w-full h-96 p-3 rounded-lg border {box_bg}") as scroll:
+            if not msgs:
+                ui.label("No messages yet. Kick off the trash talk below!").classes("text-xs opacity-60 italic")
+            else:
                 for m in msgs:
-                    m_id = m.get("id")
-                    sender = m.get("username") or "Anonymous"
-                    body = m.get("message") or m.get("content") or ""
-                    is_mine = (str(m.get("user_id")) == user_id)
+                    is_mine = (str(m.get("user_id")) == current_user_id)
+                    sender = m.get("username") or "Player"
+                    body_txt = m.get("message") or m.get("content") or ""
+                    ts_label = format_chat_timestamp(m.get("created_at") or "")
 
-                    # Format timestamp to Eastern Time
-                    time_str = ""
-                    if raw_ts := m.get("created_at"):
-                        try:
-                            dt = datetime.datetime.fromisoformat(str(raw_ts).replace("Z", "+00:00"))
-                            time_str = dt.astimezone(ET_ZONE).strftime("%b %-d, %-I:%M %p ET")
-                        except Exception:
-                            pass
+                    align_cls = "items-end" if is_mine else "items-start"
+                    bubble_cls = (
+                        "bg-blue-600 text-white"
+                        if is_mine
+                        else ("bg-slate-800 text-slate-100 border border-slate-700" if is_dark else "bg-white text-slate-900 border border-slate-200")
+                    )
 
-                    if is_mine:
-                        bubble_cls = "bg-blue-600 text-white self-end"
-                    else:
-                        bubble_cls = "bg-slate-800 text-slate-100 self-start" if is_dark else "bg-slate-100 text-slate-900 self-start"
+                    with ui.column().classes(f"w-full {align_cls} mb-2.5 gap-0.5"):
+                        with ui.row().classes("items-center gap-2 text-[11px] opacity-70"):
+                            ui.label(f"{sender} • {ts_label}")
+                            if is_mine or is_admin:
+                                def delete_msg(mid=m["id"]):
+                                    supabase.table("pool_chat").delete().eq("id", mid).execute()
+                                    message_feed.refresh()
 
-                    with ui.column().classes(f"max-w-[85%] p-2.5 rounded-xl {bubble_cls} gap-0.5"):
-                        with ui.row().classes("w-full items-center justify-between gap-3 no-wrap"):
-                            ui.label(sender).classes("text-xs font-extrabold")
-                            with ui.row().classes("items-center gap-1"):
-                                if time_str:
-                                    ui.label(time_str).classes("text-[10px] opacity-70")
-                                if admin_flag or is_mine:
-                                    def make_delete_handler(msg_id):
-                                        def handler():
-                                            try:
-                                                supabase.table("pool_chat").delete().eq("id", msg_id).execute()
-                                                ui.notify("Message deleted.", type="info")
-                                                message_feed.refresh()
-                                            except Exception as err:
-                                                ui.notify(f"Delete failed: {str(err)}", type="negative")
-                                        return handler
-                                
-                                    ui.button(icon="delete", on_click=make_delete_handler(m_id)).props("flat round dense size=xs color=red-4")
+                                ui.button(icon="delete", on_click=delete_msg).props("flat round dense size=xs color=red")
 
-                        ui.label(body).classes("text-sm whitespace-pre-wrap break-words")
+                        with ui.element("div").classes(f"px-3 py-2 rounded-xl max-w-[82%] text-xs md:text-sm shadow-sm {bubble_cls}"):
+                            ui.label(body_txt).classes("whitespace-pre-wrap break-words")
+
+            scroll.scroll_to(percent=1.0)
 
     message_feed()
 
-    # --- NEW MESSAGE INPUT BAR ---
+    # Auto-refresh chat every 15 seconds while mounted
+    with ui.element("div"):
+        ui.timer(15.0, message_feed.refresh)
+
+    # Message Input Bar
     with ui.row().classes("w-full items-center gap-2 mt-3 no-wrap"):
-        msg_input = ui.input(placeholder=f"Post as {my_username}...").classes("flex-1").props("outlined dense")
+        msg_in = ui.input(placeholder="Write a message to the league...").classes("flex-1").props("outlined dense")
 
         def send_message():
-            txt = (msg_input.value or "").strip()
+            txt = (msg_in.value or "").strip()
             if not txt:
                 return
-            try:
-                supabase.table("pool_chat").insert({
-                    "user_id": user_id,
-                    "username": my_username,
-                    "message": txt,
-                }).execute()
-                msg_input.value = ""
-                message_feed.refresh()
-            except Exception as err:
-                ui.notify(f"Failed to send: {str(err)}", type="negative")
+            msg_in.value = ""
+            supabase.table("pool_chat").insert({
+                "user_id": current_user_id,
+                "username": current_username,
+                "message": txt,
+            }).execute()
+            mark_chat_read()
+            message_feed.refresh()
 
-        msg_input.on("keydown.enter", send_message)
-        ui.button("Send", icon="send", on_click=send_message, color="primary").props("unelevated")
+        msg_in.on("keydown.enter", send_message)
+        ui.button("Send", icon="send", on_click=send_message, color="primary").classes("font-bold px-4")
