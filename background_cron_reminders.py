@@ -94,8 +94,8 @@ def main():
     if os.environ.get("GITHUB_EVENT_NAME") == "schedule":
         now_et = datetime.datetime.now(ET_ZONE)
         # Allow Thursday 11 AM/12 PM ET window or Sunday 8 AM/9 AM ET window
-        valid_thu = (now_et.weekday() == 3 and now_et.hour in)
-        valid_sun = (now_et.weekday() == 6 and now_et.hour in)
+        valid_thu = (now_et.weekday() == 3 and now_et.hour in (11, 12))
+        valid_sun = (now_et.weekday() == 6 and now_et.hour in (8, 9))
         if not (valid_thu or valid_sun):
             print(f"Skipping off-timezone UTC cron slot (Current ET: {now_et.strftime('%a %I:%M %p %Z')}).")
             return
