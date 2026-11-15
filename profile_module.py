@@ -44,6 +44,16 @@ def render_profile_view(supabase, user):
                 first_in = ui.input("First Name", value=profile.get("first_name") or "").classes("flex-1")
                 last_in = ui.input("Last Name", value=profile.get("last_name") or "").classes("flex-1")
 
+            ui.label("Automated Reminder Channels:").classes("text-xs font-bold opacity-80 mt-1")
+            email_chk = ui.checkbox(
+                "Send Thursday Noon & Sunday 9 AM ET Email Reminders",
+                value=bool(profile.get("alert_email", True))
+            )
+            push_chk = ui.checkbox(
+                "Enable Thursday Noon & Sunday 9 AM ET ntfy.sh Push Alerts",
+                value=bool(profile.get("alert_sms", False))
+            )
+
             with ui.row().classes("w-full items-center gap-2 no-wrap mb-1"):
                 topic_in = ui.input(
                     "Your Personal ntfy.sh Push Topic",
@@ -57,17 +67,7 @@ def render_profile_view(supabase, user):
             ui.label(
                 f"Free Mobile Push: Install the ntfy app on iOS/Android and subscribe to '{personal_topic}' which is your personal topic for alerts."
             ).classes("text-[11px] opacity-75 mb-3")
-
-            ui.label("Automated Reminder Channels:").classes("text-xs font-bold opacity-80 mt-1")
-            email_chk = ui.checkbox(
-                "Send Thursday Noon & Sunday 9 AM ET Email Reminders",
-                value=bool(profile.get("alert_email", True))
-            )
-            push_chk = ui.checkbox(
-                "Enable Thursday Noon & Sunday 9 AM ET ntfy.sh Push Alerts",
-                value=bool(profile.get("alert_sms", False))
-            )
-
+            
             def save_profile_settings():
                 clean_user = username_in.value.strip()
 
