@@ -136,7 +136,7 @@ def main():
                     adm_topic,
                     f"Admin Check: Week {current_week} Default = {default_team}",
                     f"Verify Week {current_week} default team ({default_team} - {status_note}) before Sunday at NOON ET.",
-                    f"{app_url}/admin",
+                    f"{app_url}admin",
                 )
             except Exception as e:
                 print(f"Admin push failed for {adm_name}: {e}")
