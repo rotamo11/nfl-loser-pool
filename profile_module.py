@@ -1,8 +1,8 @@
-import re
 from nicegui import ui, app
 
 def render_profile_view(supabase, user):
     user_id = str(user.id)
+    personal_topic = f"nflloserpool-{user_id[:8]}"
 
     # Fetch existing player profile from Supabase
     res = supabase.table("users").select("*").eq("id", user_id).execute().data
@@ -30,7 +30,7 @@ def render_profile_view(supabase, user):
             ui.switch("Dark Mode", value=is_dark, on_change=on_theme_toggle).classes("font-bold")
 
     with ui.grid().classes("w-full grid-cols-1 md:grid-cols-2 gap-6"):
-        
+
         # --- LEFT COLUMN: IDENTITY & ALERT SETTINGS ---
         with ui.card().classes("w-full p-4 border border-slate-300 dark:border-slate-700 shadow-none"):
             ui.label("League Identity & Deadline Alerts").classes("text-base font-extrabold mb-3")
@@ -44,16 +44,20 @@ def render_profile_view(supabase, user):
                 first_in = ui.input("First Name", value=profile.get("first_name") or "").classes("flex-1")
                 last_in = ui.input("Last Name", value=profile.get("last_name") or "").classes("flex-1")
 
-            personal_topic = f"nflloserpool-{user_id[:8]}"
-            saved_topic = profile.get("cell_carrier") or ""
-            if "." in saved_topic or saved_topic == "None / Do Not Use":
-                saved_topic = ""
+            saved_topic = (profile.get("cell_carrier") or "").strip()
+            if not saved_topic or "." in saved_topic or saved_topic in ["None / Do Not Use", "nflloserpool"]:
+                saved_topic = personal_topic
 
-            topic_in = ui.input(
-                "ntfy.sh Push Topic (Optional — leave blank for 'nflloserpool')",
-                value=saved_topic,
-                placeholder=f"e.g., nflloserpool or {personal_topic}"
-            ).classes("w-full mb-1")
+            with ui.row().classes("w-full items-center gap-2 no-wrap mb-1"):
+                topic_in = ui.input(
+                    "Your Personal ntfy.sh Push Topic",
+                    value=saved_topic
+                ).classes("flex-1")
+                ui.button(
+                    icon="content_copy",
+                    on_click=lambda: (ui.clipboard.write(topic_in.value), ui.notify("Topic copied to clipboard!", type="info"))
+                ).props("flat round dense").tooltip("Copy personal topic")
+
             ui.label(
                 f"Free Mobile Push: Install the ntfy app on iOS/Android and subscribe to '{personal_topic}' which is your personal topic for alerts."
             ).classes("text-[11px] opacity-75 mb-3")
@@ -70,7 +74,7 @@ def render_profile_view(supabase, user):
 
             def save_profile_settings():
                 clean_user = username_in.value.strip()
-                clean_topic = topic_in.value.strip() or "nflloserpool"
+                clean_topic = topic_in.value.strip() or personal_topic
 
                 if not clean_user:
                     ui.notify("Username cannot be empty.", type="negative")
@@ -120,7 +124,7 @@ def render_profile_view(supabase, user):
                     return
 
                 try:
-                    supabase.auth.update_user({"password": p1})
+                    supabase.auth.admin.update_user_by_id(user_id, {"password": p1})
                     supabase.table("users").update({"first_login_complete": True}).eq("id", user_id).execute()
                     new_pwd.value = ""
                     confirm_pwd.value = ""
