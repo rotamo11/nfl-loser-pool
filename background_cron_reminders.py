@@ -91,6 +91,15 @@ def main():
     supabase: Client = create_client(supabase_url, supabase_key)
     current_week = get_current_nfl_week()
 
+    if os.environ.get("GITHUB_EVENT_NAME") == "schedule":
+        now_et = datetime.datetime.now(ET_ZONE)
+        # Allow Thursday 11 AM/12 PM ET window or Sunday 8 AM/9 AM ET window
+        valid_thu = (now_et.weekday() == 3 and now_et.hour in)
+        valid_sun = (now_et.weekday() == 6 and now_et.hour in)
+        if not (valid_thu or valid_sun):
+            print(f"Skipping off-timezone UTC cron slot (Current ET: {now_et.strftime('%a %I:%M %p %Z')}).")
+            return
+    
     users = supabase.table("users").select(
         "id, username, email, alert_personal_topic, alert_email, alert_sms, is_admin"
     ).execute().data or []
