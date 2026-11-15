@@ -56,5 +56,13 @@ def render_rules_view(pool_slug: str):
                         with ui.column().classes("w-full pl-6 gap-1 my-1"):
                             for sub_b in b:
                                 ui.markdown(f"- {sub_b}").classes("text-xs md:text-sm leading-relaxed my-0")
+                    elif isinstance(b, str) and b.startswith("[") and "](" in b and b.endswith(")"):
+                        label_text, url_target = b[1:-1].split("](", 1)
+                        clean_label = label_text.replace("**", "")
+                        with ui.row().classes("items-center gap-2 pl-4 my-0.5"):
+                            ui.label("•").classes("text-xs md:text-sm")
+                            ui.link(clean_label, url_target, new_tab=True).classes(
+                                "text-xs md:text-sm font-bold text-blue-600 dark:text-blue-400 underline"
+                            )
                     else:
                         ui.markdown(f"- {b}").classes("text-xs md:text-sm leading-relaxed my-0.5")
