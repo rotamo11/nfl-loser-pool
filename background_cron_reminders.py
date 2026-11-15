@@ -47,7 +47,7 @@ def send_ntfy_push(topic: str, title: str, message: str, click_url: str):
         headers={
             "Title": title,
             "Priority": "default",
-            "Tags": "football,alarm_clock",
+            "Icon": f"{click_url.rstrip('/')}/static/loser-logo.png"
             "Click": click_url,
         },
         method="POST",
