@@ -10,6 +10,7 @@ from chat_module import render_chat_view
 from rules_module import render_rules_view
 from profile_module import render_profile_view
 from admin_module import render_admin_view, is_admin_user
+from enrollment_helper import get_open_registration_pools, notify_admins_of_join_request
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY") or os.environ.get("SUPABASE_KEY", "")
@@ -130,6 +131,57 @@ def render_login_box():
     email_input.on("keydown.enter", attempt_login)
     pass_input.on("keydown.enter", attempt_login)
     ui.button("Log In", on_click=attempt_login).classes("w-full mt-3 bg-blue-600 text-white font-bold")
+
+    open_pools = get_open_registration_pools(supabase)
+    if open_pools:
+        ui.separator().classes("my-4")
+        ui.label("Don't have an account yet?").classes("text-xs opacity-75 text-center w-full mb-1")
+
+        def open_guest_join_dialog():
+            pool_choices = {k: k.replace("_", " ") for k in open_pools.keys()}
+            default_choice = next(iter(pool_choices.keys()))
+
+            with ui.dialog() as join_dlg, ui.card().classes("w-full max-w-md p-5"):
+                ui.label("🏈 Request to Join NFL Loser Pool").classes("text-lg font-black mb-1")
+                ui.label("Submit your details below. Once approved by the Commissioner, your login will be activated.").classes("text-xs opacity-75 mb-3")
+
+                pool_sel = ui.select(pool_choices, value=default_choice, label="Pool to Join").classes("w-full mb-2")
+                uname_in = ui.input("Desired Display Username (Shown on Brackets)").classes("w-full mb-2")
+                with ui.row().classes("w-full gap-2 no-wrap mb-2"):
+                    fn_in = ui.input("First Name").classes("flex-1")
+                    ln_in = ui.input("Last Name").classes("flex-1")
+                em_in = ui.input("Email Address").classes("w-full mb-2")
+                ph_in = ui.input("Cell Phone (Optional)").classes("w-full mb-3")
+
+                def submit_guest_request():
+                    clean_email = (em_in.value or "").strip().lower()
+                    clean_user = (uname_in.value or "").strip()
+                    if not clean_email or "@" not in clean_email or not clean_user:
+                        ui.notify("Please enter a valid email address and username.", type="negative")
+                        return
+
+                    payload = {
+                        "user_id": None,
+                        "email": clean_email,
+                        "username": clean_user,
+                        "first_name": (fn_in.value or "").strip(),
+                        "last_name": (ln_in.value or "").strip(),
+                        "cell_phone": (ph_in.value or "").strip(),
+                        "game_type": pool_sel.value,
+                        "status": "Pending",
+                    }
+                    supabase.table("enrollment_requests").insert(payload).execute()
+                    notify_admins_of_join_request(supabase, payload)
+                    join_dlg.close()
+                    ui.notify("✅ Join request sent! The Commissioner has been notified.", type="positive", timeout=6000)
+
+                with ui.row().classes("w-full justify-end gap-2 mt-2"):
+                    ui.button("Cancel", on_click=join_dlg.close).props("flat")
+                    ui.button("Submit Request", on_click=submit_guest_request, color="primary").classes("font-bold")
+
+            join_dlg.open()
+
+        ui.button("Request to Join Pool", icon="person_add", on_click=open_guest_join_dialog, color="secondary").props("outline").classes("w-full font-bold")
 
 @ui.page("/")
 @ui.page("/{subpath:path}")
