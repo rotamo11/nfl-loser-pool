@@ -257,7 +257,7 @@ def render_admin_view(supabase, user):
 
     with ui.tabs().classes("w-full") as admin_tabs:
         t_score = ui.tab("Score Games")
-        t_default = ui.tab("Default Pick")
+        t_default = ui.tab("Deadline Tools")
         t_roster = ui.tab("Player Management")
         t_csv = ui.tab("CSV Import")
         t_masq = ui.tab("Masquerade")
@@ -537,8 +537,6 @@ def render_admin_view(supabase, user):
 
                             ui.button("Confirm & Lock Week", on_click=confirm_run_lock, color="amber-8").classes("font-bold text-white")
                     lock_dlg.open()
-
-                lock_btn = ui.button("Run Deadline Lock Now", icon="lock_clock", on_click=open_lock_confirm, color="amber-8").classes("font-bold text-white")
 
                 def open_reminder_confirm():
                     w_target = def_week_sel.value
