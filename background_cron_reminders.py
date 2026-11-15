@@ -99,7 +99,7 @@ def main():
                 f"Hey {adm_name},\n\n"
                 f"Please verify the Week {current_week} auto-pick default team before Sunday at NOON ET.\n\n"
                 f"Current Default Team: {default_team} ({status_note})\n\n"
-                f"Update or confirm in the Admin Console: \n\n{app_url}/admin\n"
+                f"Update or confirm in the Admin Console: \n\n{app_url}admin\n"
             )
             try:
                 send_smtp_email(smtp_user, smtp_pass, adm["email"], adm_subj, adm_body)
