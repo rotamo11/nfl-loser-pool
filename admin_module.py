@@ -737,76 +737,94 @@ def render_admin_view(supabase, user):
             missing_picks_preview()
 
         # ================================================================
-        # TAB 4: CSV HISTORICAL PICK UPLOADER (EMAIL-BASED)
+        # TAB 4: CSV HISTORICAL PICK UPLOADER (EMAIL-BASED & BATCHED)
         # ================================================================
         with ui.tab_panel(t_csv).classes("px-0"):
             ui.label("Upload Historical Picks CSV").classes("text-base font-extrabold mb-1")
             ui.label("Required columns: game_type, email, week, team_picked, pick_state").classes("text-xs opacity-75 mb-3")
 
-            status_lbl = ui.label("").classes("text-xs font-bold mt-2")
+            status_lbl = ui.label("Ready — select a .csv file to begin.").classes("text-xs font-bold mt-2 text-blue-600 dark:text-blue-400")
 
             async def handle_csv_upload(e):
-                status_lbl.text = "⏳ Processing CSV file..."
+                status_lbl.text = "⏳ Reading uploaded CSV file..."
                 try:
-                    # Support both NiceGUI file upload event signatures
-                    if hasattr(e, "file") and hasattr(e.file, "read"):
-                        raw_bytes = await e.file.read()
-                    elif hasattr(e, "content"):
-                        res = e.content.read()
-                        raw_bytes = await res if hasattr(res, "__await__") else res
-                    else:
-                        raise ValueError("Could not read uploaded file stream.")
+                    raw_bytes = b""
+                    if hasattr(e, "content") and e.content is not None:
+                        e.content.seek(0)
+                        data = e.content.read()
+                        raw_bytes = await data if hasattr(data, "__await__") else data
+                    elif hasattr(e, "file") and e.file is not None:
+                        data = e.file.read()
+                        raw_bytes = await data if hasattr(data, "__await__") else data
+
+                    if not raw_bytes:
+                        status_lbl.text = "❌ Error: Uploaded file arrived empty (0 bytes)."
+                        return
 
                     text = raw_bytes.decode("utf-8-sig")
-                    reader = csv.DictReader(io.StringIO(text))
+                    lines = [ln for ln in text.splitlines() if ln.strip()]
+                    status_lbl.text = f"⏳ Parsed {len(lines)} lines. Matching emails & saving to Supabase..."
 
-                    # Normalize headers to lowercase/trimmed so minor casing differences work
-                    if reader.fieldnames:
-                        reader.fieldnames = [h.strip().lower() for h in reader.fieldnames]
+                    def process_csv_batch(csv_text: str) -> str:
+                        reader = csv.DictReader(io.StringIO(csv_text))
+                        if reader.fieldnames:
+                            reader.fieldnames = [h.strip().lower() for h in reader.fieldnames]
 
-                    users_rows = supabase.table("users").select("id, email").execute().data or []
-                    email_to_id = {u["email"].strip().lower(): u["id"] for u in users_rows if u.get("email")}
+                        headers_found = reader.fieldnames or []
+                        if "email" not in headers_found or "team_picked" not in headers_found:
+                            return f"❌ Missing required headers. Found columns: {headers_found}"
 
-                    imported, skipped = 0, 0
-                    skipped_emails = []
+                        users_rows = supabase.table("users").select("id, email").execute().data or []
+                        email_to_id = {u["email"].strip().lower(): str(u["id"]) for u in users_rows if u.get("email")}
 
-                    for row in reader:
-                        gtype_raw = (row.get("game_type") or "Main").strip().lower()
-                        gtype = "2nd_Chance" if gtype_raw in ["2nd_chance", "2nd chance", "2ndchance"] else "Main"
+                        rows_to_insert = []
+                        skipped = 0
+                        skipped_emails = []
 
-                        email_val = (row.get("email") or "").strip().lower()
-                        uid = email_to_id.get(email_val)
-                        if not uid:
-                            skipped += 1
-                            if email_val:
-                                skipped_emails.append(email_val)
-                            continue
+                        for row in reader:
+                            email_val = (row.get("email") or "").strip().lower()
+                            uid = email_to_id.get(email_val)
+                            if not uid:
+                                skipped += 1
+                                if email_val:
+                                    skipped_emails.append(email_val)
+                                continue
 
-                        wk = int(str(row["week"]).strip())
-                        team = str(row["team_picked"]).strip().upper()
-                        state = (row.get("pick_state") or "Finalized").strip()
+                            gtype_raw = (row.get("game_type") or "Main").strip().lower()
+                            gtype = "2nd_Chance" if gtype_raw in ["2nd_chance", "2nd chance", "2ndchance"] else "Main"
+                            wk = int(str(row["week"]).strip())
+                            team = str(row["team_picked"]).strip().upper()
+                            state = (row.get("pick_state") or "Finalized").strip()
 
-                        supabase.table("user_picks").delete().eq("user_id", uid).eq("game_type", gtype).eq("week", wk).eq("team_picked", team).execute()
-                        supabase.table("user_picks").insert({
-                            "user_id": uid,
-                            "game_type": gtype,
-                            "week": wk,
-                            "team_picked": team,
-                            "pick_state": state,
-                        }).execute()
-                        imported += 1
+                            # Remove existing duplicate for same user/pool/week/team before inserting
+                            supabase.table("user_picks").delete().eq("user_id", uid).eq("game_type", gtype).eq("week", wk).eq("team_picked", team).execute()
+                            rows_to_insert.append({
+                                "user_id": uid,
+                                "game_type": gtype,
+                                "week": wk,
+                                "team_picked": team,
+                                "pick_state": state,
+                            })
 
-                    msg = f"✅ Imported {imported} picks ({skipped} skipped)."
-                    if skipped_emails:
-                        msg += f" Unmatched emails: {', '.join(sorted(set(skipped_emails))[:5])}"
-                    status_lbl.text = msg
-                    ui.notify(msg, type="positive" if imported > 0 else "warning", timeout=8000)
+                        if rows_to_insert:
+                            supabase.table("user_picks").insert(rows_to_insert).execute()
+
+                        summary = f"✅ Imported {len(rows_to_insert)} picks ({skipped} skipped)."
+                        if skipped_emails:
+                            summary += f" Unmatched emails: {', '.join(sorted(set(skipped_emails))[:5])}"
+                        return summary
+
+                    result_msg = await run.io_bound(process_csv_batch, text)
+                    status_lbl.text = result_msg
+                    ui.notify(result_msg, type="positive" if result_msg.startswith("✅") else "warning", timeout=10000)
+
                 except Exception as err:
                     err_msg = f"❌ CSV Import Error: {str(err)}"
                     status_lbl.text = err_msg
                     ui.notify(err_msg, type="negative", timeout=10000)
 
             ui.upload(on_upload=handle_csv_upload, auto_upload=True).props("accept=.csv").classes("w-full max-w-md")
+
 
         # ================================================================
         # TAB 5: MASQUERADE
