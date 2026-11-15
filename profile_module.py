@@ -44,18 +44,14 @@ def render_profile_view(supabase, user):
                 first_in = ui.input("First Name", value=profile.get("first_name") or "").classes("flex-1")
                 last_in = ui.input("Last Name", value=profile.get("last_name") or "").classes("flex-1")
 
-            saved_topic = (profile.get("cell_carrier") or "").strip()
-            if not saved_topic or "." in saved_topic or saved_topic in ["None / Do Not Use", "nflloserpool"]:
-                saved_topic = personal_topic
-
             with ui.row().classes("w-full items-center gap-2 no-wrap mb-1"):
                 topic_in = ui.input(
                     "Your Personal ntfy.sh Push Topic",
-                    value=saved_topic
-                ).classes("flex-1")
+                    value=personal_topic
+                ).props("readonly").classes("flex-1")
                 ui.button(
                     icon="content_copy",
-                    on_click=lambda: (ui.clipboard.write(topic_in.value), ui.notify("Topic copied to clipboard!", type="info"))
+                    on_click=lambda: (ui.clipboard.write(personal_topic), ui.notify("Topic copied to clipboard!", type="info"))
                 ).props("flat round dense").tooltip("Copy personal topic")
 
             ui.label(
@@ -74,7 +70,6 @@ def render_profile_view(supabase, user):
 
             def save_profile_settings():
                 clean_user = username_in.value.strip()
-                clean_topic = topic_in.value.strip() or personal_topic
 
                 if not clean_user:
                     ui.notify("Username cannot be empty.", type="negative")
@@ -85,7 +80,6 @@ def render_profile_view(supabase, user):
                         "username": clean_user,
                         "first_name": first_in.value.strip(),
                         "last_name": last_in.value.strip(),
-                        "cell_carrier": clean_topic,
                         "alert_email": email_chk.value,
                         "alert_sms": push_chk.value,
                     }).eq("id", user_id).execute()
