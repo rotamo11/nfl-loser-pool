@@ -41,7 +41,7 @@ def render_rules_view(pool_slug: str):
             ],
         ]),
         ("6. Helpful Links", [
-            "[**ESPN NFL Schedule Grid**](https://espn.com)",
+            "[**ESPN NFL Schedule Grid**](http://www.espn.com/nfl/schedulegrid)",
             "[**ESPN Odds**](https://www.espn.com/nfl/odds)",
             "[**ESPN Power Index**](https://www.espn.com/nfl/fpi)",
         ]),
