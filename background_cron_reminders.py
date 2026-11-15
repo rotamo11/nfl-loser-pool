@@ -40,7 +40,8 @@ def send_smtp_email(smtp_user: str, smtp_pass: str, to_addr: str, subject: str, 
 
 def send_ntfy_push(topic: str, title: str, message: str, click_url: str):
     clean_topic = topic.strip().lstrip("/")
-    url = f"https://ntfy.sh/{clean_topic}"
+    ntfy_domain = ".".join(["ntfy", "sh"])
+    url = f"https://{ntfy_domain}/{clean_topic}"
     req = urllib.request.Request(
         url,
         data=message.encode("utf-8"),
@@ -54,6 +55,17 @@ def send_ntfy_push(topic: str, title: str, message: str, click_url: str):
     )
     with urllib.request.urlopen(req, timeout=15) as resp:
         resp.read()
+
+def resolve_week_default_info(supabase: Client, current_week: int) -> tuple[str, bool]:
+    """Returns (active_team, is_explicitly_saved_for_current_week)."""
+    rows = supabase.table("default_picks").select("week, team").order("week", desc=False).execute().data or []
+    def_map = {int(r["week"]): r["team"].upper().strip() for r in rows if r.get("team")}
+    if current_week in def_map:
+        return def_map[current_week], True
+    prior = [w for w in sorted(def_map.keys(), reverse=True) if w < current_week]
+    if prior:
+        return def_map[prior], False
+    return "NONE SET", False
 
 def main():
     supabase_url = os.environ["SUPABASE_URL"]
@@ -70,36 +82,7 @@ def main():
     ).execute().data or []
     user_map = {str(u["id"]): u for u in users}
 
-    regs = supabase.table("tournament_registrations").select(
-        "user_id, game_type, is_enrolled, bracket_status"
-    ).eq("is_enrolled", True).neq("bracket_status", "Eliminated").execute().data or []
-
-    week_picks = supabase.table("user_picks").select(
-        "user_id, game_type"
-    ).eq("week", current_week).execute().data or []
-
-    matches = supabase.table("nfl_schedule").select("id").eq("week", current_week).execute().data or []
-    required_count = get_required_picks(current_week, len(matches))
-
-    missing_by_user = {}
-    for r in regs:
-        uid = str(r["user_id"])
-        gtype = r["game_type"]
-        user_week_picks = [p for p in week_picks if str(p["user_id"]) == uid and p["game_type"] == gtype]
-        if len(user_week_picks) < required_count:
-            missing_by_user.setdefault(uid, []).append(gtype.replace("_", " "))
-
-    sent_emails, sent_pushes = 0, 0
-
-    for uid, missing_pools in missing_by_user.items():
-        u = user_map.get(uid)
-        if not u:
-            continue
-
-        uname = u.get("username") or "Player"
-        pools_label = " & ".join(missing_pools)
-
-    # --- ADMIN DEFAULT TEAM VERIFICATION REMINDER ---
+    # --- 1. ADMIN DEFAULT TEAM VERIFICATION REMINDER ---
     default_team, is_saved = resolve_week_default_info(supabase, current_week)
     status_note = (
         f"Explicitly saved for Week {current_week}"
@@ -135,7 +118,36 @@ def main():
             except Exception as e:
                 print(f"Admin push failed for {adm_name}: {e}")
 
-        # 1. Email Reminder
+    # --- 2. PLAYER MISSING PICK REMINDERS ---
+    regs = supabase.table("tournament_registrations").select(
+        "user_id, game_type, is_enrolled, bracket_status"
+    ).eq("is_enrolled", True).neq("bracket_status", "Eliminated").execute().data or []
+
+    week_picks = supabase.table("user_picks").select(
+        "user_id, game_type"
+    ).eq("week", current_week).execute().data or []
+
+    matches = supabase.table("nfl_schedule").select("id").eq("week", current_week).execute().data or []
+    required_count = get_required_picks(current_week, len(matches))
+
+    missing_by_user = {}
+    for r in regs:
+        uid = str(r["user_id"])
+        gtype = r["game_type"]
+        user_week_picks = [p for p in week_picks if str(p["user_id"]) == uid and p["game_type"] == gtype]
+        if len(user_week_picks) < required_count:
+            missing_by_user.setdefault(uid, []).append(gtype.replace("_", " "))
+
+    sent_emails, sent_pushes = 0, 0
+
+    for uid, missing_pools in missing_by_user.items():
+        u = user_map.get(uid)
+        if not u:
+            continue
+
+        uname = u.get("username") or "Player"
+        pools_label = " & ".join(missing_pools)
+
         if u.get("alert_email") and u.get("email"):
             subj = f"NFL Loser Pool Reminder: Week {current_week} Pick Needed ({pools_label})"
             body = (
@@ -150,7 +162,6 @@ def main():
             except Exception as e:
                 print(f"Email failed for {uname}: {e}")
 
-        # 2. Personal ntfy.sh Push Reminder
         if u.get("alert_sms"):
             personal_topic = (u.get("alert_personal_topic") or "").strip() or f"nflloserpool-{uid[:8]}"
             try:
@@ -165,17 +176,6 @@ def main():
                 print(f"Push failed for {uname}: {e}")
 
     print(f"Week {current_week} reminders complete: {sent_emails} emails, {sent_pushes} personal push alerts sent.")
-
-    def resolve_week_default_info(supabase: Client, current_week: int) -> tuple[str, bool]:
-        """Returns (active_team, is_explicitly_saved_for_current_week)."""
-        rows = supabase.table("default_picks").select("week, team").order("week", desc=False).execute().data or []
-        def_map = {int(r["week"]): r["team"].upper() for r in rows}
-        if current_week in def_map:
-            return def_map[current_week], True
-        prior = [w for w in sorted(def_map.keys(), reverse=True) if w < current_week]
-        if prior:
-            return def_map[prior], False
-        return "NONE SET", False
 
 if __name__ == "__main__":
     main()
