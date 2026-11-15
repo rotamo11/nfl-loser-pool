@@ -5,6 +5,7 @@ import datetime
 from zoneinfo import ZoneInfo
 from nicegui import ui, app, run
 from picks_module import get_current_nfl_week, get_week_label, get_logo_url
+from enrollment_helper import get_open_registration_pools, ET_ZONE
 from background_cron_reminders import (
     send_smtp_email,
     send_ntfy_push,
@@ -239,6 +240,7 @@ def render_admin_view(supabase, user):
         t_score = ui.tab("Score Games")
         t_default = ui.tab("Deadline Tools")
         t_roster = ui.tab("Users & Roster")
+        t_reg = ui.tab("Registrations")
         t_csv = ui.tab("CSV Import")
         t_masq = ui.tab("Masquerade")
 
@@ -735,9 +737,168 @@ def render_admin_view(supabase, user):
                                             ).classes("text-[10px] font-bold shrink-0")
 
             missing_picks_preview()
+        # ================================================================
+        # TAB: REGISTRATION WINDOWS & PENDING JOIN REQUESTS
+        # ================================================================
+        with ui.tab_panel(t_reg).classes("px-0"):
+            ui.label("📅 Self-Enrollment Registration Windows (Eastern Time)").classes("text-base font-extrabold mb-1")
+            ui.label("Controls when the Request to Join button appears on the Login screen and un-enrolled Picks tabs.").classes("text-xs opacity-75 mb-3")
+
+            win_rows = supabase.table("registration_windows").select("*").execute().data or []
+            win_map = {r["game_type"]: r for r in win_rows}
+
+            with ui.grid().classes("w-full grid-cols-1 md:grid-cols-2 gap-4 mb-5"):
+                for gtype, label_title, default_open, default_close in [
+                    ("Main", "Main Pool (Default: 6 Wks Pre-Season)", "2026-07-29 00:00", "2026-09-13 12:00"),
+                    ("2nd_Chance", "2nd Chance Pool (Default: 2 Wks Pre-Start)", "2026-10-28 00:00", "2026-11-15 12:00"),
+                ]:
+                    existing_w = win_map.get(gtype)
+                    open_str = default_open
+                    close_str = default_close
+                    if existing_w:
+                        try:
+                            o_dt = datetime.datetime.fromisoformat(str(existing_w["opens_at"]).replace("Z", "+00:00")).astimezone(ET_ZONE)
+                            c_dt = datetime.datetime.fromisoformat(str(existing_w["closes_at"]).replace("Z", "+00:00")).astimezone(ET_ZONE)
+                            open_str = o_dt.strftime("%Y-%m-%d %H:%M")
+                            close_str = c_dt.strftime("%Y-%m-%d %H:%M")
+                        except Exception:
+                            pass
+
+                    with ui.card().classes("w-full p-3 border border-slate-300 dark:border-slate-700 shadow-none"):
+                        ui.label(label_title).classes("text-sm font-extrabold mb-2")
+                        op_in = ui.input("Opens At (YYYY-MM-DD HH:MM ET)", value=open_str).classes("w-full mb-2")
+                        cl_in = ui.input("Closes At (YYYY-MM-DD HH:MM ET)", value=close_str).classes("w-full mb-2")
+
+                        def save_window(gt=gtype, o_box=op_in, c_box=cl_in):
+                            try:
+                                o_et = datetime.datetime.strptime(o_box.value.strip(), "%Y-%m-%d %H:%M").replace(tzinfo=ET_ZONE)
+                                c_et = datetime.datetime.strptime(c_box.value.strip(), "%Y-%m-%d %H:%M").replace(tzinfo=ET_ZONE)
+                                supabase.table("registration_windows").upsert({
+                                    "game_type": gt,
+                                    "opens_at": o_et.astimezone(datetime.timezone.utc).isoformat(),
+                                    "closes_at": c_et.astimezone(datetime.timezone.utc).isoformat(),
+                                    "updated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                                }).execute()
+                                ui.notify(f"Saved {gt.replace('_', ' ')} registration window!", type="positive")
+                            except Exception as err:
+                                ui.notify(f"Invalid date format (use YYYY-MM-DD HH:MM): {err}", type="negative")
+
+                        ui.button("Save Window", on_click=save_window, color="primary").props("size=sm").classes("font-bold")
+
+            ui.separator().classes("my-4")
+
+            @ui.refreshable
+            def pending_requests_panel():
+                reqs = (
+                    supabase.table("enrollment_requests")
+                    .select("*")
+                    .eq("status", "Pending")
+                    .order("created_at", desc=False)
+                    .execute()
+                    .data or []
+                )
+                ui.label(f"📥 Pending Join Requests ({len(reqs)})").classes("text-base font-extrabold mb-2")
+
+                if not reqs:
+                    ui.label("No pending join requests right now.").classes("text-xs opacity-70 italic")
+                    return
+
+                for rq in reqs:
+                    rid = rq["id"]
+                    gtype = rq["game_type"]
+                    uname = rq.get("username") or "Player"
+                    email = rq.get("email") or ""
+                    full_nm = f"{rq.get('first_name') or ''} {rq.get('last_name') or ''}".strip()
+                    is_new_acct = not bool(rq.get("user_id"))
+
+                    with ui.card().classes("w-full p-3 mb-2 border border-blue-500/40 shadow-none"):
+                        with ui.row().classes("w-full items-center justify-between gap-2 flex-wrap"):
+                            with ui.column().classes("gap-0.5"):
+                                with ui.row().classes("items-center gap-2"):
+                                    ui.label(uname).classes("text-sm font-extrabold")
+                                    ui.badge(gtype.replace("_", " "), color="amber-8" if gtype == "2nd_Chance" else "primary").classes("text-[10px] font-bold")
+                                    if is_new_acct:
+                                        ui.badge("NEW ACCOUNT", color="purple").classes("text-[10px] font-bold")
+                                ui.label(f"📧 {email}  •  👤 {full_nm or 'No name'}  •  📱 {rq.get('cell_phone') or 'No phone'}").classes("text-xs opacity-80")
+
+                            with ui.row().classes("items-center gap-2"):
+                                def approve_req(req_obj=rq):
+                                    try:
+                                        target_uid = req_obj.get("user_id")
+                                        temp_pwd = None
+
+                                        # Check if user already exists by email before creating Auth user
+                                        if not target_uid:
+                                            existing_u = supabase.table("users").select("id").eq("email", req_obj["email"].strip().lower()).execute().data or []
+                                            first_u = next(iter(existing_u), {})
+                                            if first_u:
+                                                target_uid = str(first_u["id"])
+                                            else:
+                                                temp_pwd = f"Loser{datetime.datetime.now().year}!"
+                                                auth_res = supabase.auth.admin.create_user({
+                                                    "email": req_obj["email"].strip().lower(),
+                                                    "password": temp_pwd,
+                                                    "email_confirm": True,
+                                                })
+                                                target_uid = str(auth_res.user.id)
+                                                supabase.table("users").upsert({
+                                                    "id": target_uid,
+                                                    "email": req_obj["email"].strip().lower(),
+                                                    "username": req_obj["username"].strip(),
+                                                    "first_name": (req_obj.get("first_name") or "").strip(),
+                                                    "last_name": (req_obj.get("last_name") or "").strip(),
+                                                    "cell_phone": (req_obj.get("cell_phone") or "").strip(),
+                                                    "alert_personal_topic": f"nflloserpool-{target_uid[:8]}",
+                                                    "alert_email": True,
+                                                    "alert_sms": False,
+                                                    "is_admin": False,
+                                                }).execute()
+
+                                        # Upsert tournament registration
+                                        existing_reg = (
+                                            supabase.table("tournament_registrations")
+                                            .select("id")
+                                            .eq("user_id", target_uid)
+                                            .eq("game_type", req_obj["game_type"])
+                                            .execute()
+                                            .data or []
+                                        )
+                                        if existing_reg:
+                                            supabase.table("tournament_registrations").update({
+                                                "is_enrolled": True,
+                                                "bracket_status": "Loser Bracket",
+                                            }).eq("id", next(iter(existing_reg))["id"]).execute()
+                                        else:
+                                            supabase.table("tournament_registrations").insert({
+                                                "user_id": target_uid,
+                                                "game_type": req_obj["game_type"],
+                                                "is_enrolled": True,
+                                                "is_paid": False,
+                                                "bracket_status": "Loser Bracket",
+                                            }).execute()
+
+                                        supabase.table("enrollment_requests").update({"status": "Approved", "user_id": target_uid}).eq("id", req_obj["id"]).execute()
+
+                                        if temp_pwd:
+                                            ui.notify(f"✅ Approved {req_obj['username']}! Temp password: {temp_pwd}", type="positive", timeout=12000)
+                                        else:
+                                            ui.notify(f"✅ Approved {req_obj['username']} into {req_obj['game_type'].replace('_', ' ')}!", type="positive")
+                                        pending_requests_panel.refresh()
+                                    except Exception as err:
+                                        ui.notify(f"Approval error: {err}", type="negative", timeout=8000)
+
+                                def decline_req(req_id=rid):
+                                    supabase.table("enrollment_requests").update({"status": "Declined"}).eq("id", req_id).execute()
+                                    ui.notify("Request declined.", type="info")
+                                    pending_requests_panel.refresh()
+
+                                ui.button("Approve", icon="check", on_click=approve_req, color="positive").props("size=sm").classes("font-bold")
+                                ui.button("Decline", icon="close", on_click=decline_req, color="red").props("outline size=sm")
+
+            pending_requests_panel()
 
         # ================================================================
-        # TAB 4: CSV HISTORICAL PICK UPLOADER (EMAIL-BASED & BATCHED)
+        # TAB 5: CSV HISTORICAL PICK UPLOADER (EMAIL-BASED & BATCHED)
         # ================================================================
         with ui.tab_panel(t_csv).classes("px-0"):
             ui.label("Upload Historical Picks CSV").classes("text-base font-extrabold mb-1")
@@ -827,7 +988,7 @@ def render_admin_view(supabase, user):
 
 
         # ================================================================
-        # TAB 5: MASQUERADE
+        # TAB 6: MASQUERADE
         # ================================================================
         with ui.tab_panel(t_masq).classes("px-0"):
             all_users = sorted(
