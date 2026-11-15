@@ -53,6 +53,7 @@ def render_admin_view(supabase, user):
 
     with ui.tabs().classes("w-full") as admin_tabs:
         t_score = ui.tab("Score Games")
+        t_default = ui.tab("Default Pick")
         t_roster = ui.tab("Player Management")
         t_csv = ui.tab("CSV Import")
         t_masq = ui.tab("Masquerade")
@@ -208,8 +209,84 @@ def render_admin_view(supabase, user):
 
             sel_week.on_value_change(lambda: scoring_form.refresh())
             scoring_form()
+
         # ================================================================
-        # TAB 2: USERS, FULL PROFILE EDITOR, DELETE & ROSTER MANAGEMENT
+        # TAB 2: WEEKLY DEFAULT PICK CONFIGURATION
+        # ================================================================
+        with ui.tab_panel(t_default).classes("px-0"):
+            ui.label("Weekly Auto-Pick Default Team").classes("text-base font-extrabold mb-1")
+            ui.label("Assigned at Sunday 12:00 PM ET to players who miss the deadline and have already used their BYE.").classes(
+                "text-xs opacity-75 mb-3"
+            )
+
+            def_week_opts = {w: get_week_label(w) for w in range(1, 23)}
+            def_week_sel = ui.select(def_week_opts, value=current_week, label="Select Week").classes("w-48 mb-3")
+
+            @ui.refreshable
+            def default_pick_panel():
+                w_num = def_week_sel.value
+                all_defs = supabase.table("default_picks").select("*").order("week", desc=False).execute().data or []
+                def_map = {int(d["week"]): d["team"].upper() for d in all_defs}
+
+                # Determine active team (exact week row if saved, else most recent prior week's default)
+                saved_exact = def_map.get(w_num)
+                inherited = None
+                if not saved_exact:
+                    prior_weeks = [w for w in sorted(def_map.keys(), reverse=True) if w < w_num]
+                    if prior_weeks:
+                        inherited = def_map[prior_weeks]
+
+                active_team = saved_exact or inherited or "KC"
+
+                # Build list of teams playing in this week's schedule (or all 32 teams)
+                wk_matches = supabase.table("nfl_schedule").select("away_team, home_team").eq("week", w_num).execute().data or []
+                teams_set = set()
+                for m in wk_matches:
+                    if m.get("away_team"):
+                        teams_set.add(m["away_team"].upper())
+                    if m.get("home_team"):
+                        teams_set.add(m["home_team"].upper())
+                if not teams_set:
+                    teams_set = {
+                        "ARI", "ATL", "BAL", "BUF", "CAR", "CHI", "CIN", "CLE",
+                        "DAL", "DEN", "DET", "GB", "HOU", "IND", "JAX", "KC",
+                        "LV", "LAC", "LAR", "MIA", "MIN", "NE", "NO", "NYG",
+                        "NYJ", "PHI", "PIT", "SF", "SEA", "TB", "TEN", "WSH"
+                    }
+
+                sorted_teams = sorted(teams_set)
+                if active_team not in sorted_teams:
+                    sorted_teams.insert(0, active_team)
+
+                if saved_exact:
+                    ui.label(f"Default pick saved for Week {w_num}: {saved_exact}").classes("text-xs font-bold text-emerald-600 dark:text-emerald-400 mb-2")
+                elif inherited:
+                    ui.label(f"Not yet saved for Week {w_num} — will auto-inherit prior default: {inherited}").classes("text-xs font-bold text-amber-600 dark:text-amber-400 mb-2")
+                else:
+                    ui.label(f"No default saved yet for Week {w_num} or prior weeks.").classes("text-xs font-bold text-red-500 mb-2")
+
+                with ui.row().classes("items-center gap-3"):
+                    team_sel = ui.select(sorted_teams, value=active_team, label="Default Team").classes("w-44")
+
+                    def save_default_team():
+                        chosen = (team_sel.value or "").strip().upper()
+                        if not chosen:
+                            return
+                        supabase.table("default_picks").upsert({
+                            "week": w_num,
+                            "team": chosen,
+                            "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat()
+                        }).execute()
+                        ui.notify(f"Saved {chosen} as Week {w_num} default pick!", type="positive")
+                        default_pick_panel.refresh()
+
+                    ui.button("Save Week Default", on_click=save_default_team, color="primary").classes("font-bold")
+
+            def_week_sel.on_value_change(lambda: default_pick_panel.refresh())
+            default_pick_panel()
+        
+        # ================================================================
+        # TAB 3: USERS, FULL PROFILE EDITOR, DELETE & ROSTER MANAGEMENT
         # ================================================================
         with ui.tab_panel(t_roster).classes("px-0"):
             with ui.row().classes("w-full items-center gap-3 mb-3 flex-wrap"):
@@ -390,7 +467,7 @@ def render_admin_view(supabase, user):
             roster_list()
 
         # ================================================================
-        # TAB 3: CSV HISTORICAL PICK UPLOADER (Accounts for game_type)
+        # TAB 4: CSV HISTORICAL PICK UPLOADER (Accounts for game_type)
         # ================================================================
         with ui.tab_panel(t_csv).classes("px-0"):
             ui.label("Upload Picks CSV").classes("text-base font-extrabold mb-1")
@@ -433,7 +510,7 @@ def render_admin_view(supabase, user):
             ui.upload(on_upload=handle_csv_upload, auto_upload=True).props("accept=.csv").classes("w-full max-w-md")
 
         # ================================================================
-        # TAB 4: DEVELOPER MASQUERADE MODE
+        # TAB 5: DEVELOPER MASQUERADE MODE
         # ================================================================
         with ui.tab_panel(t_masq).classes("px-0"):
             ui.label("Assume Player Identity").classes("text-base font-extrabold mb-1")
