@@ -750,7 +750,7 @@ def render_admin_view(supabase, user):
             with ui.grid().classes("w-full grid-cols-1 md:grid-cols-2 gap-4 mb-5"):
                 for gtype, label_title, default_open, default_close in [
                     ("Main", "Main Pool (Default: 6 Wks Pre-Season)", "2026-07-29 00:00", "2026-09-13 12:00"),
-                    ("2nd_Chance", "2nd Chance Pool (Default: 2 Wks Pre-Start)", "2026-10-28 00:00", "2026-11-15 12:00"),
+                    ("2nd_Chance", "2nd Chance Pool (Default: 2 Wks Pre-Start)", "2026-09-30 00:00", "2026-10-19 12:00"),
                 ]:
                     existing_w = win_map.get(gtype)
                     open_str = default_open
