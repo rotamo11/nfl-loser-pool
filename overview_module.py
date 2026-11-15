@@ -59,7 +59,7 @@ async def render_overview_view(supabase, user, pool_slug: str):
 
     fully_finalized_weeks = weeks_with_picks - weeks_with_unfinalized
 
-    start_week = 10 if pool_slug == "2nd_Chance" else 1
+    start_week = 6 if pool_slug == "2nd_Chance" else 1
     end_week = max(start_week, current_week)
     visible_weeks = list(range(start_week, end_week + 1))
 
