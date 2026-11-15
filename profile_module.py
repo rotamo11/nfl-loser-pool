@@ -1,24 +1,6 @@
 import re
 from nicegui import ui, app
 
-# Supported US Carrier Email-to-SMS Gateways
-CARRIER_GATEWAYS = {
-    "None / Do Not Use": "",
-    "AT&T": "txt.att.net",
-    "Verizon": "vtext.com",
-    "T-Mobile": "tmomail.net",
-    "Sprint": "://sprintpcs.com",
-    "Boost Mobile": "://myboostmobile.com",
-    "Cricket Wireless": "sms.cricketwireless.net",
-    "MetroPCS": "mymetropcs.com",
-    "US Cellular": "email.uscc.net",
-    "Virgin Mobile": "vmobl.com",
-    "Google Fi": "://google.com",
-    "Xfinity Mobile": "vtext.com",
-    "Visible": "vtext.com",
-    "Mint Mobile": "tmomail.net",
-}
-
 def render_profile_view(supabase, user):
     user_id = str(user.id)
 
@@ -62,41 +44,36 @@ def render_profile_view(supabase, user):
                 first_in = ui.input("First Name", value=profile.get("first_name") or "").classes("flex-1")
                 last_in = ui.input("Last Name", value=profile.get("last_name") or "").classes("flex-1")
 
-            phone_in = ui.input(
-                "10-Digit Cell Phone (Numbers Only)",
-                value=profile.get("cell_phone") or "",
-                placeholder="e.g., 5551234567"
-            ).classes("w-full mb-2")
-            
-            current_carrier = profile.get("cell_carrier") or "None / Do Not Use"
-            if current_carrier not in CARRIER_GATEWAYS:
-                current_carrier = "None / Do Not Use"
-            
-            carrier_sel = ui.select(
-                options=list(CARRIER_GATEWAYS.keys()),
-                value=current_carrier,
-                label="Mobile Wireless Carrier (For Free SMS Reminders)"
-            ).classes("w-full mb-3")
-            
+            personal_topic = f"nflloserpool-{user_id[:8]}"
+            saved_topic = profile.get("cell_carrier") or ""
+            if "." in saved_topic or saved_topic == "None / Do Not Use":
+                saved_topic = ""
+
+            topic_in = ui.input(
+                "ntfy.sh Push Topic (Optional — leave blank for 'nflloserpool')",
+                value=saved_topic,
+                placeholder=f"e.g., nflloserpool or {personal_topic}"
+            ).classes("w-full mb-1")
+            ui.label(
+                f"Free Mobile Push: Install the ntfy app on iOS/Android and subscribe to '{personal_topic}' which is your personal topic for alerts."
+            ).classes("text-[11px] opacity-75 mb-3")
+
             ui.label("Automated Reminder Channels:").classes("text-xs font-bold opacity-80 mt-1")
             email_chk = ui.checkbox(
                 "Send Thursday Noon & Sunday 9 AM ET Email Reminders",
                 value=bool(profile.get("alert_email", True))
             )
-            sms_chk = ui.checkbox(
-                "Send Thursday Noon & Sunday 9 AM ET Text (SMS) Reminders",
+            push_chk = ui.checkbox(
+                "Enable Thursday Noon & Sunday 9 AM ET ntfy.sh Push Alerts",
                 value=bool(profile.get("alert_sms", False))
             )
+
             def save_profile_settings():
                 clean_user = username_in.value.strip()
-                clean_phone = re.sub(r"\D", "", phone_in.value or "")
-                chosen_carrier = carrier_sel.value
+                clean_topic = topic_in.value.strip() or "nflloserpool"
 
                 if not clean_user:
                     ui.notify("Username cannot be empty.", type="negative")
-                    return
-                if sms_chk.value and (len(clean_phone) != 10 or chosen_carrier == "None / Do Not Use"):
-                    ui.notify("Enter a valid 10-digit phone number and select your carrier to enable SMS alerts.", type="negative")
                     return
 
                 try:
@@ -104,10 +81,9 @@ def render_profile_view(supabase, user):
                         "username": clean_user,
                         "first_name": first_in.value.strip(),
                         "last_name": last_in.value.strip(),
-                        "cell_phone": clean_phone,
-                        "cell_carrier": chosen_carrier,
+                        "cell_carrier": clean_topic,
                         "alert_email": email_chk.value,
-                        "alert_sms": sms_chk.value,
+                        "alert_sms": push_chk.value,
                     }).eq("id", user_id).execute()
                     ui.notify("Profile & alert settings saved!", type="positive")
                 except Exception as e:
