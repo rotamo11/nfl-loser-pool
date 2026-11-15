@@ -280,7 +280,7 @@ def render_admin_view(supabase, user):
                     with ui.card().classes("w-full p-2.5 mb-2 border border-slate-300 dark:border-slate-700 shadow-none"):
                         with ui.row().classes("w-full items-center justify-between gap-2 flex-wrap"):
                             with ui.row().classes("items-center gap-2.5 flex-wrap"):
-                                ui.label(f"⏰ {time_label}").classes("text-xs font-semibold opacity-75 w-40 shrink-0")
+                                ui.label(f"{time_label}").classes("text-xs font-semibold opacity-75 w-40 shrink-0")
                                 opt_buttons = {}
 
                                 def make_selector(choice_val, btns_dict, holder):
@@ -503,10 +503,10 @@ def render_admin_view(supabase, user):
                                     if u.get("is_admin"):
                                         ui.badge("ADMIN", color="purple").classes("text-[10px] font-bold")
                                     ui.button("Edit / Delete", on_click=lambda u_obj=u: open_user_editor(u_obj)).props("dense outline size=xs color=primary")
-                                ui.label(f"📧 {u.get('email') or 'No email'}").classes("text-xs opacity-80 truncate")
-                                ui.label(f"🆔 {uid}").classes("text-[10px] font-mono opacity-60 truncate select-all")
+                                ui.label(f"{u.get('email') or 'No email'}").classes("text-xs opacity-80 truncate")
+                                ui.label(f"{uid}").classes("text-[10px] font-mono opacity-60 truncate select-all")
                                 if u.get("notes"):
-                                    ui.label(f"📝 {u['notes']}").classes("text-xs text-amber-700 dark:text-amber-300 italic mt-0.5")
+                                    ui.label(f"{u['notes']}").classes("text-xs text-amber-700 dark:text-amber-300 italic mt-0.5")
 
                             if r:
                                 with ui.row().classes("items-center gap-2 shrink-0"):
@@ -542,7 +542,7 @@ def render_admin_view(supabase, user):
         # TAB 3: DEADLINE TOOLS (DEFAULT PICK, LOCK & REMINDERS)
         # ================================================================
         with ui.tab_panel(t_default).classes("px-0"):
-            ui.label("🎯 Weekly Auto-Pick Default Team").classes("text-base font-extrabold mb-1")
+            ui.label("Weekly Auto-Pick Default Team").classes("text-base font-extrabold mb-1")
             def_week_opts = {w: get_week_label(w) for w in range(1, 23)}
 
             with ui.row().classes("w-full items-center gap-3 mb-2 flex-wrap"):
