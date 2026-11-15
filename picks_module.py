@@ -147,7 +147,7 @@ async def render_picks_view(supabase, user, pool_slug: str):
 
     # 6. Elimination Message Directing User to Brackets Page
     if current_status == "Eliminated":
-        ui.label("You have been eliminated from this pool. View standings in Brackets.").classes("text-red-500 font-bold")
+        ui.label("Tough break — you’re a winner and have been eliminated from this pool. Check out the Standings page to follow the remaining players.").classes("text-red-600 font-bold")
         return
 
     draft_picks = set()
