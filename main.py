@@ -188,6 +188,7 @@ def render_login_box():
 def spa_shell(subpath: str = ""):
     is_dark = app.storage.user.get("dark_mode", False)
     ui.dark_mode(value=is_dark)
+    ui.query("body").classes("bg-slate-950" if is_dark else "bg-slate-100")
 
     if app.storage.user.get("pool") not in ["Main", "2nd_Chance"]:
         app.storage.user["pool"] = "Main"
@@ -318,9 +319,10 @@ def spa_shell(subpath: str = ""):
                     nav_btn.on("click", go_to_route)
 
         # --- MAIN CONTENT CONTAINER WITH ui.sub_pages ---
-        card_theme = "bg-slate-900 text-white" if is_dark else "bg-white text-slate-900"
+        card_theme = "bg-slate-950 text-white border border-slate-800" if is_dark else "bg-slate-100 text-slate-900 border border-slate-200"
         with ui.column().classes("w-full items-center px-3 pb-8 pt-1"):
             with ui.card().classes(f"w-full max-w-5xl p-5 rounded-xl shadow-xl {card_theme}").style(f"border-top: 4px solid {pool_hex};"):
+
                 if not user:
                     render_login_box()
                 else:
