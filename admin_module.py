@@ -300,8 +300,7 @@ def render_admin_view(supabase, user):
                             ed_first = ui.input("First Name", value=u_row.get("first_name") or "").classes("w-full")
                             ed_last = ui.input("Last Name", value=u_row.get("last_name") or "").classes("w-full")
                             ed_phone = ui.input("Cell Phone", value=u_row.get("cell_phone") or "").classes("w-full")
-                            cur_car = u_row.get("cell_carrier") if u_row.get("cell_carrier") in CARRIER_OPTIONS else "None / Do Not Use"
-                            ed_carrier = ui.select(CARRIER_OPTIONS, value=cur_car, label="Cell Carrier").classes("w-full")
+                            ed_topic = u_row.get("alert_personal_topic")
 
                         with ui.row().classes("w-full gap-4 mt-2"):
                             ed_a_email = ui.checkbox("Alert Email", value=bool(u_row.get("alert_email", True)))
@@ -343,7 +342,6 @@ def render_admin_view(supabase, user):
                                             "first_name": ed_first.value.strip(),
                                             "last_name": ed_last.value.strip(),
                                             "cell_phone": ed_phone.value.strip(),
-                                            "cell_carrier": ed_carrier.value,
                                             "alert_email": ed_a_email.value,
                                             "alert_sms": ed_a_sms.value,
                                             "is_admin": ed_admin.value,
