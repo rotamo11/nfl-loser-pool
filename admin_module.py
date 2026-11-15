@@ -215,7 +215,7 @@ def render_admin_view(supabase, user):
         return
 
     current_week = get_current_nfl_week()
-    ui.label("🛠️ Commissioner Control Console").classes("text-2xl font-black mb-3")
+    ui.label("Commissioner Control Console").classes("text-2xl font-black mb-3")
 
     regs = supabase.table("tournament_registrations").select("*").eq("is_enrolled", True).execute().data or []
     main_regs = [r for r in regs if r.get("game_type") == "Main"]
@@ -236,11 +236,11 @@ def render_admin_view(supabase, user):
             ui.label(f"Loser Bracket: {sc_loser}  |  Eliminated: {sc_elim}").classes("text-xs font-bold mt-1")
 
     with ui.tabs().classes("w-full") as admin_tabs:
-        t_score = ui.tab("🏁 Score Games")
-        t_roster = ui.tab("👥 Users & Roster")
-        t_default = ui.tab("⏰ Deadline Tools")
-        t_csv = ui.tab("📥 CSV Import")
-        t_masq = ui.tab("🕵️ Masquerade")
+        t_score = ui.tab("Score Games")
+        t_default = ui.tab("Deadline Tools")
+        t_roster = ui.tab("Users & Roster")
+        t_csv = ui.tab("CSV Import")
+        t_masq = ui.tab("Masquerade")
 
     with ui.tab_panels(admin_tabs, value=t_score).classes("w-full bg-transparent"):
         # ================================================================
