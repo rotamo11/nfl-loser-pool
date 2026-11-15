@@ -66,7 +66,7 @@ def main():
     current_week = get_current_nfl_week()
 
     users = supabase.table("users").select(
-        "id, username, email, alert_personal_topic, alert_email, alert_sms"
+        "id, username, email, alert_personal_topic, alert_email, alert_sms, is_admin"
     ).execute().data or []
     user_map = {str(u["id"]): u for u in users}
 
@@ -99,6 +99,42 @@ def main():
         uname = u.get("username") or "Player"
         pools_label = " & ".join(missing_pools)
 
+    # --- ADMIN DEFAULT TEAM VERIFICATION REMINDER ---
+    default_team, is_saved = resolve_week_default_info(supabase, current_week)
+    status_note = (
+        f"Explicitly saved for Week {current_week}"
+        if is_saved
+        else f"Inherited from prior week (not yet saved for Week {current_week})"
+    )
+    admin_users = [u for u in users if u.get("is_admin")]
+
+    for adm in admin_users:
+        adm_name = adm.get("username") or "Admin"
+        if adm.get("alert_email") and adm.get("email"):
+            adm_subj = f"Admin Check: Week {current_week} Default Pick is {default_team}"
+            adm_body = (
+                f"Hey {adm_name},\n\n"
+                f"Please verify the Week {current_week} auto-pick default team before Sunday at NOON ET.\n\n"
+                f"Current Default Team: {default_team} ({status_note})\n\n"
+                f"Update or confirm in the Admin Console: \n\n{app_url}/admin\n"
+            )
+            try:
+                send_smtp_email(smtp_user, smtp_pass, adm["email"], adm_subj, adm_body)
+            except Exception as e:
+                print(f"Admin email failed for {adm_name}: {e}")
+
+        if adm.get("alert_sms"):
+            adm_topic = (adm.get("alert_personal_topic") or "").strip() or f"nflloserpool-{str(adm['id'])[:8]}"
+            try:
+                send_ntfy_push(
+                    adm_topic,
+                    f"Admin Check: Week {current_week} Default = {default_team}",
+                    f"Verify Week {current_week} default team ({default_team} - {status_note}) before Sunday at NOON ET.",
+                    f"{app_url}/admin",
+                )
+            except Exception as e:
+                print(f"Admin push failed for {adm_name}: {e}")
+
         # 1. Email Reminder
         if u.get("alert_email") and u.get("email"):
             subj = f"NFL Loser Pool Reminder: Week {current_week} Pick Needed ({pools_label})"
@@ -129,6 +165,17 @@ def main():
                 print(f"Push failed for {uname}: {e}")
 
     print(f"Week {current_week} reminders complete: {sent_emails} emails, {sent_pushes} personal push alerts sent.")
+
+    def resolve_week_default_info(supabase: Client, current_week: int) -> tuple[str, bool]:
+        """Returns (active_team, is_explicitly_saved_for_current_week)."""
+        rows = supabase.table("default_picks").select("week, team").order("week", desc=False).execute().data or []
+        def_map = {int(r["week"]): r["team"].upper() for r in rows}
+        if current_week in def_map:
+            return def_map[current_week], True
+        prior = [w for w in sorted(def_map.keys(), reverse=True) if w < current_week]
+        if prior:
+            return def_map[prior], False
+        return "NONE SET", False
 
 if __name__ == "__main__":
     main()
