@@ -67,7 +67,7 @@ async def render_overview_view(supabase, user, pool_slug: str):
     pool_label = "2nd Chance" if pool_slug == "2nd_Chance" else "Main"
 
     with ui.row().classes("w-full items-center justify-between mb-3 flex-wrap gap-2"):
-        ui.label(f"{pool_label} Pool — Standings & Pick Distribution").classes("text-xl font-black")
+        ui.label(f"{pool_label} Pool — Standings").classes("text-xl font-black")
 
         week_opts = {w: get_week_full_label(w) for w in visible_weeks}
         dist_week_select = ui.select(
@@ -89,7 +89,7 @@ async def render_overview_view(supabase, user, pool_slug: str):
         # --- WEEKLY PICK DISTRIBUTION ---
         dist_border = "border-amber-500/40" if pool_slug == "2nd_Chance" else "border-blue-500/40"
         with ui.card().classes(f"w-full p-3 mb-4 border {dist_border} shadow-none"):
-            ui.label(f"📊 {get_week_full_label(target_w)} Pick Distribution ({pool_label} Pool)").classes("text-sm font-extrabold mb-1")
+            ui.label(f"{get_week_full_label(target_w)} Pick Distribution ({pool_label} Pool)").classes("text-sm font-extrabold mb-1")
 
             week_passed = (target_w < current_week)
             viewer_locked = (target_w in viewer_finalized_weeks)
@@ -246,11 +246,11 @@ async def render_overview_view(supabase, user, pool_slug: str):
             else:
                 eliminated.append(player_obj)
 
-        build_bracket_section("Loser Bracket (0 Losses)", "positive", loser_bracket)
+        build_bracket_section("Loser Bracket (0 Wrong)", "positive", loser_bracket)
         if pool_slug != "2nd_Chance":
-            build_bracket_section("Winner Bracket (1 Loss)", "warning", winner_bracket)
+            build_bracket_section("Winner Bracket (1 Wrong)", "warning", winner_bracket)
         build_bracket_section(
-            "Eliminated (1+ Losses)" if pool_slug == "2nd_Chance" else "Eliminated (2+ Losses)",
+            "Eliminated (1+ Wrong)" if pool_slug == "2nd_Chance" else "Eliminated (2+ Wrong)",
             "negative",
             eliminated
         )
