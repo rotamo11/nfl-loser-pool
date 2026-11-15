@@ -132,7 +132,11 @@ def render_overview_view(supabase, user, pool_slug: str):
                 if not week_team_counts:
                     ui.label("No picks logged for this week yet.").classes("text-xs opacity-70 italic py-1")
                 else:
-                    sorted_dist = sorted(week_team_counts.items(), key=lambda item: (0 if item == "BYE" else 1, -item, item))
+                    def dist_sort_key(pair):
+                        team, cnt = pair
+                        return (0 if team == "BYE" else 1, -cnt, team)
+
+                    sorted_dist = sorted(week_team_counts.items(), key=dist_sort_key)
                     total_logged = sum(week_team_counts.values())
                     desktop_cols = min(len(sorted_dist), 15)
 
