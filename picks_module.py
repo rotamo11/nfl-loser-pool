@@ -300,15 +300,6 @@ async def render_picks_view(supabase, user, pool_slug: str):
         with ui.card().classes("w-full p-3 border border-slate-200 dark:border-slate-700 shadow-none"):
             ui.label("🛡️ Season BYE Slot (1 Per Pool)").classes("text-sm font-extrabold mb-1")
             if bye_used_prior:
-        # --- USE MY BYE SLOT SECTION ---
-        ui.separator().classes("my-4")
-        bye_used_prior = any(p["team_picked"].upper() == "BYE" and p["week"] != target_week for p in fresh_picks)
-        db_bye_this_week = next((p for p in week_picks if p["team_picked"].upper() == "BYE"), None)
-        bye_disabled = (target_week < current_week) or is_week_finalized or (now_et >= sunday_noon_et)
-
-        with ui.card().classes("w-full p-3 border border-slate-200 dark:border-slate-700 shadow-none"):
-            ui.label("🛡️ Season BYE Slot (1 Per Pool)").classes("text-sm font-extrabold mb-1")
-            if bye_used_prior:
                 ui.label("You have already used your Season BYE in this pool.").classes("text-xs opacity-70 italic")
             else:
                 ui.label("Use your one-time BYE to skip picking a team this week and automatically advance.").classes("text-xs opacity-75 mb-2")
