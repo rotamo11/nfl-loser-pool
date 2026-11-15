@@ -1,11 +1,11 @@
-# .github/workflows/deadline_lock.yml
 name: Weekly NFL Loser Pool Deadline Enforcer
 
 on:
   schedule:
-    # 12:30 PM Eastern Time converts to 16:30 UTC during Daylight Saving Time (EDT)
-    - cron: '30 16 * * 0'
-  workflow_dispatch: # Allows you to manually trigger it from GitHub anytime if needed
+    # 12:00 PM ET (16:00 UTC during EDT / 17:00 UTC during EST)
+    - cron: '0 16 * * 0'
+    - cron: '0 17 * * 0'
+  workflow_dispatch:
 
 jobs:
   enforce-locks:
