@@ -73,7 +73,7 @@ async def render_overview_view(supabase, user, pool_slug: str):
         dist_week_select = ui.select(
             week_opts,
             value=end_week,
-            label="Distribution Week"
+            label="Target (Wed-Tue)"
         ).props("dense outlined").classes("w-44")
 
     if not is_viewer_enrolled:
