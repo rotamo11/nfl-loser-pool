@@ -144,7 +144,7 @@ def spa_shell(subpath: str = ""):
     if user and app.storage.user.get("masquerade_uid"):
         masq_name = app.storage.user.get("masquerade_name", "Player")
         with ui.row().classes("w-full bg-purple-700 text-white px-4 py-1.5 items-center justify-between text-xs font-bold"):
-            ui.label(f"🕵️ MASQUERADE MODE ACTIVE — Viewing as: {masq_name}")
+            ui.label(f"MASQUERADE MODE ACTIVE — Viewing as: {masq_name}")
             def exit_masquerade():
                 app.storage.user.pop("masquerade_uid", None)
                 app.storage.user.pop("masquerade_name", None)
@@ -188,7 +188,7 @@ def spa_shell(subpath: str = ""):
                 ).style(f"background-color: {pool_hex};")
 
                 if is_2nd:
-                    ui.label("26 Players: $650 Purse ($390 for 1st / $195 for 2nd / $65 for 3rd)").classes(f"text-xs md:text-base font-bold mt-1 {purse_cls}")
+                    ui.label("26 Players: $650 Purse ($390 1st / $195 2nd / $65 3rd)").classes(f"text-xs md:text-base font-bold mt-1 {purse_cls}")
                     ui.label("Last Year's Losers: D. Bobrow ($300) • M. Ellis ($150) • D. Tashima ($50)").classes(f"text-[11px] md:text-sm {text_muted}")
                 else:
                     ui.label("74 Players | $1850 Purse ($1110 1st / $555 2nd / $185 3rd)").classes(f"text-xs md:text-base font-bold mt-1 {purse_cls}")
