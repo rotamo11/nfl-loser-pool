@@ -66,7 +66,7 @@ def main():
     current_week = get_current_nfl_week()
 
     users = supabase.table("users").select(
-        "id, username, email, cell_carrier, alert_email, alert_sms"
+        "id, username, email, alert_personal_topic, alert_email, alert_sms"
     ).execute().data or []
     user_map = {str(u["id"]): u for u in users}
 
@@ -116,13 +116,10 @@ def main():
 
         # 2. Personal ntfy.sh Push Reminder
         if u.get("alert_sms"):
-            saved_topic = (u.get("cell_carrier") or "").strip()
-            if not saved_topic or "." in saved_topic or saved_topic in ["None / Do Not Use", "nflloserpool"]:
-                saved_topic = f"nflloserpool-{uid[:8]}"
-
+            personal_topic = (u.get("alert_personal_topic") or "").strip() or f"nflloserpool-{uid[:8]}"
             try:
                 send_ntfy_push(
-                    saved_topic,
+                    personal_topic,
                     f"NFL Loser Pool: Week {current_week} Pick Needed",
                     f"Hey {uname}, submit your {pools_label} Pool pick before Sunday at NOON ET to avoid being given your BYE (if available) or the highest favored/ranked team that still has yet to play this week.",
                     app_url,
