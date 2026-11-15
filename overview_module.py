@@ -231,7 +231,13 @@ def render_overview_view(supabase, user, pool_slug: str):
                                     ui.label("•").classes(f"w-16 shrink-0 text-center font-bold text-sm {'text-slate-600' if is_dark else 'text-gray-400'}")
                                     continue
 
-                                can_reveal = (w < current_week) or is_own_row or (w in viewer_finalized_weeks) or admin_override
+                                can_reveal = (
+                                    (w < current_week)
+                                    or is_own_row
+                                    or (w in viewer_finalized_weeks)
+                                    or (w in fully_finalized_weeks)
+                                    or admin_override
+                                )
                                 if not can_reveal:
                                     hid_cls = "bg-slate-800 text-slate-400" if is_dark else "bg-gray-200/70 text-gray-500"
                                     with ui.element("div").classes("w-16 shrink-0 flex justify-center"):
