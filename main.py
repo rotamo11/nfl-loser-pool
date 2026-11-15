@@ -115,8 +115,9 @@ def render_login_box():
 
                 u_row = supabase.table("users").select("dark_mode, is_admin").eq("id", str(res.user.id)).execute().data
                 if u_row and isinstance(u_row, list) and len(u_row) > 0:
-                    app.storage.user["dark_mode"] = bool(u_row.get("dark_mode", False))
-                    app.storage.user["is_admin_cached"] = bool(u_row.get("is_admin", False))
+                    first_row = u_row
+                    app.storage.user["dark_mode"] = bool(first_row.get("dark_mode", False))
+                    app.storage.user["is_admin_cached"] = bool(first_row.get("is_admin", False))
                     app.storage.user["is_admin_cached_at"] = time.time()
 
                 ui.notify("Logged in! Session saved for 7 days.", type="positive")
