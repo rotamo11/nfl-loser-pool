@@ -146,7 +146,7 @@ def render_login_box():
                 ui.label("Submit your details below. Once approved by the Commissioner, your login will be activated.").classes("text-xs opacity-75 mb-3")
 
                 pool_sel = ui.select(pool_choices, value=default_choice, label="Pool to Join").classes("w-full mb-2")
-                uname_in = ui.input("Desired Display Username (Shown on Brackets)").classes("w-full mb-2")
+                uname_in = ui.input("Desired Display Username (Shown on Standing)").classes("w-full mb-2")
                 with ui.row().classes("w-full gap-2 no-wrap mb-2"):
                     fn_in = ui.input("First Name").classes("flex-1")
                     ln_in = ui.input("Last Name").classes("flex-1")
@@ -286,7 +286,7 @@ def spa_shell(subpath: str = ""):
             with ui.row().classes("w-full max-w-5xl justify-around items-center py-2.5 mt-1 text-xs md:text-sm font-bold flex-wrap gap-2"):
                 nav_items = [
                     ("Picks", "/"),
-                    ("Brackets", "/brackets"),
+                    ("Standings", "/standings"),
                     ("Chat", "/chat"),
                     ("Rules", "/rules"),
                     ("Profile", "/profile"),
@@ -329,7 +329,7 @@ def spa_shell(subpath: str = ""):
                     pool_now = app.storage.user.get("pool", "Main")
                     ui.sub_pages({
                         "/": lambda: render_picks_view(supabase, user, pool_now),
-                        "/brackets": lambda: render_overview_view(supabase, user, pool_now),
+                        "/standings": lambda: render_overview_view(supabase, user, pool_now),
                         "/chat": lambda: render_chat_view(supabase, user),
                         "/rules": lambda: render_rules_view(pool_now),
                         "/profile": lambda: render_profile_view(supabase, user),
