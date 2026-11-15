@@ -59,16 +59,28 @@ def render_overview_view(supabase, user, pool_slug: str):
     picks_by_user = {}
     viewer_finalized_weeks = set()
     team_week_outcomes = {}
+    weeks_with_picks = set()
+    weeks_with_unfinalized = set()
 
     for p in all_picks:
         uid = str(p["user_id"])
         w = p["week"]
+        state = p.get("pick_state")
         picks_by_user.setdefault(uid, {}).setdefault(w, []).append(p)
-        if uid == current_user_id and p.get("pick_state") in ["Finalized", "Correct", "Incorrect"]:
-            viewer_finalized_weeks.add(w)
+        weeks_with_picks.add(w)
+
+        if state in ["Finalized", "Correct", "Incorrect"]:
+            if uid == current_user_id:
+                viewer_finalized_weeks.add(w)
+        else:
+            weeks_with_unfinalized.add(w)
+
         clean_t = p["team_picked"].replace("_SO", "").strip().upper()
-        if p.get("pick_state") in ["Correct", "Incorrect"]:
-            team_week_outcomes[(w, clean_t)] = p["pick_state"]
+        if state in ["Correct", "Incorrect"]:
+            team_week_outcomes[(w, clean_t)] = state
+
+    # Weeks where at least one pick exists AND every logged pick is Finalized/Correct/Incorrect
+    fully_finalized_weeks = weeks_with_picks - weeks_with_unfinalized
 
     start_week = 6 if pool_slug == "2nd_Chance" else 1
     max_visible_week = max(current_week, max((p["week"] for p in all_picks), default=current_week))
@@ -115,9 +127,10 @@ def render_overview_view(supabase, user, pool_slug: str):
 
             week_passed = (target_w < current_week)
             viewer_locked = (target_w in viewer_finalized_weeks)
+            all_locked = (target_w in fully_finalized_weeks)
 
-            if not (week_passed or viewer_locked or admin_override):
-                ui.label(f"🔒 Finalize your {get_week_full_label(target_w)} pick on the Picks page to unlock this week's distribution.  Players eliminated or not enrolled can view once the deadline passes.").classes(
+            if not (week_passed or viewer_locked or all_locked or admin_override):
+                ui.label(f"🔒 Lock in your {get_week_full_label(target_w)} pick on the Picks page (or wait for all picks to finalize) to unlock this week's distribution.").classes(
                     "text-xs font-semibold opacity-75 italic py-1"
                 )
             else:
