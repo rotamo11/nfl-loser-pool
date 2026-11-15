@@ -45,9 +45,10 @@ def get_authenticated_user():
                 app.storage.user["auth_verified_at"] = now
 
                 if "dark_mode" not in app.storage.user:
-                    u_row = supabase.table("users").select("dark_mode").eq("id", str(res.user.id)).execute().data
-                    if u_row and isinstance(u_row, list) and len(u_row) > 0:
-                        app.storage.user["dark_mode"] = bool(u_row.get("dark_mode", False))
+                    u_row = supabase.table("users").select("dark_mode").eq("id", str(res.user.id)).execute().data or []
+                    first_row = next(iter(u_row), {})
+                    if first_row:
+                        app.storage.user["dark_mode"] = bool(first_row.get("dark_mode", False))
 
                 real_user = res.user
         except Exception:
@@ -88,7 +89,8 @@ def get_unread_chat_count(user) -> int:
         return 0
     try:
         u_rows = supabase.table("users").select("last_read_chat_at").eq("id", str(user.id)).execute().data or []
-        last_read = u_rows.get("last_read_chat_at") if u_rows else None
+        first_row = next(iter(u_rows), {})
+        last_read = first_row.get("last_read_chat_at")
         q = supabase.table("pool_chat").select("id", count="exact").neq("user_id", str(user.id))
         if last_read:
             q = q.gt("created_at", last_read)
@@ -113,9 +115,9 @@ def render_login_box():
                 app.storage.user["user_email"] = res.user.email or ""
                 app.storage.user["auth_verified_at"] = time.time()
 
-                u_row = supabase.table("users").select("dark_mode, is_admin").eq("id", str(res.user.id)).execute().data
-                if u_row and isinstance(u_row, list) and len(u_row) > 0:
-                    first_row = u_row
+                u_row = supabase.table("users").select("dark_mode, is_admin").eq("id", str(res.user.id)).execute().data or []
+                first_row = next(iter(u_row), {})
+                if first_row:
                     app.storage.user["dark_mode"] = bool(first_row.get("dark_mode", False))
                     app.storage.user["is_admin_cached"] = bool(first_row.get("is_admin", False))
                     app.storage.user["is_admin_cached_at"] = time.time()
