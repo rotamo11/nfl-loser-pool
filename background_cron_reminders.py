@@ -40,7 +40,7 @@ def send_smtp_email(smtp_user: str, smtp_pass: str, to_addr: str, subject: str, 
 
 def send_ntfy_push(topic: str, title: str, message: str, click_url: str):
     clean_topic = topic.strip().lstrip("/")
-    url = f"https://ntfy.sh{clean_topic}"
+    url = f"https://ntfy.sh/{clean_topic}"
     req = urllib.request.Request(
         url,
         data=message.encode("utf-8"),
