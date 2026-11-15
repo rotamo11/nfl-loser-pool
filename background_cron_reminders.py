@@ -1,5 +1,6 @@
 import os
 import smtplib
+import socket
 import datetime
 import urllib.request
 from email.message import EmailMessage
@@ -34,9 +35,22 @@ def send_smtp_email(smtp_user: str, smtp_pass: str, to_addr: str, subject: str, 
     msg["Subject"] = subject
     msg.set_content(body)
 
-    with smtplib.SMTP_SSL(smtp_server, 465, local_hostname="localhost", timeout=15) as server:
-        server.login(clean_user, clean_pass)
-        server.send_message(msg)
+    # Resolve IPv4 address explicitly so Railway doesn't fail on IPv6 routing
+    ipv4_addr = socket.gethostbyname(smtp_server)
+
+    # Try port 587 (STARTTLS) first, falling back to 465 (SSL)
+    try:
+        with smtplib.SMTP(ipv4_addr, 587, local_hostname="localhost", timeout=15) as server:
+            server.ehlo()
+            server.starttls()
+            server.ehlo()
+            server.login(clean_user, clean_pass)
+            server.send_message(msg)
+    except Exception:
+        with smtplib.SMTP_SSL(ipv4_addr, 465, local_hostname="localhost", timeout=15) as server:
+            server.login(clean_user, clean_pass)
+            server.send_message(msg)
+
 
 def send_ntfy_push(topic: str, title: str, message: str, click_url: str):
     clean_topic = topic.strip().lstrip("/")
