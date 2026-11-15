@@ -140,6 +140,9 @@ def spa_shell(subpath: str = ""):
     if app.storage.user.get("pool") not in ["Main", "2nd_Chance"]:
         app.storage.user["pool"] = "Main"
 
+    # Sync active_route on initial page load / refresh
+    app.storage.user["active_route"] = "/" + subpath.strip("/") if subpath.strip("/") else "/"
+
     user = get_authenticated_user()
     logo_url = "/static/loser-logo.png" if os.path.exists("static/loser-logo.png") else ""
 
@@ -147,7 +150,7 @@ def spa_shell(subpath: str = ""):
     if user and app.storage.user.get("masquerade_uid"):
         masq_name = app.storage.user.get("masquerade_name", "Player")
         with ui.row().classes("w-full bg-purple-700 text-white px-4 py-1.5 items-center justify-between text-xs font-bold"):
-            ui.label(f"MASQUERADE MODE ACTIVE — Viewing as: {masq_name}")
+            ui.label(f"🕵️ MASQUERADE MODE ACTIVE — Viewing as: {masq_name}")
             def exit_masquerade():
                 app.storage.user.pop("masquerade_uid", None)
                 app.storage.user.pop("masquerade_name", None)
@@ -159,7 +162,7 @@ def spa_shell(subpath: str = ""):
         current_tab = app.storage.user.get("pool", "Main")
         is_2nd = (current_tab == "2nd_Chance")
         pool_hex = "#974706" if is_2nd else "#1d3d70"
-        active_path = "/" + subpath.strip("/") if subpath.strip("/") else "/"
+        active_path = app.storage.user.get("active_route", "/")
 
         banner_bg = "bg-slate-950 text-white" if is_dark else "bg-slate-100 text-slate-900"
         week_hdr_cls = "text-amber-400" if is_dark else ("text-amber-800" if is_2nd else "text-blue-900")
@@ -191,7 +194,7 @@ def spa_shell(subpath: str = ""):
                 ).style(f"background-color: {pool_hex};")
 
                 if is_2nd:
-                    ui.label("26 Players: $650 Purse ($390 1st / $195 2nd / $65 3rd)").classes(f"text-xs md:text-base font-bold mt-1 {purse_cls}")
+                    ui.label("26 Players: $650 Purse ($390 for 1st / $195 for 2nd / $65 for 3rd)").classes(f"text-xs md:text-base font-bold mt-1 {purse_cls}")
                     ui.label("Last Year's Losers: D. Bobrow ($300) • M. Ellis ($150) • D. Tashima ($50)").classes(f"text-[11px] md:text-sm {text_muted}")
                 else:
                     ui.label("74 Players | $1850 Purse ($1110 1st / $555 2nd / $185 3rd)").classes(f"text-xs md:text-base font-bold mt-1 {purse_cls}")
@@ -225,7 +228,7 @@ def spa_shell(subpath: str = ""):
                     sc_el.style("background-color: #974706;")
                 sc_el.on("click", lambda: select_pool("2nd_Chance"))
 
-            # 4. Instant SPA Navigation Row (Uses ui.navigate.to without full page reload)
+            # 4. Instant SPA Navigation Row
             unread_chat = get_unread_chat_count(user) if active_path != "/chat" else 0
             with ui.row().classes("w-full max-w-5xl justify-around items-center py-2.5 mt-1 text-xs md:text-sm font-bold flex-wrap gap-2"):
                 nav_items = [
@@ -254,7 +257,13 @@ def spa_shell(subpath: str = ""):
                             ui.label(badge_txt).classes(
                                 "bg-red-600 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full leading-tight shadow-sm"
                             )
-                    nav_btn.on("click", lambda r=route: ui.navigate.to(r))
+
+                    def go_to_route(r=route):
+                        app.storage.user["active_route"] = r
+                        ui.navigate.to(r)
+                        app_shell.refresh()
+
+                    nav_btn.on("click", go_to_route)
 
         # --- MAIN CONTENT CONTAINER WITH ui.sub_pages ---
         card_theme = "bg-slate-900 text-white" if is_dark else "bg-white text-slate-900"
