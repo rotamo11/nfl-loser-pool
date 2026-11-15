@@ -131,7 +131,7 @@ def execute_manual_reminders(supabase, target_week: int, admin_only_uid: str | N
     """Sends email & ntfy.sh push reminders on demand for target_week."""
     smtp_user = os.environ.get("SMTP_USER", "")
     smtp_pass = os.environ.get("SMTP_PASS", "")
-    app_url = os.environ.get("APP_URL", "https://railway.app")
+    app_url = os.environ.get("APP_URL", "https://nfl-loser-pool-production.up.railway.app")
 
     if not smtp_user or not smtp_pass:
         raise RuntimeError("Missing SMTP_USER or SMTP_PASS in Railway environment variables.")
