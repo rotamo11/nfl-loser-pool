@@ -9,7 +9,6 @@ from supabase import create_client, Client
 
 ET_ZONE = ZoneInfo("America/New_York")
 SEASON_START_WEDNESDAY = datetime.datetime(2026, 9, 9, 0, 0, 0, tzinfo=ET_ZONE)
-DEFAULT_NTFY_TOPIC = "nflloserpool"
 
 def get_current_nfl_week() -> int:
     now_et = datetime.datetime.now(ET_ZONE)
@@ -40,7 +39,7 @@ def send_smtp_email(smtp_user: str, smtp_pass: str, to_addr: str, subject: str, 
         server.send_message(msg)
 
 def send_ntfy_push(topic: str, title: str, message: str, click_url: str):
-    clean_topic = (topic or DEFAULT_NTFY_TOPIC).strip().lstrip("/")
+    clean_topic = topic.strip().lstrip("/")
     url = f"https://ntfy.sh{clean_topic}"
     req = urllib.request.Request(
         url,
@@ -61,7 +60,7 @@ def main():
     supabase_key = os.environ.get("SUPABASE_SERVICE_KEY") or os.environ["SUPABASE_KEY"]
     smtp_user = os.environ["SMTP_USER"]
     smtp_pass = os.environ["SMTP_PASS"]
-    app_url = os.environ.get("APP_URL", "https://nfl-loser-pool-production.up.railway.app/")
+    app_url = os.environ.get("APP_URL", "https://railway.app")
 
     supabase: Client = create_client(supabase_url, supabase_key)
     current_week = get_current_nfl_week()
@@ -91,7 +90,6 @@ def main():
             missing_by_user.setdefault(uid, []).append(gtype.replace("_", " "))
 
     sent_emails, sent_pushes = 0, 0
-    broadcast_needed = False
 
     for uid, missing_pools in missing_by_user.items():
         u = user_map.get(uid)
@@ -116,37 +114,24 @@ def main():
             except Exception as e:
                 print(f"Email failed for {uname}: {e}")
 
-        # 2. ntfy.sh Push Reminder (Reuses alert_sms toggle + cell_carrier as custom topic if set)
+        # 2. Personal ntfy.sh Push Reminder
         if u.get("alert_sms"):
             saved_topic = (u.get("cell_carrier") or "").strip()
-            if saved_topic and saved_topic != DEFAULT_NTFY_TOPIC and "." not in saved_topic and saved_topic != "None / Do Not Use":
-                try:
-                    send_ntfy_push(
-                        saved_topic,
-                        f"NFL Loser Pool: Week {current_week} Pick Needed",
-                        f"Hey {uname}, submit your {pools_label} Pool pick before Sunday 12:00 PM ET to avoid being given your BYE (if available) or the highest favored/ranked team that still has yet to play this week.",
-                        app_url,
-                    )
-                    sent_pushes += 1
-                except Exception as e:
-                    print(f"Push failed for {uname}: {e}")
-            else:
-                broadcast_needed = True
+            if not saved_topic or "." in saved_topic or saved_topic in ["None / Do Not Use", "nflloserpool"]:
+                saved_topic = f"nflloserpool-{uid[:8]}"
 
-    # Send one clean broadcast alert to 'nflloserpool' if any subscribed players still need picks
-    if broadcast_needed:
-        try:
-            send_ntfy_push(
-                DEFAULT_NTFY_TOPIC,
-                f"NFL Loser Pool: Week {current_week} Deadline Reminder",
-                f"Reminder: Submit your Week {current_week} pick(s) before Sunday at 12:00 PM ET (or kickoff of an early game)!",
-                app_url,
-            )
-            sent_pushes += 1
-        except Exception as e:
-            print(f"Broadcast push failed: {e}")
+            try:
+                send_ntfy_push(
+                    saved_topic,
+                    f"NFL Loser Pool: Week {current_week} Pick Needed",
+                    f"Hey {uname}, submit your {pools_label} Pool pick before Sunday at NOON ET to avoid being given your BYE (if available) or the highest favored/ranked team that still has yet to play this week.",
+                    app_url,
+                )
+                sent_pushes += 1
+            except Exception as e:
+                print(f"Push failed for {uname}: {e}")
 
-    print(f"Week {current_week} reminders complete: {sent_emails} emails, {sent_pushes} push alerts sent.")
+    print(f"Week {current_week} reminders complete: {sent_emails} emails, {sent_pushes} personal push alerts sent.")
 
 if __name__ == "__main__":
     main()
