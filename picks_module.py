@@ -1,7 +1,6 @@
 import os
-import base64
-import datetime
 import asyncio
+import datetime
 from zoneinfo import ZoneInfo
 from nicegui import ui, app, run
 from enrollment_helper import get_open_registration_pools, notify_admins_of_join_request
@@ -9,10 +8,31 @@ from enrollment_helper import get_open_registration_pools, notify_admins_of_join
 ET_ZONE = ZoneInfo("America/New_York")
 SEASON_START_WEDNESDAY = datetime.datetime(2026, 9, 9, 0, 0, 0, tzinfo=ET_ZONE)
 
+def get_current_nfl_week() -> int:
+    now_et = datetime.datetime.now(ET_ZONE)
+    if now_et < SEASON_START_WEDNESDAY:
+        return 1
+    return min(22, ((now_et - SEASON_START_WEDNESDAY).days // 7) + 1)
+
+def get_week_label(w: int) -> str:
+    if w <= 18:
+        return f"Week {w}"
+    return {19: "Wild Card", 20: "Divisional", 21: "Conference", 22: "Super Bowl"}.get(w, f"Week {w}")
+
+def get_logo_url(team_abbr: str) -> str:
+    clean = team_abbr.replace("_SO", "").strip().upper()
+    if clean in ["BYE", "NO_PICK", "TIE", "PENDING", ""]:
+        return ""
+    filename = "WAS.svg" if clean == "WSH" else f"{clean}.svg"
+    if os.path.exists(f"static/{filename}"):
+        return f"/static/{filename}"
+    return ""
+
 async def render_picks_view(supabase, user, pool_slug: str):
     user_id = str(user.id)
     current_week = get_current_nfl_week()
 
+    # Fetch registration, user picks, NFL schedule, and user profile in parallel
     reg_rows, all_picks, all_matches, u_rows = await asyncio.gather(
         run.io_bound(lambda: supabase.table("tournament_registrations").select("*").eq("user_id", user_id).eq("game_type", pool_slug).execute().data or []),
         run.io_bound(lambda: supabase.table("user_picks").select("*").eq("user_id", user_id).eq("game_type", pool_slug).execute().data or []),
@@ -23,6 +43,7 @@ async def render_picks_view(supabase, user, pool_slug: str):
     reg = next(iter(reg_rows), None)
     u_info = next(iter(u_rows), {})
 
+    # --- SELF-ENROLLMENT REQUEST CARD FOR UN-ENROLLED PLAYERS ---
     if not reg or not reg.get("is_enrolled"):
         pool_label = pool_slug.replace("_", " ")
         open_pools = get_open_registration_pools(supabase)
@@ -31,16 +52,6 @@ async def render_picks_view(supabase, user, pool_slug: str):
             ui.label(f"You are not currently enrolled in the {pool_label} Pool.").classes("text-base font-extrabold mb-1")
 
             if pool_slug in open_pools:
-                existing_req = (
-                    supabase.table("enrollment_requests")
-                    .select("id")
-                    .eq("user_id", user_id)
-                    .eq("game_type", pool_slug)
-                    .eq("status", "Pending")
-                    .execute()
-                    .data or []
-                )
-
                 @ui.refreshable
                 def self_enroll_area():
                     pending_now = (
@@ -80,305 +91,252 @@ async def render_picks_view(supabase, user, pool_slug: str):
                 ui.label(f"Registration for {pool_label} is currently closed. Contact the Commissioner for assistance.").classes("text-xs opacity-75")
         return
 
-def get_current_nfl_week() -> int:
-    now_et = datetime.datetime.now(ET_ZONE)
-    if now_et < SEASON_START_WEDNESDAY:
-        return 1
-    return min(22, ((now_et - SEASON_START_WEDNESDAY).days // 7) + 1)
-
-def get_week_label(w: int) -> str:
-    return {19: "Wildcard", 20: "Divisional", 21: "Conference", 22: "Super Bowl"}.get(w, f"Week {w}")
-
-def get_logo_url(team_code: str) -> str:
-    clean = team_code.replace("_SO", "").strip().upper()
-    fname = f"{'BYE' if clean == 'BYE' else clean}.svg"
-    return f"/static/{fname}" if os.path.exists(f"static/{fname}") else ""
-
-def render_history_rail(supabase, all_picks: list):
-    ui.label("Your Season Selection History").classes("font-bold text-base mb-1")
-    sched_rows = supabase.table("nfl_schedule").select("week", "away_team", "home_team", "winner").execute().data or []
-    outcomes = {}
-    for m in sched_rows:
-        w = m["week"]
-        outcomes.setdefault(w, {})
-        loser = m.get("winner")
-        if loser == "TIE":
-            outcomes[w][m["away_team"].upper()] = "Incorrect"
-            outcomes[w][m["home_team"].upper()] = "Incorrect"
-        elif loser:
-            outcomes[w][loser.upper()] = "Correct"
-            opp = m["home_team"].upper() if loser.upper() == m["away_team"].upper() else m["away_team"].upper()
-            outcomes[w][opp] = "Incorrect"
-
-    picks_map = {p["week"]: p for p in all_picks}
-    with ui.row().classes("w-full overflow-x-auto no-wrap gap-1 pb-2 mb-3"):
-        for w in range(1, 23):
-            p = picks_map.get(w)
-            if not p:
-                with ui.column().classes("min-w-[52px] min-h-[64px] border border-dashed border-gray-400/50 rounded items-center justify-center p-1 opacity-50 shrink-0"):
-                    ui.label(f"Wk {w}").classes("text-[9px] font-bold")
-                    ui.label("•").classes("text-xs")
-            else:
-                raw_pick = p["team_picked"].upper()
-                clean_team = raw_pick.replace("_SO", "").strip()
-                state = p.get("pick_state", "Pending")
-                res = outcomes.get(w, {}).get(clean_team, "Pending")
-
-                if clean_team == "BYE" or state == "Correct" or res == "Correct":
-                    box_cls = "bg-emerald-500/15 border-emerald-500"
-                elif state == "Incorrect" or res == "Incorrect":
-                    box_cls = "bg-red-500/15 border-red-500"
-                else:
-                    box_cls = "bg-slate-400/10 border-slate-400/40"
-
-                with ui.column().classes(f"min-w-[56px] min-h-[64px] border rounded items-center justify-center p-1 shrink-0 {box_cls}"):
-                    ui.label(f"Wk {w}").classes("text-[9px] font-bold opacity-75 leading-none")
-                    if url := get_logo_url(clean_team):
-                        ui.html(f'<img src="{url}" class="w-7 h-5 object-contain p-0.5 my-0.5" />')
-                    tag = f"{clean_team}{'🎯' if raw_pick.endswith('_SO') else ''}"
-                    ui.label(tag).classes("text-[10px] font-extrabold leading-none")
-
-def render_picks_view(supabase, user, pool_slug: str):
-    user_id = str(user.id)
-    current_week = get_current_nfl_week()
-    if "selected_week" not in app.storage.user:
-        app.storage.user["selected_week"] = current_week
-
-    # 1. Fetch Player Username & Pool Registrations (for Status & Active Count Header)
-    u_res = supabase.table("users").select("username").eq("id", user_id).execute().data
-    user_row = u_res[0] if (isinstance(u_res, list) and len(u_res) > 0) else {}
-    current_user_name = user_row.get("username") or "Player"
-
-    pool_regs = (
-        supabase.table("tournament_registrations")
-        .select("*")
-        .eq("game_type", pool_slug)
-        .eq("is_enrolled", True)
-        .execute()
-        .data or []
-    )
-    active_reg = next((r for r in pool_regs if str(r["user_id"]) == user_id), None)
-    current_status = active_reg.get("bracket_status", "Not Enrolled") if active_reg else "Not Enrolled"
-    active_total = sum(1 for r in pool_regs if r.get("bracket_status") != "Eliminated")
-
-    # 2. Render Status & Remaining Active Badge Bar (Matches Brackets Page)
-    with ui.row().classes("w-full items-center justify-between mb-4 pb-2 border-b border-gray-200 dark:border-slate-700"):
-        ui.label(f"Status for {current_user_name}: {current_status}").classes("text-lg md:text-xl font-black")
-        ui.badge(f"Remaining Active: {active_total} / {len(pool_regs)}", color="primary").classes("text-xs font-bold px-2 py-1")
-
-    # 3. Verify Enrollment & Bracket Status
-    if not active_reg or not active_reg.get("is_enrolled", False):
-        ui.label(f"Not Enrolled in {pool_slug.replace('_', ' ')}.").classes("text-red-500 font-bold text-lg")
-        return
-    if current_status == "Eliminated":
-        ui.label("You have been eliminated from this pool. View standings in Brackets.").classes("text-red-500 font-bold")
+    b_status = reg.get("bracket_status") or "Loser Bracket"
+    if b_status == "Eliminated":
+        ui.label("💀 You have been ELIMINATED from this pool.").classes("text-red-500 font-extrabold text-lg mb-3")
         return
 
-    draft_picks = set()
+    # --- TOP STATUS HEADER & WEEK DROPDOWN ---
+    start_week = 10 if pool_slug == "2nd_Chance" else 1
+    available_weeks = list(range(start_week, 23))
+    default_week = max(start_week, current_week)
+
+    with ui.row().classes("w-full items-center justify-between mb-3 flex-wrap gap-2"):
+        with ui.row().classes("items-center gap-2"):
+            ui.label("Active Bracket:").classes("text-sm font-bold opacity-80")
+            badge_col = "positive" if b_status == "Loser Bracket" else "warning"
+            ui.badge(b_status, color=badge_col).classes("text-xs font-extrabold px-2.5 py-1")
+
+        week_options = {w: get_week_label(w) for w in available_weeks}
+        week_select = ui.select(week_options, value=default_week, label="Select Week").props("dense outlined").classes("w-44")
+
+    # --- SEASON PICK HISTORY STRIP ---
+    sorted_history = sorted(all_picks, key=lambda x: x["week"])
+    if sorted_history:
+        with ui.row().classes("w-full items-center gap-1.5 flex-wrap mb-3"):
+            ui.label("Your Picks:").classes("text-xs font-bold opacity-75 mr-1")
+            for hp in sorted_history:
+                wk_lbl = f"W{hp['week']}" if hp["week"] <= 18 else get_week_label(hp["week"])[:3]
+                raw_t = hp["team_picked"].upper()
+                st = hp["pick_state"]
+                disp = f"{raw_t.replace('_SO', '')} 🎯" if raw_t.endswith("_SO") else raw_t
+                p_col = "green" if st == "Correct" else ("red" if st == "Incorrect" else ("blue" if st == "Finalized" else "amber-8"))
+                ui.badge(f"{wk_lbl}: {disp}", color=p_col).classes("text-[11px] font-bold")
     @ui.refreshable
     def matchup_board():
-        target_week = app.storage.user["selected_week"]
-        all_picks = supabase.table("user_picks").select("*").eq("user_id", user_id).eq("game_type", pool_slug).execute().data or []
-        render_history_rail(supabase, all_picks)
+        target_week = week_select.value
+        now_et = datetime.datetime.now(ET_ZONE)
 
-        week_picks = [p for p in all_picks if p["week"] == target_week]
-        used_teams = {
-            p["team_picked"].replace("_SO", "").upper()
-            for p in all_picks
-            if p["week"] < 19 and not p["team_picked"].endswith("_SO") and p["week"] != target_week
-        }
+        # Reload current user's picks fresh when board refreshes after Confirm/Finalize/Reset
+        fresh_picks = supabase.table("user_picks").select("*").eq("user_id", user_id).eq("game_type", pool_slug).execute().data or []
+        week_picks = [p for p in fresh_picks if p["week"] == target_week]
 
-        if not draft_picks:
-            for p in week_picks:
-                if p["pick_state"] == "Confirmed":
-                    draft_picks.add(p["team_picked"].upper())
+        matches = [m for m in all_matches if m["week"] == target_week]
+        matches = sorted(matches, key=lambda m: (0, str(m["kickoff_time"]), m["id"]) if m.get("kickoff_time") else (1, "", m["id"]))
 
-        max_picks = 1 if target_week <= 14 else (2 if target_week <= 18 else 6)
-        is_week_finalized = any(p["pick_state"] in ["Finalized", "Correct", "Incorrect"] for p in week_picks)
+        if not matches:
+            ui.label(f"No matchups scheduled yet for {get_week_label(target_week)}.").classes("text-sm opacity-75")
+            return
 
-        for p in week_picks:
-            if p["pick_state"] in ["Finalized", "Correct", "Incorrect"]:
-                ui.label(f"🔒 Finalized Pick: {p['team_picked']}").classes("w-full p-3 rounded bg-green-100 text-green-900 font-bold mb-2")
-            elif p["pick_state"] == "Confirmed":
-                ui.label(f"Confirmed Pick (Editable): {p['team_picked']}").classes("w-full p-3 rounded bg-blue-100 text-blue-900 font-bold mb-2")
+        max_picks = 1 if target_week <= 14 else (2 if target_week <= 18 else len(matches))
 
-        raw_matches = supabase.table("nfl_schedule").select("*").eq("week", target_week).execute().data or []
-        matches = sorted(raw_matches, key=lambda m: (0, str(m["kickoff_time"]), m["id"]) if m.get("kickoff_time") else (1, "", m["id"]))
+        # Determine used teams (respecting _SO shutout bonus & Playoff repeats)
+        used_teams = set()
+        if target_week <= 18:
+            pick_counts = {}
+            so_teams = set()
+            for p in fresh_picks:
+                if p["week"] == target_week:
+                    continue
+                raw = p["team_picked"].upper()
+                base = raw.replace("_SO", "")
+                if base not in ["BYE", "NO_PICK"]:
+                    pick_counts[base] = pick_counts.get(base, 0) + 1
+                    if raw.endswith("_SO"):
+                        so_teams.add(base)
+            for tm, cnt in pick_counts.items():
+                allowed = 2 if tm in so_teams else 1
+                if cnt >= allowed:
+                    used_teams.add(tm)
 
-        with ui.grid().classes("w-full grid-cols-1 md:grid-cols-2 gap-3 mt-2"):
+        db_selected_teams = {p["team_picked"].replace("_SO", "").upper() for p in week_picks}
+        finalized_count = sum(1 for p in week_picks if p.get("pick_state") in ["Finalized", "Correct", "Incorrect"])
+        is_week_finalized = (finalized_count >= max_picks)
+
+        selected_state = {"teams": set(db_selected_teams)}
+
+        # Sunday Noon ET deadline calculation for target_week
+        week_wed = SEASON_START_WEDNESDAY + datetime.timedelta(days=(target_week - 1) * 7)
+        sunday_noon_et = week_wed + datetime.timedelta(days=4, hours=12)
+
+        with ui.row().classes("w-full items-center justify-between mb-2"):
+            ui.label(f"Select {max_picks} Team{'s' if max_picks > 1 else ''} to LOSE ({get_week_label(target_week)})").classes("text-base font-extrabold")
+            if is_week_finalized:
+                ui.badge("🔒 Week Finalized", color="blue").classes("text-xs font-bold")
+
+        team_btns = {}
+
+        def refresh_btn_styles():
+            cur_sel = selected_state["teams"]
+            limit_hit = (len(cur_sel) >= max_picks)
+            for tm, meta in team_btns.items():
+                btn = meta["btn"]
+                is_sel = (tm in cur_sel)
+                locked_row = meta["is_locked"] or is_week_finalized or (tm in used_teams) or (limit_hit and not is_sel)
+
+                if locked_row:
+                    btn.props("disable")
+                else:
+                    btn.props(remove="disable")
+
+                if is_sel:
+                    btn.classes(remove="bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700",
+                                add="bg-blue-600 text-white border-blue-500 shadow-md")
+                else:
+                    btn.classes(remove="bg-blue-600 text-white border-blue-500 shadow-md",
+                                add="bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700")
+
+        with ui.grid().classes("w-full grid-cols-1 md:grid-cols-2 gap-2.5"):
             for m in matches:
                 away, home = m["away_team"].upper(), m["home_team"].upper()
                 kickoff_raw = m.get("kickoff_time")
-                is_locked, is_early = (target_week < current_week), False
-                time_label = "TBD (Flex Scheduling Pending)"
 
+                time_label = "TBD"
+                game_started = False
                 if kickoff_raw:
                     dt_naive = datetime.datetime.fromisoformat(str(kickoff_raw).replace(" ", "T")[:19])
                     dt_et = dt_naive.replace(tzinfo=ET_ZONE)
-                    if target_week == current_week and datetime.datetime.now(ET_ZONE) >= dt_et:
-                        is_locked = True
-                    sunday_noon = dt_et.replace(hour=12, minute=0, second=0)
-                    while sunday_noon.weekday() != 6:
-                        sunday_noon -= datetime.timedelta(days=1)
-                    if target_week == current_week and dt_et < sunday_noon:
-                        is_early = True
-                    time_label = dt_et.strftime("%a %-m/%-d/%y %-I:%M %p ET")
+                    time_label = dt_et.strftime("%A %-m/%-d/%y %-I:%M %p ET")
+                    game_started = (now_et >= dt_et)
 
-                db_pick = next((p for p in week_picks if p["team_picked"].replace("_SO", "").upper() in [away, home]), None)
-                is_db_conf = db_pick and db_pick["pick_state"] == "Confirmed"
-                is_db_fin = db_pick and db_pick["pick_state"] in ["Finalized", "Correct", "Incorrect"]
+                past_sunday_noon = (now_et >= sunday_noon_et)
+                is_locked = (target_week < current_week) or game_started or past_sunday_noon
 
-                sel_away = away in draft_picks or (db_pick and db_pick["team_picked"].startswith(away))
-                sel_home = home in draft_picks or (db_pick and db_pick["team_picked"].startswith(home))
-                limit_hit = (len(draft_picks) >= max_picks)
+                with ui.card().classes("w-full p-2.5 border border-slate-200 dark:border-slate-700 shadow-none"):
+                    with ui.row().classes("w-full items-center justify-between text-[11px] opacity-75 mb-1.5"):
+                        ui.label(f"⏰ {time_label}").classes("font-semibold")
+                        if is_locked:
+                            ui.label("🔒 Locked").classes("font-bold text-red-500")
 
-                with ui.card().classes("w-full p-3 border border-slate-300 dark:border-slate-700 shadow-sm"):
                     with ui.row().classes("w-full items-center justify-between gap-2 no-wrap"):
-                        for idx_t, (team, is_sel) in enumerate([(away, sel_away), (home, sel_home)]):
+                        for idx_t, tm in enumerate([away, home]):
                             if idx_t == 1:
                                 ui.label("@").classes("text-xs text-slate-500 dark:text-slate-400 font-black shrink-0")
 
-                            used = team in used_teams
-                            # Lock out ALL other matchups once the player finalizes their pick(s) for the week
-                            disabled = is_locked or is_week_finalized or is_db_fin or used or (limit_hit and not is_sel)
+                            def make_toggle(team_code):
+                                def toggle_team():
+                                    if is_week_finalized:
+                                        return
+                                    cur = selected_state["teams"]
+                                    if team_code in cur:
+                                        cur.remove(team_code)
+                                    elif len(cur) < max_picks:
+                                        cur.add(team_code)
+                                    refresh_btn_styles()
+                                return toggle_team
 
-                            def toggle_team(t=team, active=is_sel):
-                                draft_picks.clear() if max_picks == 1 else draft_picks.discard(t)
-                                if not active:
-                                    draft_picks.add(t)
-                                matchup_board.refresh()
+                            with ui.button(on_click=make_toggle(tm)).props("unelevated no-caps").classes(
+                                "flex-1 py-2 px-2 rounded-lg border font-extrabold text-xs md:text-sm transition-all"
+                            ) as t_btn:
+                                with ui.row().classes("items-center justify-center gap-1.5 no-wrap"):
+                                    if logo_u := get_logo_url(tm):
+                                        ui.html(f'<img src="{logo_u}" class="w-5 h-3.5 object-contain shrink-0" />')
+                                    ui.label(tm)
 
-                            # High-contrast button styling: bright primary if selected, darker obvious fill if available, muted if disabled
-                            if is_sel:
-                                btn_cls = "flex-1 font-extrabold text-xs bg-blue-600 text-white border-2 border-blue-400 shadow"
-                            elif disabled:
-                                btn_cls = "flex-1 font-bold text-xs bg-slate-100 dark:bg-slate-800/50 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-800 opacity-60"
-                            else:
-                                btn_cls = "flex-1 font-extrabold text-xs bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-900 dark:text-white border border-slate-400 dark:border-slate-500 shadow-sm cursor-pointer"
+                            team_btns[tm] = {"btn": t_btn, "is_locked": is_locked}
 
-                            btn_text = f"{team} (Used)" if used else team
-                            logo_u = get_logo_url(team)
+        refresh_btn_styles()
 
-                            with ui.button(on_click=toggle_team).props(f"{'disable' if disabled else ''} flat no-caps").classes(btn_cls):
-                                with ui.row().classes("items-center justify-center gap-1.5 no-wrap py-0.5"):
-                                    if logo_u:
-                                        ui.html(f'<img src="{logo_u}" class="w-6 h-4 object-contain p-0.5 shrink-0" />')
-                                    ui.label(btn_text).classes("leading-none")
-                    if sel_away or sel_home or db_pick:
-                        chosen_team = away if sel_away else home
-                        with ui.row().classes("w-full gap-2 mt-2"):
-                            def save_confirm(t=chosen_team, early=is_early):
-                                supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", pool_slug).eq("week", target_week).execute()
-                                state = "Finalized" if early else "Confirmed"
-                                supabase.table("user_picks").insert({
-                                    "user_id": user_id, "game_type": pool_slug, "week": target_week,
-                                    "team_picked": t, "pick_state": state
-                                }).execute()
-                                ui.notify(f"Pick {state}!", type="positive")
-                                matchup_board.refresh()
+        # --- CONFIRM / FINALIZE / RESET BUTTONS ---
+        def save_picks(target_state: str):
+            chosen = sorted(selected_state["teams"])
+            if len(chosen) != max_picks:
+                ui.notify(f"Please select exactly {max_picks} team{'s' if max_picks > 1 else ''}.", type="warning")
+                return
+            supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", pool_slug).eq("week", target_week).execute()
+            rows = [
+                {"user_id": user_id, "game_type": pool_slug, "week": target_week, "team_picked": t, "pick_state": target_state}
+                for t in chosen
+            ]
+            supabase.table("user_picks").insert(rows).execute()
+            ui.notify(f"Picks {target_state.lower()}!", type="positive")
+            matchup_board.refresh()
 
-                            ui.button("Confirm", on_click=save_confirm, color="primary" if is_db_conf else "blue-2").props(
-                                f"{'disable' if (is_locked or is_db_fin) else ''} dense unelevated"
-                            ).classes("flex-1 text-xs")
+        def open_finalize_dialog():
+            chosen = sorted(selected_state["teams"])
+            if len(chosen) != max_picks:
+                ui.notify(f"Please select exactly {max_picks} team{'s' if max_picks > 1 else ''} first.", type="warning")
+                return
+            with ui.dialog() as fin_dlg, ui.card().classes("p-5 max-w-md"):
+                ui.label("Finalize Weekly Pick(s)?").classes("text-lg font-black")
+                ui.label(f"You are locking in: {', '.join(chosen)}. Once finalized, picks cannot be changed and league picks for this week will unlock.").classes("text-xs opacity-80 my-2")
+                with ui.row().classes("w-full justify-end gap-2 mt-3"):
+                    ui.button("Cancel", on_click=fin_dlg.close).props("flat")
+                    ui.button("Yes, Finalize", on_click=lambda: (fin_dlg.close(), save_picks("Finalized")), color="positive").classes("font-bold")
+            fin_dlg.open()
 
-                            def open_finalize_dialog(t=chosen_team):
-                                with ui.dialog() as dialog, ui.card():
-                                    ui.label(f"Lock in {t} permanently?").classes("font-bold text-lg")
-                                    ui.label("Once finalized, you cannot change your pick and opponent picks will unlock.").classes("text-sm text-gray-500")
-                                    with ui.row().classes("w-full justify-end gap-2 mt-3"):
-                                        ui.button("Cancel", on_click=dialog.close).props("flat")
-                                        def commit_final():
-                                            supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", pool_slug).eq("week", target_week).execute()
-                                            supabase.table("user_picks").insert({
-                                                "user_id": user_id, "game_type": pool_slug, "week": target_week,
-                                                "team_picked": t, "pick_state": "Finalized"
-                                            }).execute()
-                                            dialog.close()
-                                            ui.notify(f"{t} Finalized!", type="positive")
-                                            matchup_board.refresh()
-                                        ui.button("Yes, Finalize", on_click=commit_final, color="green")
-                                dialog.open()
+        with ui.row().classes("w-full gap-2 mt-4 flex-wrap"):
+            ui.button("Confirm Pick(s)", on_click=lambda: save_picks("Confirmed"), color="primary").props(
+                f"{'disable' if is_week_finalized else ''} unelevated"
+            ).classes("flex-1 font-bold")
 
-                            ui.button("🔒 Finalized" if is_db_fin else "Finalize", on_click=open_finalize_dialog, color="green" if is_db_fin else "green-2").props(
-                                f"{'disable' if (is_locked or is_db_fin) else ''} dense unelevated"
-                            ).classes("flex-1 text-xs")
+            ui.button("Finalize Pick(s)", on_click=open_finalize_dialog, color="positive").props(
+                f"{'disable' if is_week_finalized else ''} unelevated"
+            ).classes("flex-1 font-bold")
 
-                            if not is_db_fin:
-                                def reset_choice(t=chosen_team, in_db=is_db_conf):
-                                    draft_picks.discard(t)
-                                    if in_db:
-                                        supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", pool_slug).eq("week", target_week).execute()
-                                        ui.notify("Confirmed pick removed.", type="info")
-                                    matchup_board.refresh()
-
-                                ui.button("Reset", on_click=reset_choice, color="red-2").props(
-                                    f"{'disable' if is_locked else ''} dense unelevated"
-                                ).classes("flex-1 text-xs")
-
-                    if is_locked:
-                        ui.label(f"🔒 Kickoff Passed ({time_label})").classes("text-xs text-red-500 font-semibold mt-1")
-                    else:
-                        ui.label(f"{time_label}").classes("text-xs text-gray-500 dark:text-gray-400 mt-1")
+            if week_picks and not is_week_finalized:
+                def reset_week_picks():
+                    supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", pool_slug).eq("week", target_week).execute()
+                    ui.notify("Week selections cleared.", type="info")
+                    matchup_board.refresh()
+                ui.button("Reset", on_click=reset_week_picks, color="red").props("outline unelevated").classes("font-bold")
 
         # --- USE MY BYE SLOT SECTION ---
         ui.separator().classes("my-4")
-        bye_used_prior = any(p["team_picked"].upper() == "BYE" and p["week"] != target_week for p in all_picks)
+        bye_used_prior = any(p["team_picked"].upper() == "BYE" and p["week"] != target_week for p in fresh_picks)
         db_bye_this_week = next((p for p in week_picks if p["team_picked"].upper() == "BYE"), None)
-        bye_finalized_this_week = db_bye_this_week and db_bye_this_week["pick_state"] in ["Finalized", "Correct", "Incorrect"]
-        bye_disabled = (target_week < current_week) or is_week_finalized
+        bye_disabled = (target_week < current_week) or is_week_finalized or (now_et >= sunday_noon_et)
 
-        if bye_finalized_this_week:
-            ui.button("🔒 BYE Finalized for This Week", color="green").props("disable unelevated").classes("w-full font-bold")
-        elif bye_used_prior:
-            ui.button("🔒 Season BYE Already Used", color="grey-5").props("disable unelevated").classes("w-full font-bold")
-        else:
-            with ui.row().classes("w-full gap-2"):
-                def confirm_bye():
+        with ui.card().classes("w-full p-3 border border-slate-200 dark:border-slate-700 shadow-none"):
+            ui.label("🛡️ Season BYE Slot (1 Per Pool)").classes("text-sm font-extrabold mb-1")
+            if bye_used_prior:
+        # --- USE MY BYE SLOT SECTION ---
+        ui.separator().classes("my-4")
+        bye_used_prior = any(p["team_picked"].upper() == "BYE" and p["week"] != target_week for p in fresh_picks)
+        db_bye_this_week = next((p for p in week_picks if p["team_picked"].upper() == "BYE"), None)
+        bye_disabled = (target_week < current_week) or is_week_finalized or (now_et >= sunday_noon_et)
+
+        with ui.card().classes("w-full p-3 border border-slate-200 dark:border-slate-700 shadow-none"):
+            ui.label("🛡️ Season BYE Slot (1 Per Pool)").classes("text-sm font-extrabold mb-1")
+            if bye_used_prior:
+                ui.label("You have already used your Season BYE in this pool.").classes("text-xs opacity-70 italic")
+            else:
+                ui.label("Use your one-time BYE to skip picking a team this week and automatically advance.").classes("text-xs opacity-75 mb-2")
+
+                def save_bye(st: str):
                     supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", pool_slug).eq("week", target_week).execute()
                     supabase.table("user_picks").insert({
-                        "user_id": user_id, "game_type": pool_slug, "week": target_week,
-                        "team_picked": "BYE", "pick_state": "Confirmed"
+                        "user_id": user_id,
+                        "game_type": pool_slug,
+                        "week": target_week,
+                        "team_picked": "BYE",
+                        "pick_state": st,
                     }).execute()
-                    draft_picks.clear()
-                    ui.notify("BYE Confirmed (Editable).", type="positive")
+                    ui.notify(f"Season BYE {st.lower()}!", type="positive")
                     matchup_board.refresh()
 
-                ui.button("Confirm BYE" if not db_bye_this_week else "✓ BYE Confirmed", on_click=confirm_bye,
-                          color="primary" if db_bye_this_week else "blue-3").props(f"{'disable' if bye_disabled else ''} unelevated").classes("flex-1 font-bold")
+                with ui.row().classes("w-full gap-2 flex-wrap"):
+                    ui.button(
+                        "Confirm BYE" if not db_bye_this_week else "✓ BYE Confirmed",
+                        on_click=lambda: save_bye("Confirmed"),
+                        color="primary" if db_bye_this_week else "blue-3",
+                    ).props(f"{'disable' if bye_disabled else ''} unelevated").classes("flex-1 font-bold")
 
-                def open_bye_finalize():
-                    with ui.dialog() as dlg, ui.card():
-                        ui.label("Finalize your Season BYE?").classes("font-bold text-lg")
-                        ui.label("You only get one BYE per season. Locking it in cannot be undone.").classes("text-sm text-gray-500")
-                        with ui.row().classes("w-full justify-end gap-2 mt-3"):
-                            ui.button("Cancel", on_click=dlg.close).props("flat")
-                            def lock_bye():
-                                supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", pool_slug).eq("week", target_week).execute()
-                                supabase.table("user_picks").insert({
-                                    "user_id": user_id, "game_type": pool_slug, "week": target_week,
-                                    "team_picked": "BYE", "pick_state": "Finalized"
-                                }).execute()
-                                draft_picks.clear()
-                                dlg.close()
-                                ui.notify("BYE Finalized!", type="positive")
-                                matchup_board.refresh()
-                            ui.button("Yes, Finalize BYE", on_click=lock_bye, color="green")
-                    dlg.open()
+                    ui.button(
+                        "Finalize BYE",
+                        on_click=lambda: save_bye("Finalized"),
+                        color="positive",
+                    ).props(f"{'disable' if bye_disabled else ''} unelevated").classes("flex-1 font-bold")
 
-                ui.button("Finalize BYE", on_click=open_bye_finalize, color="green-3").props(f"{'disable' if bye_disabled else ''} unelevated").classes("flex-1 font-bold")
-
-                if db_bye_this_week:
-                    def clear_bye():
-                        supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", pool_slug).eq("week", target_week).execute()
-                        ui.notify("BYE selection removed.", type="info")
-                        matchup_board.refresh()
-                    ui.button("Reset BYE", on_click=clear_bye, color="red-3").props(f"{'disable' if bye_disabled else ''} unelevated").classes("flex-1 font-bold")
-
-    week_opts = {w: f"{get_week_label(w)} (current)" if w == current_week else get_week_label(w) for w in range(1, 23)}
-    def change_week(e):
-        app.storage.user["selected_week"] = e.value
-        draft_picks.clear()
-        matchup_board.refresh()
-
-    ui.select(week_opts, value=app.storage.user["selected_week"], label="Target (Wed-Tue)", on_change=change_week).classes("w-48 mb-3")
+    week_select.on_value_change(lambda: matchup_board.refresh())
     matchup_board()
