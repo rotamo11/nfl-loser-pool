@@ -4,6 +4,13 @@ from nicegui import ui, app, run
 from picks_module import get_current_nfl_week, get_week_label, get_logo_url
 import datetime
 from zoneinfo import ZoneInfo
+import os
+from background_cron_reminders import (
+    send_smtp_email,
+    send_ntfy_push,
+    resolve_week_default_info,
+    get_required_picks,
+)
 
 ET_ZONE = ZoneInfo("America/New_York")
 
@@ -23,6 +30,203 @@ def is_admin_user(supabase, user) -> bool:
     except Exception:
         pass
     return False
+
+def execute_manual_deadline_lock(supabase, target_week: int) -> str:
+    """Runs the Sunday 12:00 PM ET lock & auto-pick logic for the specified week."""
+    # 1. Upgrade all 'Confirmed' picks for target_week to 'Finalized'
+    confirmed_picks = (
+        supabase.table("user_picks")
+        .select("id")
+        .eq("week", target_week)
+        .eq("pick_state", "Confirmed")
+        .execute()
+        .data or []
+    )
+    for p in confirmed_picks:
+        supabase.table("user_picks").update({"pick_state": "Finalized"}).eq("id", p["id"]).execute()
+
+    # 2. Fetch active registrations, full pick history, schedule count, and week default team
+    regs = (
+        supabase.table("tournament_registrations")
+        .select("id, user_id, game_type, is_enrolled, bracket_status")
+        .eq("is_enrolled", True)
+        .neq("bracket_status", "Eliminated")
+        .execute()
+        .data or []
+    )
+    all_picks = supabase.table("user_picks").select(
+        "id, user_id, game_type, week, team_picked, pick_state"
+    ).execute().data or []
+    matches = supabase.table("nfl_schedule").select("id").eq("week", target_week).execute().data or []
+
+    required_count = 1 if target_week <= 14 else (2 if target_week <= 18 else max(1, len(matches)))
+
+    # Resolve target_week's default team (or carry over & save previous week's default)
+    def_rows = supabase.table("default_picks").select("week, team").order("week", desc=False).execute().data or []
+    def_map = {int(r["week"]): r["team"].upper().strip() for r in def_rows if r.get("team")}
+    default_team = def_map.get(target_week)
+    if not default_team:
+        prior = [w for w in sorted(def_map.keys(), reverse=True) if w < target_week]
+        if prior:
+            default_team = def_map[prior]
+            supabase.table("default_picks").upsert({
+                "week": target_week,
+                "team": default_team,
+                "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat()
+            }).execute()
+
+    auto_byes, auto_defaults, no_picks = 0, 0, 0
+
+    for r in regs:
+        uid = str(r["user_id"])
+        gtype = r["game_type"]
+        user_pool_picks = [p for p in all_picks if str(p["user_id"]) == uid and p["game_type"] == gtype]
+        current_week_picks = [p for p in user_pool_picks if p["week"] == target_week]
+        missing_slots = required_count - len(current_week_picks)
+
+        if missing_slots <= 0:
+            continue
+
+        bye_used = any((p.get("team_picked") or "").upper().strip() == "BYE" for p in user_pool_picks)
+
+        for _ in range(missing_slots):
+            if not bye_used:
+                new_row = {"user_id": uid, "game_type": gtype, "week": target_week, "team_picked": "BYE", "pick_state": "Finalized"}
+                supabase.table("user_picks").insert(new_row).execute()
+                user_pool_picks.append(new_row)
+                all_picks.append(new_row)
+                bye_used = True
+                auto_byes += 1
+            elif default_team:
+                new_row = {"user_id": uid, "game_type": gtype, "week": target_week, "team_picked": default_team, "pick_state": "Finalized"}
+                supabase.table("user_picks").insert(new_row).execute()
+                user_pool_picks.append(new_row)
+                all_picks.append(new_row)
+                auto_defaults += 1
+            else:
+                new_row = {"user_id": uid, "game_type": gtype, "week": target_week, "team_picked": "NO_PICK", "pick_state": "Incorrect"}
+                supabase.table("user_picks").insert(new_row).execute()
+                user_pool_picks.append(new_row)
+                all_picks.append(new_row)
+                no_picks += 1
+
+    # 3. Recalculate bracket_status across BOTH pools
+    for r in regs:
+        uid = str(r["user_id"])
+        gtype = r["game_type"]
+        losses = sum(1 for p in all_picks if str(p["user_id"]) == uid and p["game_type"] == gtype and p.get("pick_state") == "Incorrect")
+        if gtype == "2nd_Chance":
+            new_status = "Eliminated" if losses >= 1 else "Loser Bracket"
+        else:
+            new_status = "Loser Bracket" if losses == 0 else ("Winner Bracket" if losses == 1 else "Eliminated")
+        if new_status != r.get("bracket_status"):
+            supabase.table("tournament_registrations").update({"bracket_status": new_status}).eq("id", r["id"]).execute()
+
+    return (
+        f"Week {target_week} lock complete: {len(confirmed_picks)} finalized, "
+        f"{auto_byes} auto-BYEs, {auto_defaults} default picks ({default_team or 'None'}), {no_picks} NO_PICK losses."
+    )
+
+def execute_manual_reminders(supabase, target_week: int, admin_only_uid: str | None = None) -> str:
+    """Sends email & ntfy.sh push reminders on demand for target_week."""
+    smtp_user = os.environ.get("SMTP_USER", "")
+    smtp_pass = os.environ.get("SMTP_PASS", "")
+    app_url = os.environ.get("APP_URL", "https://railway.app")
+
+    if not smtp_user or not smtp_pass:
+        raise RuntimeError("Missing SMTP_USER or SMTP_PASS in Railway environment variables.")
+
+    users = supabase.table("users").select(
+        "id, username, email, alert_personal_topic, alert_email, alert_sms, is_admin"
+    ).execute().data or []
+    user_map = {str(u["id"]): u for u in users}
+
+    # 1. Admin Default Team Verification Alert
+    default_team, is_saved = resolve_week_default_info(supabase, target_week)
+    status_note = (
+        f"Explicitly saved for Week {target_week}"
+        if is_saved
+        else f"Inherited from prior week (not yet saved for Week {target_week})"
+    )
+
+    target_admins = [
+        u for u in users
+        if u.get("is_admin") and (not admin_only_uid or str(u["id"]) == admin_only_uid)
+    ]
+    admin_sent = 0
+    for adm in target_admins:
+        adm_name = adm.get("username") or "Admin"
+        if adm.get("alert_email") and adm.get("email"):
+            send_smtp_email(
+                smtp_user,
+                smtp_pass,
+                adm["email"],
+                f"Admin Check: Week {target_week} Default Pick is {default_team}",
+                f"Hey {adm_name},\n\nPlease verify the Week {target_week} auto-pick default team before Sunday at NOON ET.\n\n"
+                f"Current Default Team: {default_team} ({status_note})\n\nUpdate or confirm in Admin: \n\n{app_url}/admin\n",
+            )
+            admin_sent += 1
+        if adm.get("alert_sms"):
+            adm_topic = (adm.get("alert_personal_topic") or "").strip() or f"nflloserpool-{str(adm['id'])[:8]}"
+            send_ntfy_push(
+                adm_topic,
+                f"Admin Check: Week {target_week} Default = {default_team}",
+                f"Verify Week {target_week} default team ({default_team} - {status_note}) before Sunday at NOON ET.",
+                f"{app_url}/admin",
+            )
+            admin_sent += 1
+
+    # 2. Player Missing Pick Reminders
+    regs = supabase.table("tournament_registrations").select(
+        "user_id, game_type, is_enrolled, bracket_status"
+    ).eq("is_enrolled", True).neq("bracket_status", "Eliminated").execute().data or []
+
+    week_picks = supabase.table("user_picks").select("user_id, game_type").eq("week", target_week).execute().data or []
+    matches = supabase.table("nfl_schedule").select("id").eq("week", target_week).execute().data or []
+    required_count = get_required_picks(target_week, len(matches))
+
+    missing_by_user = {}
+    for r in regs:
+        uid = str(r["user_id"])
+        if admin_only_uid and uid != admin_only_uid:
+            continue
+        gtype = r["game_type"]
+        user_week_picks = [p for p in week_picks if str(p["user_id"]) == uid and p["game_type"] == gtype]
+        if len(user_week_picks) < required_count:
+            missing_by_user.setdefault(uid, []).append(gtype.replace("_", " "))
+
+    sent_emails, sent_pushes = 0, 0
+    for uid, missing_pools in missing_by_user.items():
+        u = user_map.get(uid)
+        if not u:
+            continue
+        uname = u.get("username") or "Player"
+        pools_label = " & ".join(missing_pools)
+
+        if u.get("alert_email") and u.get("email"):
+            send_smtp_email(
+                smtp_user,
+                smtp_pass,
+                u["email"],
+                f"NFL Loser Pool Reminder: Week {target_week} Pick Needed ({pools_label})",
+                f"Hey {uname},\n\nYou still need to submit your Week {target_week} pick(s) for the {pools_label} Pool.\n\n"
+                f"You have until Sunday at NOON ET (or by kickoff of an earlier game) to avoid being given your BYE (if available) or the highest favored/ranked team that still has yet to play this week.\n\n"
+                f"Submit your pick now: \n\n{app_url}\n",
+            )
+            sent_emails += 1
+
+        if u.get("alert_sms"):
+            personal_topic = (u.get("alert_personal_topic") or "").strip() or f"nflloserpool-{uid[:8]}"
+            send_ntfy_push(
+                personal_topic,
+                f"NFL Loser Pool: Week {target_week} Pick Needed",
+                f"Hey {uname}, submit your {pools_label} Pool pick before Sunday at NOON ET to avoid being given your BYE (if available) or the highest favored/ranked team that still has yet to play this week.",
+                app_url,
+            )
+            sent_pushes += 1
+
+    scope = "Test (Admin Only)" if admin_only_uid else "All Missing Players"
+    return f"Week {target_week} reminders ({scope}): {admin_sent} admin alerts, {sent_emails} player emails, {sent_pushes} push alerts sent."
 
 def render_admin_view(supabase, user):
     if not is_admin_user(supabase, user):
@@ -284,7 +488,100 @@ def render_admin_view(supabase, user):
 
             def_week_sel.on_value_change(lambda: default_pick_panel.refresh())
             default_pick_panel()
-        
+
+            ui.separator().classes("my-5")
+
+            # --- MANUAL DEADLINE LOCK TRIGGER ---
+            with ui.card().classes("w-full p-4 border border-amber-500/40 shadow-none"):
+                ui.label("🔒 Manual Deadline Lock Enforcer").classes("text-base font-extrabold mb-1")
+                ui.label(
+                    "Upgrades all Confirmed picks to Finalized for the selected week above, assigns unused BYEs, "
+                    "and applies the week's Default Team to any remaining missing picks across both pools."
+                ).classes("text-xs opacity-75 mb-3")
+
+                def open_lock_confirm():
+                    w_target = def_week_sel.value
+                    with ui.dialog() as lock_dlg, ui.card().classes("p-5 max-w-md"):
+                        ui.label(f"Run Deadline Lock for {get_week_label(w_target)}?").classes("text-lg font-black")
+                        ui.label(
+                            "This will immediately finalize all Confirmed picks and auto-assign BYEs or the Default Team "
+                            "to all active players who haven't submitted picks for this week."
+                        ).classes("text-xs opacity-80 my-2")
+
+                        with ui.row().classes("w-full justify-end gap-2 mt-3"):
+                            ui.button("Cancel", on_click=lock_dlg.close).props("flat")
+
+                            async def confirm_run_lock():
+                                lock_dlg.close()
+                                lock_btn.props("loading")
+                                notif = ui.notification(
+                                    f"⏳ Running deadline lock for {get_week_label(w_target)}...",
+                                    spinner=True,
+                                    timeout=None,
+                                    type="info"
+                                )
+                                try:
+                                    summary_msg = await run.io_bound(execute_manual_deadline_lock, supabase, w_target)
+                                    notif.message = f"✅ {summary_msg}"
+                                    notif.spinner = False
+                                    notif.type = "positive"
+                                    notif.timeout = 6.0
+                                    default_pick_panel.refresh()
+                                except Exception as err:
+                                    notif.message = f"❌ Lock failed: {str(err)}"
+                                    notif.spinner = False
+                                    notif.type = "negative"
+                                    notif.timeout = 8.0
+                                finally:
+                                    lock_btn.props(remove="loading")
+
+                            ui.button("Confirm & Lock Week", on_click=confirm_run_lock, color="amber-8").classes("font-bold text-white")
+                    lock_dlg.open()
+
+                lock_btn = ui.button("Run Deadline Lock Now", icon="lock_clock", on_click=open_lock_confirm, color="amber-8").classes("font-bold text-white")
+
+                def open_reminder_confirm():
+                    w_target = def_week_sel.value
+                    with ui.dialog() as rem_dlg, ui.card().classes("p-5 max-w-md"):
+                        ui.label(f"Send Reminders for {get_week_label(w_target)}?").classes("text-lg font-black")
+                        ui.label("Choose whether to send a test alert only to your Admin account or blast all players missing picks.").classes(
+                            "text-xs opacity-80 my-2"
+                        )
+
+                        async def trigger_reminders(only_me: bool):
+                            rem_dlg.close()
+                            rem_btn.props("loading")
+                            notif = ui.notification(
+                                f"⏳ Sending Week {w_target} reminders...",
+                                spinner=True,
+                                timeout=None,
+                                type="info",
+                            )
+                            try:
+                                target_uid = str(user.id) if only_me else None
+                                msg = await run.io_bound(execute_manual_reminders, supabase, w_target, target_uid)
+                                notif.message = f"✅ {msg}"
+                                notif.spinner = False
+                                notif.type = "positive"
+                                notif.timeout = 6.0
+                            except Exception as err:
+                                notif.message = f"❌ Reminder error: {str(err)}"
+                                notif.spinner = False
+                                notif.type = "negative"
+                                notif.timeout = 8.0
+                            finally:
+                                rem_btn.props(remove="loading")
+
+                        with ui.row().classes("w-full justify-end gap-2 mt-3 flex-wrap"):
+                            ui.button("Cancel", on_click=rem_dlg.close).props("flat")
+                            ui.button("Test (Only Me)", on_click=lambda: trigger_reminders(True), color="primary").props("outline")
+                            ui.button("Send to All Missing", on_click=lambda: trigger_reminders(False), color="primary").classes("font-bold")
+                    rem_dlg.open()
+
+                with ui.row().classes("items-center gap-3 flex-wrap"):
+                    lock_btn = ui.button("Run Deadline Lock Now", icon="lock_clock", on_click=open_lock_confirm, color="amber-8").classes("font-bold text-white")
+                    rem_btn = ui.button("Send Reminders Now", icon="notifications_active", on_click=open_reminder_confirm, color="primary").classes("font-bold")
+
         # ================================================================
         # TAB 3: USERS, FULL PROFILE EDITOR, DELETE & ROSTER MANAGEMENT
         # ================================================================
