@@ -1,11 +1,84 @@
 import os
 import base64
 import datetime
+import asyncio
 from zoneinfo import ZoneInfo
-from nicegui import ui, app
+from nicegui import ui, app, run
+from enrollment_helper import get_open_registration_pools, notify_admins_of_join_request
 
 ET_ZONE = ZoneInfo("America/New_York")
 SEASON_START_WEDNESDAY = datetime.datetime(2026, 9, 9, 0, 0, 0, tzinfo=ET_ZONE)
+
+async def render_picks_view(supabase, user, pool_slug: str):
+    user_id = str(user.id)
+    current_week = get_current_nfl_week()
+
+    reg_rows, all_picks, all_matches, u_rows = await asyncio.gather(
+        run.io_bound(lambda: supabase.table("tournament_registrations").select("*").eq("user_id", user_id).eq("game_type", pool_slug).execute().data or []),
+        run.io_bound(lambda: supabase.table("user_picks").select("*").eq("user_id", user_id).eq("game_type", pool_slug).execute().data or []),
+        run.io_bound(lambda: supabase.table("nfl_schedule").select("*").execute().data or []),
+        run.io_bound(lambda: supabase.table("users").select("username, first_name, last_name, email, cell_phone").eq("id", user_id).execute().data or []),
+    )
+
+    reg = next(iter(reg_rows), None)
+    u_info = next(iter(u_rows), {})
+
+    if not reg or not reg.get("is_enrolled"):
+        pool_label = pool_slug.replace("_", " ")
+        open_pools = get_open_registration_pools(supabase)
+
+        with ui.card().classes("w-full p-5 border border-amber-500/40 shadow-none text-center items-center"):
+            ui.label(f"You are not currently enrolled in the {pool_label} Pool.").classes("text-base font-extrabold mb-1")
+
+            if pool_slug in open_pools:
+                existing_req = (
+                    supabase.table("enrollment_requests")
+                    .select("id")
+                    .eq("user_id", user_id)
+                    .eq("game_type", pool_slug)
+                    .eq("status", "Pending")
+                    .execute()
+                    .data or []
+                )
+
+                @ui.refreshable
+                def self_enroll_area():
+                    pending_now = (
+                        supabase.table("enrollment_requests")
+                        .select("id")
+                        .eq("user_id", user_id)
+                        .eq("game_type", pool_slug)
+                        .eq("status", "Pending")
+                        .execute()
+                        .data or []
+                    )
+                    if pending_now:
+                        ui.badge("⏳ Request Pending Commissioner Approval", color="amber-8").classes("text-xs font-bold px-3 py-1 mt-2")
+                    else:
+                        ui.label(f"Registration for {pool_label} is currently OPEN!").classes("text-xs opacity-80 mb-3")
+
+                        def request_pool_join():
+                            payload = {
+                                "user_id": user_id,
+                                "email": (u_info.get("email") or user.email or "").strip().lower(),
+                                "username": (u_info.get("username") or "Player").strip(),
+                                "first_name": (u_info.get("first_name") or "").strip(),
+                                "last_name": (u_info.get("last_name") or "").strip(),
+                                "cell_phone": (u_info.get("cell_phone") or "").strip(),
+                                "game_type": pool_slug,
+                                "status": "Pending",
+                            }
+                            supabase.table("enrollment_requests").insert(payload).execute()
+                            notify_admins_of_join_request(supabase, payload)
+                            ui.notify(f"✅ Request sent to join {pool_label}! The Commissioner has been notified.", type="positive")
+                            self_enroll_area.refresh()
+
+                        ui.button(f"Request to Join {pool_label}", icon="how_to_reg", on_click=request_pool_join, color="primary").classes("font-bold px-6")
+
+                self_enroll_area()
+            else:
+                ui.label(f"Registration for {pool_label} is currently closed. Contact the Commissioner for assistance.").classes("text-xs opacity-75")
+        return
 
 def get_current_nfl_week() -> int:
     now_et = datetime.datetime.now(ET_ZONE)
