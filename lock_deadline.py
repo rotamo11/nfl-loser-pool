@@ -41,6 +41,11 @@ def get_or_carryover_default_team(supabase: Client, current_week: int) -> str | 
     return None
 
 def main():
+    now_et = datetime.datetime.now(ET_ZONE)
+    if os.environ.get("GITHUB_EVENT_NAME") == "schedule" and now_et.hour != 12:
+        print(f"Skipping off-timezone UTC cron slot (Current ET: {now_et.strftime('%I:%M %p %Z')}).")
+        return
+
     supabase_url = os.environ["SUPABASE_URL"]
     supabase_key = os.environ.get("SUPABASE_SERVICE_KEY") or os.environ["SUPABASE_KEY"]
     supabase: Client = create_client(supabase_url, supabase_key)
