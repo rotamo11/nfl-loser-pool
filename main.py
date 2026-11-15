@@ -154,7 +154,7 @@ def render_layout(active_page: str, content_builder):
             ).style(f"background-color: {pool_hex};")
 
             if is_2nd:
-                ui.label("26 Players: $650 Purse ($390 for 1st / $195 for 2nd / $65 for 3rd)").classes(f"text-xs md:text-base font-bold mt-1 {purse_cls}")
+                ui.label("26 Players: $650 Purse ($390 1st / $195 2nd / $65 3rd)").classes(f"text-xs md:text-base font-bold mt-1 {purse_cls}")
                 ui.label("Last Year's Losers: D. Bobrow ($300) • M. Ellis ($150) • D. Tashima ($50)").classes(f"text-[11px] md:text-sm {text_muted}")
             else:
                 ui.label("74 Players | $1850 Purse ($1110 1st / $555 2nd / $185 3rd)").classes(f"text-xs md:text-base font-bold mt-1 {purse_cls}")
