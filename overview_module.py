@@ -132,31 +132,28 @@ def render_overview_view(supabase, user, pool_slug: str):
                 if not week_team_counts:
                     ui.label("No picks logged for this week yet.").classes("text-xs opacity-70 italic py-1")
                 else:
-                    sorted_dist = sorted(week_team_counts.items(), key=lambda item: (0 if item[0] == "BYE" else 1, -item[1], item[0]))
+                    sorted_dist = sorted(week_team_counts.items(), key=lambda item: (0 if item == "BYE" else 1, -item, item))
                     total_logged = sum(week_team_counts.values())
+                    desktop_cols = min(len(sorted_dist), 15)
 
-                    sorted_dist = sorted(week_team_counts.items(), key=lambda item: (0 if item[0] == "BYE" else 1, -item[1], item[0]))
-                    total_logged = sum(week_team_counts.values())
-
-                    # Responsive grid: 5 per row on phones, up to 15 stretched evenly across desktop
                     ui.add_head_html("""
                         <style>
-                            .dist-grid-15 {
+                            .dist-grid-dynamic {
                                 display: grid;
                                 grid-template-columns: repeat(5, minmax(0, 1fr));
                                 gap: 0.35rem;
                                 width: 100%;
                             }
                             @media (min-width: 640px) {
-                                .dist-grid-15 { grid-template-columns: repeat(8, minmax(0, 1fr)); }
+                                .dist-grid-dynamic { grid-template-columns: repeat(min(var(--cols, 8), 8), minmax(0, 1fr)); }
                             }
                             @media (min-width: 1024px) {
-                                .dist-grid-15 { grid-template-columns: repeat(15, minmax(0, 1fr)); }
+                                .dist-grid-dynamic { grid-template-columns: repeat(var(--cols, 15), minmax(0, 1fr)); }
                             }
                         </style>
                     """)
 
-                    with ui.element("div").classes("dist-grid-15 mt-2"):
+                    with ui.element("div").classes("dist-grid-dynamic mt-2").style(f"--cols: {desktop_cols};"):
                         for team_code, count in sorted_dist:
                             pct = round((count / total_logged) * 100)
                             outcome = team_week_outcomes.get((target_w, team_code))
@@ -168,7 +165,6 @@ def render_overview_view(supabase, user, pool_slug: str):
                             else:
                                 card_cls = "bg-slate-800/60 border-slate-700" if is_dark else "bg-slate-50 border-slate-200"
 
-                            # Vertical card layout: Logo -> Team Code -> Count
                             with ui.column().classes(f"w-full items-center justify-center py-1.5 px-1 rounded-lg border {card_cls} gap-0.5 text-center"):
                                 if url := get_logo_url(team_code):
                                     ui.html(f'<img src="{url}" class="w-6 h-4 object-contain p-0.5 shrink-0" />')
