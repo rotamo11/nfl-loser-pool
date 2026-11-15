@@ -97,7 +97,7 @@ async def render_picks_view(supabase, user, pool_slug: str):
         return
 
     # --- TOP STATUS HEADER & WEEK DROPDOWN ---
-    start_week = 10 if pool_slug == "2nd_Chance" else 1
+    start_week = 6 if pool_slug == "2nd_Chance" else 1
     available_weeks = list(range(start_week, 23))
     default_week = max(start_week, current_week)
 
