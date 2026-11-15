@@ -4,6 +4,18 @@ from collections import Counter
 from zoneinfo import ZoneInfo
 from nicegui import ui, app
 from admin_module import is_admin_user
+import asyncio
+from nicegui import ui, app, run
+
+async def render_overview_view(supabase, user, pool_slug: str):
+    current_week = get_current_nfl_week()
+    current_user_id = str(user.id)
+
+    users, regs, all_picks = await asyncio.gather(
+        run.io_bound(lambda: supabase.table("users").select("id, username, first_name, last_name").execute().data or []),
+        run.io_bound(lambda: supabase.table("tournament_registrations").select("user_id, game_type, is_enrolled, bracket_status").eq("game_type", pool_slug).eq("is_enrolled", True).execute().data or []),
+        run.io_bound(lambda: supabase.table("user_picks").select("user_id, week, team_picked, pick_state").eq("game_type", pool_slug).execute().data or []),
+    )
 
 ET_ZONE = ZoneInfo("America/New_York")
 SEASON_START_WEDNESDAY = datetime.datetime(2026, 9, 9, 0, 0, 0, tzinfo=ET_ZONE)
