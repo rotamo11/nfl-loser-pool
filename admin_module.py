@@ -560,6 +560,7 @@ def render_admin_view(supabase, user):
                         }).execute()
                         ui.notify(f"Saved {chosen} as Week {w_num} default pick!", type="positive")
                         default_pick_status.refresh()
+                        def_week_sel.on_value_change(lambda: (default_pick_status.refresh(), missing_picks_preview.refresh()))
 
                 ui.button("Save Week Default", on_click=save_default_team, color="primary").classes("font-bold")
 
@@ -606,16 +607,11 @@ def render_admin_view(supabase, user):
                                 notif = ui.notification(f"⏳ Running lock for {get_week_label(w_target)}...", spinner=True, timeout=None, type="info")
                                 try:
                                     msg = await run.io_bound(execute_manual_deadline_lock, supabase, w_target)
-                                    notif.message = f"✅ {msg}"
-                                    notif.spinner = False
-                                    notif.type = "positive"
-                                    notif.timeout = 6.0
+                                    notif.message, notif.spinner, notif.type, notif.timeout = f"✅ {msg}", False, "positive", 6.0
                                     default_pick_status.refresh()
+                                    missing_picks_preview.refresh()
                                 except Exception as err:
-                                    notif.message = f"❌ Lock failed: {err}"
-                                    notif.spinner = False
-                                    notif.type = "negative"
-                                    notif.timeout = 8.0
+                                    notif.message, notif.spinner, notif.type, notif.timeout = f"❌ Lock failed: {err}", False, "negative", 8.0
                                 finally:
                                     lock_btn.props(remove="loading")
 
@@ -654,6 +650,91 @@ def render_admin_view(supabase, user):
                 with ui.row().classes("items-center gap-3 flex-wrap"):
                     lock_btn = ui.button("Run Deadline Lock Now", icon="lock_clock", on_click=open_lock_confirm, color="amber-8").classes("font-bold text-white")
                     rem_btn = ui.button("Send Reminders Now", icon="notifications_active", on_click=open_reminder_confirm, color="primary").classes("font-bold")
+                    
+            ui.separator().classes("my-5")
+
+            # --- MISSING PICKS & AUTO-ASSIGN PREVIEW (MAIN LEFT | 2ND CHANCE RIGHT) ---
+            @ui.refreshable
+            def missing_picks_preview():
+                w_target = def_week_sel.value
+                users_rows = supabase.table("users").select("id, username, first_name, last_name").execute().data or []
+                user_name_map = {
+                    str(u["id"]): f"{u.get('username') or 'Unknown'} ({u.get('first_name') or ''} {u.get('last_name') or ''})".strip()
+                    for u in users_rows
+                }
+
+                active_regs = (
+                    supabase.table("tournament_registrations")
+                    .select("user_id, game_type, is_enrolled, bracket_status")
+                    .eq("is_enrolled", True)
+                    .neq("bracket_status", "Eliminated")
+                    .execute()
+                    .data or []
+                )
+                all_picks = supabase.table("user_picks").select("user_id, game_type, week, team_picked").execute().data or []
+                matches = supabase.table("nfl_schedule").select("id").eq("week", w_target).execute().data or []
+                req_count = get_required_picks(w_target, len(matches))
+
+                active_default, _ = resolve_week_default_info(supabase, w_target)
+
+                def get_pool_missing(pool_name: str) -> list[dict]:
+                    pool_regs = [r for r in active_regs if r.get("game_type") == pool_name]
+                    missing_list = []
+                    for r in pool_regs:
+                        uid = str(r["user_id"])
+                        u_picks = [p for p in all_picks if str(p["user_id"]) == uid and p["game_type"] == pool_name]
+                        wk_picks = [p for p in u_picks if p["week"] == w_target]
+                        missing_slots = req_count - len(wk_picks)
+                        if missing_slots <= 0:
+                            continue
+
+                        bye_used = any((p.get("team_picked") or "").upper().strip() == "BYE" for p in u_picks)
+                        if not bye_used and missing_slots == 1:
+                            outcome = "BYE Available"
+                            is_bye = True
+                        elif not bye_used and missing_slots > 1:
+                            outcome = f"1 BYE + {missing_slots - 1} Default ({active_default})"
+                            is_bye = True
+                        else:
+                            label_prefix = f"{missing_slots}x " if missing_slots > 1 else ""
+                            outcome = f"{label_prefix}Default ({active_default})"
+                            is_bye = False
+
+                        missing_list.append({
+                            "name": user_name_map.get(uid, uid),
+                            "outcome": outcome,
+                            "is_bye": is_bye,
+                        })
+                    return sorted(missing_list, key=lambda x: x["name"].lower())
+
+                main_missing = get_pool_missing("Main")
+                sc_missing = get_pool_missing("2nd_Chance")
+
+                ui.label(f"Missing Picks & Auto-Assign Preview ({get_week_label(w_target)})").classes("text-base font-extrabold mb-2")
+
+                with ui.grid().classes("w-full grid-cols-1 md:grid-cols-2 gap-4"):
+                    for title, items, accent in [
+                        ("Main Pool", main_missing, "border-blue-500/40"),
+                        ("2nd Chance Pool", sc_missing, "border-amber-500/40"),
+                    ]:
+                        with ui.card().classes(f"w-full p-3 border {accent} shadow-none"):
+                            with ui.row().classes("w-full items-center justify-between mb-2 pb-1 border-b border-slate-200 dark:border-slate-700"):
+                                ui.label(title).classes("text-sm font-extrabold")
+                                ui.badge(f"{len(items)} Missing", color="primary" if items else "positive").classes("text-xs font-bold")
+
+                            if not items:
+                                ui.label("All active players have submitted picks!").classes("text-xs opacity-70 italic py-1")
+                            else:
+                                with ui.column().classes("w-full gap-1.5"):
+                                    for entry in items:
+                                        with ui.row().classes("w-full items-center justify-between gap-2 text-xs"):
+                                            ui.label(entry["name"]).classes("font-semibold truncate")
+                                            ui.badge(
+                                                entry["outcome"],
+                                                color="green" if entry["is_bye"] else "amber-8",
+                                            ).classes("text-[10px] font-bold shrink-0")
+
+            missing_picks_preview()
 
         # ================================================================
         # TAB 4: CSV IMPORT & TAB 5: MASQUERADE
