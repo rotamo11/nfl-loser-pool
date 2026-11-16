@@ -29,11 +29,13 @@ def send_smtp_email(smtp_user: str, smtp_pass: str, to_addr: str, subject: str, 
     resend_key = os.environ.get("RESEND_API_KEY", "").strip()
     if resend_key:
         from_addr = os.environ.get("RESEND_FROM", "NFL Loser Pool <onboarding@resend.dev>").strip()
+        reply_to_addr = (os.environ.get("REPLY_TO_EMAIL") or smtp_user or "nfl.loser.pool@gmail.com").strip()
         resend_host = ".".join(["api", "resend", "com"])
         url = f"https://{resend_host}/emails"
         payload = json.dumps({
             "from": from_addr,
             "to": [to_addr.strip()],
+            "reply_to": reply_to_addr,
             "subject": subject,
             "text": body,
         }).encode("utf-8")
@@ -100,7 +102,7 @@ def main():
     supabase_key = os.environ.get("SUPABASE_SERVICE_KEY") or os.environ["SUPABASE_KEY"]
     smtp_user = os.environ["SMTP_USER"]
     smtp_pass = os.environ["SMTP_PASS"]
-    app_url = os.environ.get("APP_URL", "https://railway.app")
+    app_url = os.environ.get("APP_URL", "https://nfl-loser-pool-production.up.railway.app/")
 
     supabase: Client = create_client(supabase_url, supabase_key)
     current_week = get_current_nfl_week()
