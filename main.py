@@ -293,21 +293,21 @@ def spa_shell(subpath: str = ""):
                 sc_el.on("click", lambda: select_pool("2nd_Chance"))
 
             # 4. Instant SPA Navigation Row
+            is_masquerading = bool(app.storage.user.get("masquerade_uid"))
+            is_adm = False if is_masquerading else get_cached_admin_status(user)
+            pending_joins = get_pending_join_count() if is_adm else 0
             unread_chat = get_unread_chat_count(user) if active_path != "/chat" else 0
+
             with ui.row().classes("w-full max-w-5xl justify-around items-center py-2.5 mt-1 text-xs md:text-sm font-bold flex-wrap gap-2"):
                 nav_items = [
                     ("Picks", "/"),
-                    ("Standings", "/standings"),
+                    ("Standings", "/brackets"),
                     ("Chat", "/chat"),
                     ("Rules", "/rules"),
                     ("Profile", "/profile"),
                 ]
-                if get_cached_admin_status(user):
+                if is_adm:
                     nav_items.append(("Admin", "/admin"))
-
-                is_masquerading = bool(app.storage.user.get("masquerade_uid"))
-                is_adm = False if is_masquerading else get_cached_admin_status(user)
-                pending_joins = get_pending_join_count() if is_adm else 0
 
                 for label, route in nav_items:
                     is_active = (active_path == route)
