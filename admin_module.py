@@ -216,7 +216,7 @@ def render_admin_view(supabase, user):
         return
 
     current_week = get_current_nfl_week()
-    ui.label("Admin Control Console").classes("text-2xl font-black mb-3")
+    ui.label("Admin Control Console").classes("text-xl font-black")
 
     regs = supabase.table("tournament_registrations").select("*").eq("is_enrolled", True).execute().data or []
     main_regs = [r for r in regs if r.get("game_type") == "Main"]
