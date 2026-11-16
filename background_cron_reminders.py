@@ -26,34 +26,6 @@ def get_required_picks(week: int, matches_count: int) -> int:
     return max(1, matches_count)
 
 def send_smtp_email(smtp_user: str, smtp_pass: str, to_addr: str, subject: str, body: str):
-    resend_key = os.environ.get("RESEND_API_KEY", "").strip()
-    if resend_key:
-        from_addr = os.environ.get("RESEND_FROM", "NFL Loser Pool <onboarding@resend.dev>").strip()
-        reply_to_addr = (os.environ.get("REPLY_TO_EMAIL") or smtp_user or "nfl.loser.pool@gmail.com").strip()
-        resend_host = ".".join(["api", "resend", "com"])
-        url = f"https://{resend_host}/emails"
-        payload = json.dumps({
-            "from": from_addr,
-            "to": [to_addr.strip()],
-            "reply_to": reply_to_addr,
-            "subject": subject,
-            "text": body,
-        }).encode("utf-8")
-
-        req = urllib.request.Request(
-            url,
-            data=payload,
-            headers={
-                "Authorization": f"Bearer {resend_key}",
-                "Content-Type": "application/json",
-                "User-Agent": "NFLLoserPool/1.0",
-            },
-            method="POST",
-        )
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            resp.read()
-        return
-
     clean_user = smtp_user.strip()
     clean_pass = smtp_pass.replace(" ", "").strip()
     smtp_server = ".".join(["smtp", "gmail", "com"])
@@ -138,7 +110,7 @@ def main():
                 f"Hey {adm_name},\n\n"
                 f"Please verify the Week {current_week} auto-pick default team before Sunday at NOON ET.\n\n"
                 f"Current Default Team: {default_team} ({status_note})\n\n"
-                f"Update or confirm in the Admin Console: \n\n{app_url}admin\n"
+                f"Update or confirm in the Admin Console: \n\n{app_url}/admin\n"
             )
             try:
                 send_smtp_email(smtp_user, smtp_pass, adm["email"], adm_subj, adm_body)
@@ -152,7 +124,7 @@ def main():
                     adm_topic,
                     f"Admin Check: Week {current_week} Default = {default_team}",
                     f"Verify Week {current_week} default team ({default_team} - {status_note}) before Sunday at NOON ET.",
-                    f"{app_url}admin",
+                    f"{app_url}/admin",
                 )
             except Exception as e:
                 print(f"Admin push failed for {adm_name}: {e}")
