@@ -97,7 +97,7 @@ def render_chat_view(supabase, user):
 
     # Message Input Bar
     with ui.row().classes("w-full items-center gap-2 mt-3 no-wrap"):
-        msg_in = ui.input(placeholder="Write a message to the league...").classes("flex-1").props("outlined dense")
+        msg_in = ui.input(placeholder="Say something...").classes("flex-1").props("outlined dense")
 
         def send_message():
             txt = (msg_in.value or "").strip()
