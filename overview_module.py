@@ -71,7 +71,7 @@ async def render_overview_view(supabase, user, pool_slug: str):
     active_total = sum(1 for r in regs if r.get("bracket_status") != "Eliminated")
 
     # Line 1: [Pool] Pool - Standings
-    ui.label(f"{pool_label} Pool - Standings").classes("text-xl md:text-2xl font-black mb-1")
+    ui.label(f"{pool_label} Pool - Standings").classes("text-xl font-black")
 
     # Line 2: Status (left) & Remaining Active #/# (right)
     with ui.row().classes("w-full items-center justify-between pb-2 mb-3 border-b border-gray-200 dark:border-slate-700"):
