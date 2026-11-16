@@ -8,7 +8,7 @@ def render_profile_view(supabase, user):
     res = supabase.table("users").select("*").eq("id", user_id).execute().data
     profile = res[0] if (isinstance(res, list) and len(res) > 0) else {}
 
-    ui.label("Profile & Notification Settings").classes("text-xl font-black mb-1")
+    ui.label("Profile & Notification Settings").classes("text-xl font-black")
     ui.label(f"Account Email: {user.email}").classes("text-xs opacity-70 mb-4")
 
     # --- TOP SECTION: APPEARANCE / THEME PREFERENCE ---
