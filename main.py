@@ -301,7 +301,7 @@ def spa_shell(subpath: str = ""):
             with ui.row().classes("w-full max-w-5xl justify-around items-center py-2.5 mt-1 text-xs md:text-sm font-bold flex-wrap gap-2"):
                 nav_items = [
                     ("Picks", "/"),
-                    ("Standings", "/brackets"),
+                    ("Standings", "/standings"),
                     ("Chat", "/chat"),
                     ("Rules", "/rules"),
                     ("Profile", "/profile"),
