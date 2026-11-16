@@ -209,12 +209,17 @@ def spa_shell(subpath: str = ""):
     if user and app.storage.user.get("masquerade_uid"):
         masq_name = app.storage.user.get("masquerade_name", "Player")
         with ui.row().classes("w-full bg-purple-700 text-white px-4 py-1.5 items-center justify-between text-xs font-bold"):
-            ui.label(f"🕵️ MASQUERADE MODE ACTIVE — Viewing as: {masq_name}")
+            ui.label(f"MASQUERADE MODE ACTIVE — Viewing as: {masq_name}")
+
             def exit_masquerade():
                 app.storage.user.pop("masquerade_uid", None)
                 app.storage.user.pop("masquerade_name", None)
-                ui.navigate.reload()
-            ui.button("Exit Masquerade", on_click=exit_masquerade, color="white").props("flat dense size=xs")
+                app.storage.user["active_route"] = "/admin"
+                ui.run_javascript("window.location.href = '/admin'")
+
+            ui.button("Exit Masquerade", on_click=exit_masquerade, color="black").props("dense no-caps").classes(
+                "bg-black text-white font-bold px-3 py-1 rounded text-xs"
+            )
 
     @ui.refreshable
     def app_shell():
