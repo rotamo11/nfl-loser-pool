@@ -92,10 +92,15 @@ async def render_picks_view(supabase, user, pool_slug: str):
     current_status = active_reg.get("bracket_status", "Not Enrolled") if active_reg else "Not Enrolled"
     active_total = sum(1 for r in pool_regs if r.get("bracket_status") != "Eliminated")
 
-    # 1 & 2. Status Message & Remaining Active Count Badge Bar
-    with ui.row().classes("w-full items-center justify-between mb-4 pb-2 border-b border-gray-200 dark:border-slate-700"):
-        ui.label(f"Status for {current_user_name}: {current_status}").classes("text-lg md:text-xl font-black")
-        ui.badge(f"Remaining Active: {active_total} / {len(pool_regs)}", color="primary").classes("text-xs font-bold px-2 py-1")
+    pool_label = "2nd Chance" if pool_slug == "2nd_Chance" else "Main"
+
+    # Line 1: [Pool] Pool - Picks
+    ui.label(f"{pool_label} Pool - Picks").classes("text-xl md:text-2xl font-black mb-1")
+
+    # Line 2: Status (left) & Remaining Active #/# (right)
+    with ui.row().classes("w-full items-center justify-between pb-2 mb-3 border-b border-gray-200 dark:border-slate-700"):
+        ui.label(f"Status: {current_status}").classes("text-sm md:text-base font-extrabold")
+        ui.badge(f"Remaining Active: {active_total} / {len(pool_regs)}", color="primary").classes("text-xs font-bold px-2.5 py-1")
 
     # 3. Verify Enrollment & Self-Enrollment Request Flow
     if not active_reg or not active_reg.get("is_enrolled", False):
@@ -401,5 +406,4 @@ async def render_picks_view(supabase, user, pool_slug: str):
         draft_picks.clear()
         matchup_board.refresh()
 
-    ui.select(week_opts, value=app.storage.user["selected_week"], label="Target (Wed-Tue)", on_change=change_week).classes("w-48 mb-3")
     matchup_board()
