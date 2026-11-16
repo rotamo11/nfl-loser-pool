@@ -175,7 +175,8 @@ def execute_manual_reminders(supabase, target_week: int, admin_only_uid: str | N
     return f"Week {target_week} reminders ({scope}): {admin_sent} admin alerts, {sent_emails} player emails, {sent_pushes} push alerts sent."
 
 async def render_admin_view(supabase, user):
-    if not (app.storage.user.get("is_admin_cached") or is_admin_user(supabase, user)):
+    is_masquerading = bool(app.storage.user.get("masquerade_uid"))
+    if is_masquerading or not (app.storage.user.get("is_admin_cached") or is_admin_user(supabase, user)):
         ui.label("🔒 Access Denied: Admin Privileges Required.").classes("text-red-500 font-bold text-lg")
         return
 
