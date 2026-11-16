@@ -937,8 +937,7 @@ async def render_admin_view(supabase, user):
                                             app.storage.user["masquerade_uid"] = target_id
                                             app.storage.user["masquerade_name"] = target_name
                                             app.storage.user["active_route"] = "/"
-                                            ui.navigate.to("/")
-                                            ui.navigate.reload()
+                                            ui.run_javascript("window.location.href = '/'")
 
                                         ui.button("Masquerade", on_click=start_masquerade).props("dense outline size=xs color=purple")
                                     ui.button("Edit / Delete", on_click=lambda u_obj=u: open_user_editor(u_obj)).props("dense outline size=xs color=primary")
