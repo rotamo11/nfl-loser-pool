@@ -181,7 +181,7 @@ async def render_admin_view(supabase, user):
         return
 
     current_week = get_current_nfl_week()
-    ui.label("Admin Control Console").classes("text-xl md:text-2xl font-black mb-2")
+    ui.label("Admin Control Console").classes("text-xl font-black")
 
     # Parallel initial fetch of core tables so switching tabs is instantaneous
     users_data, regs_data, picks_data, sched_data = await asyncio.gather(
