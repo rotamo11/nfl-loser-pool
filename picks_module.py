@@ -77,7 +77,6 @@ async def render_picks_view(supabase, user, pool_slug: str):
     if "selected_week" not in app.storage.user or app.storage.user["selected_week"] < start_week:
         app.storage.user["selected_week"] = max(start_week, current_week)
 
-    # Parallel fetch of user info, pool registrations, user picks, and NFL schedule
     u_res, pool_regs, initial_picks, all_matches = await asyncio.gather(
         run.io_bound(lambda: supabase.table("users").select("username, first_name, last_name, email, cell_phone").eq("id", user_id).execute().data or []),
         run.io_bound(lambda: supabase.table("tournament_registrations").select("*").eq("game_type", pool_slug).eq("is_enrolled", True).execute().data or []),
@@ -101,10 +100,8 @@ async def render_picks_view(supabase, user, pool_slug: str):
     with ui.row().classes("w-full items-center justify-between pb-2 mb-3 border-b border-gray-200 dark:border-slate-700"):
         ui.label(f"Status: {current_status}").classes("text-sm md:text-base font-extrabold")
         ui.badge(f"Remaining Active: {active_total} / {len(pool_regs)}", color="primary").classes("text-xs font-bold px-2.5 py-1")
-
-    # 3. Verify Enrollment & Self-Enrollment Request Flow
+    # Verify Enrollment & Self-Enrollment Request Flow
     if not active_reg or not active_reg.get("is_enrolled", False):
-        pool_label = pool_slug.replace("_", " ")
         open_pools = get_open_registration_pools(supabase)
 
         with ui.card().classes("w-full p-5 border border-amber-500/40 shadow-none text-center items-center"):
@@ -150,13 +147,33 @@ async def render_picks_view(supabase, user, pool_slug: str):
                 ui.label(f"Registration for {pool_label} is currently closed. Contact the Commissioner for assistance.").classes("text-xs opacity-75")
         return
 
-    # 6. Elimination Message Directing User to Brackets Page
+    # Elimination Message Directing User to Standings Page
     if current_status == "Eliminated":
         ui.label("Tough break — you’re a winner and have been eliminated from this pool. Check out the Standings page to follow and admire the remaining losers.").classes("text-red-600 font-bold")
         return
 
     draft_picks = set()
     state_cache = {"picks": initial_picks, "first_load": True}
+
+    # Line 3: Enclosed Rectangle Week Selector with "(present)" tag
+    week_opts = {
+        w: f"{get_week_label(w)} (present)" if w == current_week else get_week_label(w)
+        for w in range(start_week, 23)
+    }
+
+    def change_week(e):
+        app.storage.user["selected_week"] = e.value
+        draft_picks.clear()
+        matchup_board.refresh()
+
+    with ui.row().classes("w-full items-center mb-3"):
+        ui.select(
+            week_opts,
+            value=app.storage.user["selected_week"],
+            label="Select Week",
+            on_change=change_week,
+        ).props("dense outlined").classes("w-52")
+
     @ui.refreshable
     def matchup_board():
         target_week = app.storage.user["selected_week"]
@@ -166,7 +183,6 @@ async def render_picks_view(supabase, user, pool_slug: str):
         else:
             all_picks = supabase.table("user_picks").select("*").eq("user_id", user_id).eq("game_type", pool_slug).execute().data or []
 
-        # 3. Season Selection History Rail
         render_history_rail(all_picks, all_matches, start_week)
 
         week_picks = [p for p in all_picks if p["week"] == target_week]
@@ -189,7 +205,6 @@ async def render_picks_view(supabase, user, pool_slug: str):
         confirmed_picks = [p for p in week_picks if p["pick_state"] == "Confirmed"]
         is_week_finalized = (len(finalized_picks) >= max_picks)
 
-        # 8. Status Banner for Finalized, Confirmed, and Multi-Pick Remaining Counts
         for p in finalized_picks:
             ui.label(f"🔒 Finalized Pick: {p['team_picked']}").classes("w-full p-3 rounded bg-green-100 text-green-900 font-bold mb-2")
         for p in confirmed_picks:
@@ -201,7 +216,6 @@ async def render_picks_view(supabase, user, pool_slug: str):
             ui.label(
                 f"Additional Pick(s) Needed: You have saved {total_saved} of {max_picks} required picks for {get_week_label(target_week)} ({remaining_needed} still needed)."
             ).classes("w-full p-3 rounded bg-amber-100 text-amber-900 font-bold mb-2")
-
         with ui.grid().classes("w-full grid-cols-1 md:grid-cols-2 gap-3 mt-2"):
             for m in matches:
                 away, home = m["away_team"].upper(), m["home_team"].upper()
@@ -225,7 +239,6 @@ async def render_picks_view(supabase, user, pool_slug: str):
                 is_db_conf = db_pick and db_pick["pick_state"] == "Confirmed"
                 is_db_fin = db_pick and db_pick["pick_state"] in ["Finalized", "Correct", "Incorrect"]
 
-                # 4. Saved & Draft Selections Highlighted
                 sel_away = away in draft_picks or (db_pick and db_pick["team_picked"].replace("_SO", "").upper() == away)
                 sel_home = home in draft_picks or (db_pick and db_pick["team_picked"].replace("_SO", "").upper() == home)
                 limit_hit = (len(draft_picks) >= max_picks)
@@ -255,7 +268,6 @@ async def render_picks_view(supabase, user, pool_slug: str):
                             else:
                                 btn_cls = "flex-1 font-extrabold text-xs bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-900 dark:text-white border border-slate-400 dark:border-slate-500 shadow-sm cursor-pointer"
 
-                            # 5. "(Used)" Label on Previously Picked Teams
                             btn_text = f"{team} (Used)" if used else team
                             logo_u = get_logo_url(team)
 
@@ -265,7 +277,6 @@ async def render_picks_view(supabase, user, pool_slug: str):
                                         ui.html(f'<img src="{logo_u}" class="w-6 h-4 object-contain p-0.5 shrink-0" />')
                                     ui.label(btn_text).classes("leading-none")
 
-                    # 7. Per-Matchup Confirm / Finalize / Reset Buttons
                     if sel_away or sel_home or db_pick:
                         chosen_team = away if sel_away else home
                         with ui.row().classes("w-full gap-2 mt-2"):
@@ -299,11 +310,8 @@ async def render_picks_view(supabase, user, pool_slug: str):
                                             else:
                                                 supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", pool_slug).eq("week", target_week).eq("team_picked", t).execute()
                                             supabase.table("user_picks").insert({
-                                                "user_id": user_id,
-                                                "game_type": pool_slug,
-                                                "week": target_week,
-                                                "team_picked": t,
-                                                "pick_state": "Finalized",
+                                                "user_id": user_id, "game_type": pool_slug, "week": target_week,
+                                                "team_picked": t, "pick_state": "Finalized"
                                             }).execute()
                                             dialog.close()
                                             ui.notify(f"{t} Finalized!", type="positive")
@@ -398,12 +406,5 @@ async def render_picks_view(supabase, user, pool_slug: str):
                         matchup_board.refresh()
 
                     ui.button("Reset BYE", on_click=clear_bye, color="red-3").props(f"{'disable' if bye_disabled else ''} unelevated").classes("flex-1 font-bold")
-
-    week_opts = {w: f"{get_week_label(w)} (current)" if w == current_week else get_week_label(w) for w in range(start_week, 23)}
-
-    def change_week(e):
-        app.storage.user["selected_week"] = e.value
-        draft_picks.clear()
-        matchup_board.refresh()
 
     matchup_board()
