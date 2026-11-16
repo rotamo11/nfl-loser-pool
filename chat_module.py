@@ -39,7 +39,7 @@ def render_chat_view(supabase, user):
     with ui.row().classes("w-full items-center justify-between mb-3"):
         with ui.column().classes("gap-0"):
             ui.label("League Chat & Trash Talk").classes("text-xl font-black")
-            ui.label("Open to all Main & 2nd Chance players, even if you're a winner. Be mindful to not reveal picks prior to deadline.").classes("text-xs opacity-70")
+            ui.label("Open to all Main & 2nd Chance players, even if you're a winner. Be mindful of deadlines when discussing picks.").classes("text-xs opacity-70")
         ui.button("Refresh", icon="refresh", on_click=lambda: message_feed.refresh()).props("flat dense size=sm")
 
     box_bg = "bg-slate-950/60 border-slate-700" if is_dark else "bg-slate-50 border-slate-200"
