@@ -109,7 +109,7 @@ def execute_manual_deadline_lock(supabase, target_week: int) -> str:
 def execute_manual_reminders(supabase, target_week: int, admin_only_uid: str | None = None) -> str:
     smtp_user = os.environ.get("SMTP_USER", "")
     smtp_pass = os.environ.get("SMTP_PASS", "")
-    app_url = os.environ.get("APP_URL", "https://railway.app")
+    app_url = os.environ.get("APP_URL", "https://nfl-loser-pool-production.up.railway.app")
     if not os.environ.get("RESEND_API_KEY") and (not smtp_user or not smtp_pass):
         raise RuntimeError("Missing SMTP_USER or SMTP_PASS in Railway environment variables.")
 
@@ -742,7 +742,7 @@ async def render_admin_view(supabase, user):
                                         cache["regs"] = supabase.table("tournament_registrations").select("*").execute().data or []
 
                                         if temp_pwd:
-                                            app_url = os.environ.get("APP_URL", "https://railway.app").rstrip("/")
+                                            app_url = os.environ.get("APP_URL", "https://nfl-loser-pool-production.up.railway.app").rstrip("/")
                                             pool_lbl = req_obj["game_type"].replace("_", " ")
                                             welcome_txt = (
                                                 f"Hey {req_obj['username']},\n\n"
