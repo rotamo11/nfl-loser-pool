@@ -110,7 +110,7 @@ def execute_manual_reminders(supabase, target_week: int, admin_only_uid: str | N
     smtp_user = os.environ.get("SMTP_USER", "")
     smtp_pass = os.environ.get("SMTP_PASS", "")
     app_url = os.environ.get("APP_URL", "https://railway.app")
-    if not smtp_user or not smtp_pass:
+    if not os.environ.get("RESEND_API_KEY") and (not smtp_user or not smtp_pass):
         raise RuntimeError("Missing SMTP_USER or SMTP_PASS in Railway environment variables.")
 
     users = supabase.table("users").select("id, username, email, alert_personal_topic, alert_email, alert_sms, is_admin").execute().data or []
@@ -742,9 +742,27 @@ async def render_admin_view(supabase, user):
                                         cache["regs"] = supabase.table("tournament_registrations").select("*").execute().data or []
 
                                         if temp_pwd:
-                                            ui.notify(f"Approved {req_obj['username']}! Temp password: {temp_pwd}", type="positive", timeout=12000)
-                                        else:
-                                            ui.notify(f"Approved {req_obj['username']} into {req_obj['game_type'].replace('_', ' ')}!", type="positive")
+                                            app_url = os.environ.get("APP_URL", "https://railway.app").rstrip("/")
+                                            pool_lbl = req_obj["game_type"].replace("_", " ")
+                                            welcome_txt = (
+                                                f"Hey {req_obj['username']},\n\n"
+                                                f"You're approved and enrolled in the NFL Loser Pool ({pool_lbl})!\n\n"
+                                                f"Login Link: {app_url}\n"
+                                                f"Email: {req_obj['email'].strip().lower()}\n"
+                                                f"Temporary Password: {temp_pwd}\n\n"
+                                                f"Please log in and update your password on the Profile page whenever you're ready."
+                                            )
+                                            try:
+                                                send_smtp_email(
+                                                    os.environ.get("SMTP_USER", ""),
+                                                    os.environ.get("SMTP_PASS", ""),
+                                                    req_obj["email"].strip().lower(),
+                                                    f"Welcome to NFL Loser Pool ({pool_lbl})!",
+                                                    welcome_txt,
+                                                )
+                                                ui.notify(f"Approved & welcome email sent to {req_obj['email']}!", type="positive", timeout=8000)
+                                            except Exception as mail_err:
+                                                ui.notify(f"Approved! Temp password: {temp_pwd} (Email skipped: {mail_err})", type="warning", timeout=12000)
                                         pending_requests_panel.refresh()
                                     except Exception as err:
                                         ui.notify(f"Approval error: {err}", type="negative", timeout=8000)
