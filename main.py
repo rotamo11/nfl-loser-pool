@@ -314,16 +314,16 @@ def spa_shell(subpath: str = ""):
 
                     with ui.row().classes("items-center gap-1 no-wrap cursor-pointer") as nav_btn:
                         ui.label(label).classes(cls)
-                   if label == "Chat" and unread_chat > 0:
-                       badge_txt = "9+" if unread_chat > 9 else str(unread_chat)
-                       ui.label(badge_txt).classes(
-                           "bg-red-600 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full leading-tight shadow-sm"
-                       )
-                   elif label == "Admin" and pending_joins > 0:
-                       badge_txt = "9+" if pending_joins > 9 else str(pending_joins)
-                       ui.label(badge_txt).classes(
-                           "bg-red-600 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full leading-tight shadow-sm"
-                       )
+                        if label == "Chat" and unread_chat > 0:
+                            badge_txt = "9+" if unread_chat > 9 else str(unread_chat)
+                            ui.label(badge_txt).classes(
+                                "bg-red-600 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full leading-tight shadow-sm"
+                            )
+                        elif label == "Admin" and pending_joins > 0:
+                            badge_txt = "9+" if pending_joins > 9 else str(pending_joins)
+                            ui.label(badge_txt).classes(
+                                "bg-red-600 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full leading-tight shadow-sm"
+                            )
 
                     def go_to_route(r=route):
                         app.storage.user["active_route"] = r
