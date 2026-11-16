@@ -305,7 +305,8 @@ def spa_shell(subpath: str = ""):
                 if get_cached_admin_status(user):
                     nav_items.append(("Admin", "/admin"))
 
-                is_adm = get_cached_admin_status(user)
+                is_masquerading = bool(app.storage.user.get("masquerade_uid"))
+                is_adm = False if is_masquerading else get_cached_admin_status(user)
                 pending_joins = get_pending_join_count() if is_adm else 0
 
                 for label, route in nav_items:
