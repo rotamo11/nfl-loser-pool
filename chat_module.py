@@ -1,6 +1,7 @@
+import asyncio
 import datetime
 from zoneinfo import ZoneInfo
-from nicegui import ui, app
+from nicegui import ui, app, run
 
 ET_ZONE = ZoneInfo("America/New_York")
 
@@ -16,25 +17,27 @@ def format_chat_timestamp(iso_str: str) -> str:
     except Exception:
         return ""
 
-def render_chat_view(supabase, user):
+async def render_chat_view(supabase, user):
     current_user_id = str(user.id)
     is_dark = app.storage.user.get("dark_mode", False)
 
-    # Safely fetch current user's username and admin flag
-    u_rows = supabase.table("users").select("username, is_admin").eq("id", current_user_id).execute().data or []
-    first_u = next(iter(u_rows), {})
-    current_username = first_u.get("username") or "Player"
-    is_admin = bool(first_u.get("is_admin", False))
-
-    # Mark chat as read upon opening
-    def mark_chat_read():
+    def mark_chat_read_sync():
         try:
             now_utc = datetime.datetime.now(datetime.timezone.utc).isoformat()
             supabase.table("users").update({"last_read_chat_at": now_utc}).eq("id", current_user_id).execute()
         except Exception:
             pass
 
-    mark_chat_read()
+    # Fetch user info and initial 75 messages concurrently while marking chat read in background
+    u_rows, initial_msgs, _ = await asyncio.gather(
+        run.io_bound(lambda: supabase.table("users").select("username, is_admin").eq("id", current_user_id).execute().data or []),
+        run.io_bound(lambda: supabase.table("pool_chat").select("*").order("created_at", desc=True).limit(75).execute().data or []),
+        run.io_bound(mark_chat_read_sync),
+    )
+
+    first_u = next(iter(u_rows), {})
+    current_username = first_u.get("username") or "Player"
+    is_admin = bool(first_u.get("is_admin", False))
 
     with ui.row().classes("w-full items-center justify-between mb-3"):
         with ui.column().classes("gap-0"):
@@ -43,18 +46,24 @@ def render_chat_view(supabase, user):
         ui.button("Refresh", icon="refresh", on_click=lambda: message_feed.refresh()).props("flat dense size=sm")
 
     box_bg = "bg-slate-950/60 border-slate-700" if is_dark else "bg-slate-50 border-slate-200"
+    feed_cache = {"msgs": initial_msgs, "first_load": True}
 
     @ui.refreshable
     def message_feed():
-        mark_chat_read()
-        msgs = (
-            supabase.table("pool_chat")
-            .select("*")
-            .order("created_at", desc=True)
-            .limit(75)
-            .execute()
-            .data or []
-        )
+        if feed_cache["first_load"]:
+            msgs = feed_cache["msgs"]
+            feed_cache["first_load"] = False
+        else:
+            mark_chat_read_sync()
+            msgs = (
+                supabase.table("pool_chat")
+                .select("*")
+                .order("created_at", desc=True)
+                .limit(75)
+                .execute()
+                .data or []
+            )
+
         msgs = list(reversed(msgs))
 
         with ui.scroll_area().classes(f"w-full h-96 p-3 rounded-lg border {box_bg}") as scroll:
@@ -91,11 +100,9 @@ def render_chat_view(supabase, user):
 
     message_feed()
 
-    # Auto-refresh chat every 15 seconds while mounted
     with ui.element("div"):
         ui.timer(15.0, message_feed.refresh)
 
-    # Message Input Bar
     with ui.row().classes("w-full items-center gap-2 mt-3 no-wrap"):
         msg_in = ui.input(placeholder="Say something...").classes("flex-1").props("outlined dense")
 
@@ -109,7 +116,7 @@ def render_chat_view(supabase, user):
                 "username": current_username,
                 "message": txt,
             }).execute()
-            mark_chat_read()
+            mark_chat_read_sync()
             message_feed.refresh()
 
         msg_in.on("keydown.enter", send_message)
