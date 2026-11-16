@@ -212,11 +212,11 @@ def execute_manual_reminders(supabase, target_week: int, admin_only_uid: str | N
 
 def render_admin_view(supabase, user):
     if not is_admin_user(supabase, user):
-        ui.label("🔒 Access Denied: Commissioner Privileges Required.").classes("text-red-500 font-bold text-lg")
+        ui.label("🔒 Access Denied: Admin Privileges Required.").classes("text-red-500 font-bold text-lg")
         return
 
     current_week = get_current_nfl_week()
-    ui.label("Commissioner Control Console").classes("text-2xl font-black mb-3")
+    ui.label("Admin Control Console").classes("text-2xl font-black mb-3")
 
     regs = supabase.table("tournament_registrations").select("*").eq("is_enrolled", True).execute().data or []
     main_regs = [r for r in regs if r.get("game_type") == "Main"]
