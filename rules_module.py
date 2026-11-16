@@ -3,7 +3,7 @@ from nicegui import ui
 def render_rules_view(pool_slug: str):
     is_2nd = (pool_slug == "2nd_Chance")
 
-    ui.label("2026 Official NFL Loser Pool Rules & Helpful Links").classes("text-2xl font-black mb-1")
+    ui.label("Official NFL Loser Pool Rules & Helpful Links").classes("text-2xl font-black mb-1")
     ui.label("Pick team(s) you think will LOSE each week. If they win or tie, it is considered a wrong pick.").classes("text-sm font-semibold opacity-80 mb-4")
 
     sections = [
