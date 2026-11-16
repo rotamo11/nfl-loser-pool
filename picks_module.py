@@ -170,7 +170,7 @@ async def render_picks_view(supabase, user, pool_slug: str):
         ui.select(
             week_opts,
             value=app.storage.user["selected_week"],
-            label="Select Week",
+            label="Select Week  (Wed-Tue)",
             on_change=change_week,
         ).props("dense outlined").classes("w-52")
 
