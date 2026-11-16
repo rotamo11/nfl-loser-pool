@@ -8,7 +8,7 @@ def render_profile_view(supabase, user):
     res = supabase.table("users").select("*").eq("id", user_id).execute().data
     profile = res[0] if (isinstance(res, list) and len(res) > 0) else {}
 
-    ui.label("Player Profile & Notification Settings").classes("text-xl font-black mb-1")
+    ui.label("Profile & Notification Settings").classes("text-xl font-black mb-1")
     ui.label(f"Account Email: {user.email}").classes("text-xs opacity-70 mb-4")
 
     # --- TOP SECTION: APPEARANCE / THEME PREFERENCE ---
@@ -83,7 +83,7 @@ def render_profile_view(supabase, user):
                         "alert_email": email_chk.value,
                         "alert_sms": push_chk.value,
                     }).eq("id", user_id).execute()
-                    ui.notify("Profile & alert settings saved!", type="positive")
+                    ui.notify("Profile & notification settings saved!", type="positive")
                 except Exception as e:
                     ui.notify(f"Error saving profile: {str(e)}", type="negative")
 
