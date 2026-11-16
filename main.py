@@ -99,6 +99,12 @@ def get_unread_chat_count(user) -> int:
         return res.count or 0
     except Exception:
         return 0
+def get_pending_join_count() -> int:
+    try:
+        res = supabase.table("enrollment_requests").select("id", count="exact").eq("status", "Pending").execute()
+        return res.count or 0
+    except Exception:
+        return 0
 def render_login_box():
     ui.label("Player Login").classes("text-2xl font-bold mb-2")
     email_input = ui.input("Email Address").classes("w-full")
@@ -294,6 +300,9 @@ def spa_shell(subpath: str = ""):
                 if get_cached_admin_status(user):
                     nav_items.append(("Admin", "/admin"))
 
+                is_adm = get_cached_admin_status(user)
+                pending_joins = get_pending_join_count() if is_adm else 0
+
                 for label, route in nav_items:
                     is_active = (active_path == route)
                     if is_active:
@@ -305,11 +314,16 @@ def spa_shell(subpath: str = ""):
 
                     with ui.row().classes("items-center gap-1 no-wrap cursor-pointer") as nav_btn:
                         ui.label(label).classes(cls)
-                        if label == "Chat" and unread_chat > 0:
-                            badge_txt = "9+" if unread_chat > 9 else str(unread_chat)
-                            ui.label(badge_txt).classes(
-                                "bg-red-600 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full leading-tight shadow-sm"
-                            )
+                       if label == "Chat" and unread_chat > 0:
+                           badge_txt = "9+" if unread_chat > 9 else str(unread_chat)
+                           ui.label(badge_txt).classes(
+                               "bg-red-600 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full leading-tight shadow-sm"
+                           )
+                       elif label == "Admin" and pending_joins > 0:
+                           badge_txt = "9+" if pending_joins > 9 else str(pending_joins)
+                           ui.label(badge_txt).classes(
+                               "bg-red-600 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full leading-tight shadow-sm"
+                           )
 
                     def go_to_route(r=route):
                         app.storage.user["active_route"] = r
