@@ -742,7 +742,7 @@ async def render_admin_view(supabase, user):
                                         cache["regs"] = supabase.table("tournament_registrations").select("*").execute().data or []
 
                                         if temp_pwd:
-                                            app_url = os.environ.get("APP_URL", "https://nfl-loser-pool-production.up.railway.app").rstrip("/")
+                                            app_url = os.environ.get("APP_URL", "https://railway.app").rstrip("/")
                                             pool_lbl = req_obj["game_type"].replace("_", " ")
                                             welcome_txt = (
                                                 f"Hey {req_obj['username']},\n\n"
@@ -752,20 +752,26 @@ async def render_admin_view(supabase, user):
                                                 f"Temporary Password: {temp_pwd}\n\n"
                                                 f"Please log in and update your password on the Profile page whenever you're ready."
                                             )
-                                            try:
-                                                send_smtp_email(
-                                                    os.environ.get("SMTP_USER", ""),
-                                                    os.environ.get("SMTP_PASS", ""),
-                                                    req_obj["email"].strip().lower(),
-                                                    f"Welcome to NFL Loser Pool ({pool_lbl})!",
-                                                    welcome_txt,
-                                                )
-                                                ui.notify(f"Approved & welcome email sent to {req_obj['email']}!", type="positive", timeout=8000)
-                                            except Exception as mail_err:
-                                                ui.notify(f"Approved! Temp password: {temp_pwd} (Email skipped: {mail_err})", type="warning", timeout=12000)
+
+                                            with ui.dialog() as wel_dlg, ui.card().classes("w-full max-w-md p-5"):
+                                                ui.label(f"Approved: {req_obj['username']}").classes("text-lg font-black mb-1")
+                                                ui.label("New account created. Copy the welcome message below to send them their login details:").classes("text-xs opacity-75 mb-3")
+
+                                                ui.textarea("Welcome Message", value=welcome_txt).props("readonly outlined rows=7").classes("w-full text-xs mb-3")
+
+                                                with ui.row().classes("w-full justify-end gap-2"):
+                                                    ui.button(
+                                                        "Copy Message",
+                                                        icon="content_copy",
+                                                        on_click=lambda: (ui.clipboard.write(welcome_txt), ui.notify("Welcome message copied!", type="positive")),
+                                                        color="primary",
+                                                    ).classes("font-bold")
+                                                    ui.button("Done", on_click=wel_dlg.close).props("flat")
+
+                                            wel_dlg.open()
+                                        else:
+                                            ui.notify(f"Approved {req_obj['username']} into {req_obj['game_type'].replace('_', ' ')}!", type="positive")
                                         pending_requests_panel.refresh()
-                                    except Exception as err:
-                                        ui.notify(f"Approval error: {err}", type="negative", timeout=8000)
 
                                 def decline_req(req_id=rid):
                                     supabase.table("enrollment_requests").update({"status": "Declined"}).eq("id", req_id).execute()
