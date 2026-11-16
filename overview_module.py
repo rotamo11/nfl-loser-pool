@@ -66,15 +66,29 @@ async def render_overview_view(supabase, user, pool_slug: str):
     is_dark = app.storage.user.get("dark_mode", False)
     pool_label = "2nd Chance" if pool_slug == "2nd_Chance" else "Main"
 
-    with ui.row().classes("w-full items-center justify-between mb-3 flex-wrap gap-2"):
-        ui.label(f"{pool_label} Pool — Standings").classes("text-xl font-black")
+    viewer_reg = next((r for r in regs if str(r["user_id"]) == current_user_id), None)
+    viewer_status = viewer_reg.get("bracket_status", "Not Enrolled") if viewer_reg else "Not Enrolled"
+    active_total = sum(1 for r in regs if r.get("bracket_status") != "Eliminated")
 
-        week_opts = {w: get_week_full_label(w) for w in visible_weeks}
+    # Line 1: [Pool] Pool - Standings
+    ui.label(f"{pool_label} Pool - Standings").classes("text-xl md:text-2xl font-black mb-1")
+
+    # Line 2: Status (left) & Remaining Active #/# (right)
+    with ui.row().classes("w-full items-center justify-between pb-2 mb-3 border-b border-gray-200 dark:border-slate-700"):
+        ui.label(f"Status: {viewer_status}").classes("text-sm md:text-base font-extrabold")
+        ui.badge(f"Remaining Active: {active_total} / {len(regs)}", color="primary").classes("text-xs font-bold px-2.5 py-1")
+
+    # Line 3: Enclosed Rectangle Week Selector with "(present)" tag
+    week_opts = {
+        w: f"{get_week_full_label(w)} (present)" if w == current_week else get_week_full_label(w)
+        for w in visible_weeks
+    }
+    with ui.row().classes("w-full items-center mb-3"):
         dist_week_select = ui.select(
             week_opts,
             value=end_week,
-            label="Target (Wed-Tue)"
-        ).props("dense outlined").classes("w-44")
+            label="Select Week",
+        ).props("dense outlined").classes("w-52")
 
     if not is_viewer_enrolled:
         ui.label(
