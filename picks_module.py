@@ -94,7 +94,7 @@ async def render_picks_view(supabase, user, pool_slug: str):
     pool_label = "2nd Chance" if pool_slug == "2nd_Chance" else "Main"
 
     # Line 1: [Pool] Pool - Picks
-    ui.label(f"{pool_label} Pool - Picks").classes("text-xl md:text-2xl font-black mb-1")
+    ui.label(f"{pool_label} Pool - Picks").classes("text-xl font-black")
 
     # Line 2: Status (left) & Remaining Active #/# (right)
     with ui.row().classes("w-full items-center justify-between pb-2 mb-3 border-b border-gray-200 dark:border-slate-700"):
