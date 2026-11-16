@@ -772,6 +772,8 @@ async def render_admin_view(supabase, user):
                                         else:
                                             ui.notify(f"Approved {req_obj['username']} into {req_obj['game_type'].replace('_', ' ')}!", type="positive")
                                         pending_requests_panel.refresh()
+                                    except Exception as err:
+                                        ui.notify(f"Approval error: {err}", type="negative", timeout=8000)
 
                                 def decline_req(req_id=rid):
                                     supabase.table("enrollment_requests").update({"status": "Declined"}).eq("id", req_id).execute()
