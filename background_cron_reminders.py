@@ -1,6 +1,7 @@
 import os
 import smtplib
 import socket
+import json
 import datetime
 import urllib.request
 from email.message import EmailMessage
@@ -25,6 +26,32 @@ def get_required_picks(week: int, matches_count: int) -> int:
     return max(1, matches_count)
 
 def send_smtp_email(smtp_user: str, smtp_pass: str, to_addr: str, subject: str, body: str):
+    resend_key = os.environ.get("RESEND_API_KEY", "").strip()
+    if resend_key:
+        from_addr = os.environ.get("RESEND_FROM", "NFL Loser Pool <onboarding@resend.dev>").strip()
+        resend_host = ".".join(["api", "resend", "com"])
+        url = f"https://{resend_host}/emails"
+        payload = json.dumps({
+            "from": from_addr,
+            "to": [to_addr.strip()],
+            "subject": subject,
+            "text": body,
+        }).encode("utf-8")
+
+        req = urllib.request.Request(
+            url,
+            data=payload,
+            headers={
+                "Authorization": f"Bearer {resend_key}",
+                "Content-Type": "application/json",
+                "User-Agent": "NFLLoserPool/1.0",
+            },
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            resp.read()
+        return
+
     clean_user = smtp_user.strip()
     clean_pass = smtp_pass.replace(" ", "").strip()
     smtp_server = ".".join(["smtp", "gmail", "com"])
@@ -35,22 +62,9 @@ def send_smtp_email(smtp_user: str, smtp_pass: str, to_addr: str, subject: str, 
     msg["Subject"] = subject
     msg.set_content(body)
 
-    # Resolve IPv4 address explicitly so Railway doesn't fail on IPv6 routing
-    ipv4_addr = socket.gethostbyname(smtp_server)
-
-    # Try port 587 (STARTTLS) first, falling back to 465 (SSL)
-    try:
-        with smtplib.SMTP(ipv4_addr, 587, local_hostname="localhost", timeout=15) as server:
-            server.ehlo()
-            server.starttls()
-            server.ehlo()
-            server.login(clean_user, clean_pass)
-            server.send_message(msg)
-    except Exception:
-        with smtplib.SMTP_SSL(ipv4_addr, 465, local_hostname="localhost", timeout=15) as server:
-            server.login(clean_user, clean_pass)
-            server.send_message(msg)
-
+    with smtplib.SMTP_SSL(smtp_server, 465, local_hostname="localhost", timeout=15) as server:
+        server.login(clean_user, clean_pass)
+        server.send_message(msg)
 
 def send_ntfy_push(topic: str, title: str, message: str, click_url: str):
     clean_topic = topic.strip().lstrip("/")
