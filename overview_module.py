@@ -103,7 +103,7 @@ async def render_overview_view(supabase, user, pool_slug: str):
         # --- WEEKLY PICK DISTRIBUTION ---
         dist_border = "border-amber-500/40" if pool_slug == "2nd_Chance" else "border-blue-500/40"
         with ui.card().classes(f"w-full p-3 mb-4 border {dist_border} shadow-none"):
-            ui.label(f"{get_week_full_label(target_w)} Pick Distribution ({pool_label} Pool)").classes("text-sm font-extrabold mb-1")
+            ui.label(f"{get_week_full_label(target_w)} Pick Distribution").classes("text-sm font-extrabold mb-1")
 
             week_passed = (target_w < current_week)
             viewer_locked = (target_w in viewer_finalized_weeks)
