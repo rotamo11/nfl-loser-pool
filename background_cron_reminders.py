@@ -102,7 +102,7 @@ def main():
     supabase_key = os.environ.get("SUPABASE_SERVICE_KEY") or os.environ["SUPABASE_KEY"]
     smtp_user = os.environ["SMTP_USER"]
     smtp_pass = os.environ["SMTP_PASS"]
-    app_url = os.environ.get("APP_URL", "https://nfl-loser-pool-production.up.railway.app/")
+    app_url = os.environ.get("APP_URL", "https://nfl-loser-pool-production.up.railway.app")
 
     supabase: Client = create_client(supabase_url, supabase_key)
     current_week = get_current_nfl_week()
