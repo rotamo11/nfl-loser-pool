@@ -741,43 +741,66 @@ async def render_admin_view(supabase, user):
                                         cache["users"] = supabase.table("users").select("*").execute().data or []
                                         cache["regs"] = supabase.table("tournament_registrations").select("*").execute().data or []
 
+                                        app_url = os.environ.get("APP_URL", "https://railway.app").rstrip("/")
+                                        pool_lbl = req_obj["game_type"].replace("_", " ")
+                                        clean_em = req_obj["email"].strip().lower()
+
                                         if temp_pwd:
-                                            app_url = os.environ.get("APP_URL", "https://railway.app").rstrip("/")
-                                            pool_lbl = req_obj["game_type"].replace("_", " ")
                                             welcome_txt = (
                                                 f"Hey {req_obj['username']},\n\n"
                                                 f"You're approved and enrolled in the NFL Loser Pool ({pool_lbl})!\n\n"
                                                 f"Login Link: {app_url}\n"
-                                                f"Email: {req_obj['email'].strip().lower()}\n"
+                                                f"Email: {clean_em}\n"
                                                 f"Temporary Password: {temp_pwd}\n\n"
                                                 f"Please log in and update your password on the Profile page whenever you're ready."
                                             )
-
-                                            with ui.dialog() as wel_dlg, ui.card().classes("w-full max-w-md p-5"):
-                                                ui.label(f"Approved: {req_obj['username']}").classes("text-lg font-black mb-1")
-                                                ui.label("New account created. Copy the welcome message below to send them their login details:").classes("text-xs opacity-75 mb-3")
-
-                                                ui.textarea("Welcome Message", value=welcome_txt).props("readonly outlined rows=7").classes("w-full text-xs mb-3")
-
-                                                with ui.row().classes("w-full justify-end gap-2"):
-                                                    ui.button(
-                                                        "Copy Message",
-                                                        icon="content_copy",
-                                                        on_click=lambda: (ui.clipboard.write(welcome_txt), ui.notify("Welcome message copied!", type="positive")),
-                                                        color="primary",
-                                                    ).classes("font-bold")
-                                                    ui.button("Done", on_click=wel_dlg.close).props("flat")
-
-                                            wel_dlg.open()
                                         else:
-                                            ui.notify(f"Approved {req_obj['username']} into {req_obj['game_type'].replace('_', ' ')}!", type="positive")
+                                            welcome_txt = (
+                                                f"Hey {req_obj['username']},\n\n"
+                                                f"You're approved and enrolled in the NFL Loser Pool ({pool_lbl})!\n\n"
+                                                f"Log in anytime to submit your picks: {app_url}"
+                                            )
+
+                                        with ui.dialog() as wel_dlg, ui.card().classes("w-full max-w-md p-5"):
+                                            ui.label(f"Approved: {req_obj['username']}").classes("text-lg font-black mb-1")
+                                            ui.label("Copy the message below to send them their confirmation:").classes("text-xs opacity-75 mb-3")
+                                            ui.textarea("Approval Message", value=welcome_txt).props("readonly outlined rows=7").classes("w-full text-xs mb-3")
+                                            with ui.row().classes("w-full justify-end gap-2"):
+                                                ui.button(
+                                                    "Copy Message",
+                                                    icon="content_copy",
+                                                    on_click=lambda txt=welcome_txt: (ui.clipboard.write(txt), ui.notify("Approval message copied!", type="positive")),
+                                                    color="primary",
+                                                ).classes("font-bold")
+                                                ui.button("Done", on_click=wel_dlg.close).props("flat")
+
+                                        wel_dlg.open()
                                         pending_requests_panel.refresh()
                                     except Exception as err:
                                         ui.notify(f"Approval error: {err}", type="negative", timeout=8000)
 
-                                def decline_req(req_id=rid):
-                                    supabase.table("enrollment_requests").update({"status": "Declined"}).eq("id", req_id).execute()
-                                    ui.notify("Request declined.", type="info")
+                                def decline_req(req_obj=rq):
+                                    supabase.table("enrollment_requests").update({"status": "Declined"}).eq("id", req_obj["id"]).execute()
+                                    pool_lbl = req_obj["game_type"].replace("_", " ")
+                                    decline_txt = (
+                                        f"Hey {req_obj.get('username') or 'there'},\n\n"
+                                        f"Thanks for your interest in the NFL Loser Pool ({pool_lbl}). "
+                                        f"Unfortunately, we aren't able to approve your join request at this time."
+                                    )
+                                    with ui.dialog() as dec_dlg, ui.card().classes("w-full max-w-md p-5"):
+                                        ui.label(f"Declined: {req_obj.get('username') or 'Player'}").classes("text-lg font-black mb-1")
+                                        ui.label("Copy the message below if you'd like to send a follow-up note:").classes("text-xs opacity-75 mb-3")
+                                        ui.textarea("Decline Message", value=decline_txt).props("readonly outlined rows=5").classes("w-full text-xs mb-3")
+                                        with ui.row().classes("w-full justify-end gap-2"):
+                                            ui.button(
+                                                "Copy Message",
+                                                icon="content_copy",
+                                                on_click=lambda txt=decline_txt: (ui.clipboard.write(txt), ui.notify("Decline message copied!", type="positive")),
+                                                color="primary",
+                                            ).classes("font-bold")
+                                            ui.button("Done", on_click=dec_dlg.close).props("flat")
+
+                                    dec_dlg.open()
                                     pending_requests_panel.refresh()
 
                                 ui.button("Approve", on_click=approve_req, color="positive").props("size=sm").classes("font-bold")
@@ -894,6 +917,39 @@ async def render_admin_view(supabase, user):
                             ed_last = ui.input("Last Name", value=u_row.get("last_name") or "").classes("w-full")
                             ed_phone = ui.input("Cell Phone", value=u_row.get("cell_phone") or "").classes("w-full")
                             ui.input("ntfy.sh Topic (Read-Only)", value=personal_topic).props("readonly").classes("w-full")
+
+                        def copy_player_welcome(reset_pwd: bool = False):
+                            app_url = os.environ.get("APP_URL", "https://railway.app").rstrip("/")
+                            cur_uname = ed_user.value.strip() or "Player"
+                            cur_email = ed_email.value.strip().lower()
+
+                            if reset_pwd:
+                                new_temp = f"Loser{datetime.datetime.now().year}!"
+                                supabase.auth.admin.update_user_by_id(uid, {"password": new_temp})
+                                msg_txt = (
+                                    f"Hey {cur_uname},\n\n"
+                                    f"Your NFL Loser Pool password has been reset!\n\n"
+                                    f"Login Link: {app_url}\n"
+                                    f"Email: {cur_email}\n"
+                                    f"Temporary Password: {new_temp}\n\n"
+                                    f"Please log in and update your password on the Profile page whenever you're ready."
+                                )
+                                ui.clipboard.write(msg_txt)
+                                ui.notify(f"Password reset to {new_temp} & message copied!", type="positive", timeout=6000)
+                            else:
+                                msg_txt = (
+                                    f"Hey {cur_uname},\n\n"
+                                    f"Welcome to the NFL Loser Pool!\n\n"
+                                    f"Login Link: {app_url}\n"
+                                    f"Email: {cur_email}\n\n"
+                                    f"Use 'Forgot Password' or let me know if you need a temporary password reset."
+                                )
+                                ui.clipboard.write(msg_txt)
+                                ui.notify("Welcome message copied to clipboard!", type="positive")
+
+                        with ui.row().classes("w-full items-center gap-2 mt-3 flex-wrap"):
+                            ui.button("Copy Welcome Message", icon="content_copy", on_click=lambda: copy_player_welcome(False), color="secondary").props("outline size=sm").classes("font-bold")
+                            ui.button("Reset Password & Copy", icon="lock_reset", on_click=lambda: copy_player_welcome(True), color="amber-8").props("outline size=sm").classes("font-bold")
 
                         with ui.row().classes("w-full gap-4 mt-2"):
                             ed_a_email = ui.checkbox("Alert Email", value=bool(u_row.get("alert_email", True)))
