@@ -136,7 +136,47 @@ def render_login_box():
 
     email_input.on("keydown.enter", attempt_login)
     pass_input.on("keydown.enter", attempt_login)
-    ui.button("Log In", on_click=attempt_login).classes("w-full mt-3 bg-blue-600 text-white font-bold")
+    ui.button("Login", on_click=attempt_login).classes("w-full mt-3 bg-blue-600 text-white font-bold")
+
+    def open_forgot_password_dialog():
+        with ui.dialog() as fp_dlg, ui.card().classes("w-full max-w-md p-5"):
+            ui.label("Reset Your Password").classes("text-lg font-black mb-1")
+            ui.label("Enter your account email address and we'll send you a password reset link.").classes("text-xs opacity-75 mb-3")
+
+            fp_email = ui.input("Account Email Address", value=(email_input.value or "").strip()).classes("w-full mb-3")
+
+            async def send_reset_link():
+                target_em = (fp_email.value or "").strip().lower()
+                if not target_em or "@" not in target_em:
+                    ui.notify("Please enter a valid email address.", type="negative")
+                    return
+
+                fp_btn.props("loading")
+                app_url = os.environ.get("APP_URL", "https://railway.app").rstrip("/")
+                try:
+                    await run.io_bound(
+                        lambda: supabase_auth.auth.reset_password_for_email(
+                            target_em,
+                            {"redirect_to": f"{app_url}/reset-password"},
+                        )
+                    )
+                    fp_dlg.close()
+                    ui.notify("If an account exists for that email, a reset link has been sent!", type="positive", timeout=6000)
+                except Exception as err:
+                    ui.notify(f"Reset request error: {err}", type="negative", timeout=8000)
+                finally:
+                    fp_btn.props(remove="loading")
+
+            with ui.row().classes("w-full justify-end gap-2"):
+                ui.button("Cancel", on_click=fp_dlg.close).props("flat")
+                fp_btn = ui.button("Send Reset Link", on_click=send_reset_link, color="primary").classes("font-bold")
+
+        fp_dlg.open()
+
+    with ui.row().classes("w-full justify-end mt-1"):
+        ui.button("Forgot Password?", on_click=open_forgot_password_dialog).props("flat dense no-caps size=sm").classes(
+            "text-xs font-semibold text-blue-600 dark:text-blue-400"
+        )
 
     open_pools = get_open_registration_pools(supabase)
     if open_pools:
@@ -148,8 +188,8 @@ def render_login_box():
             default_choice = next(iter(pool_choices.keys()))
 
             with ui.dialog() as join_dlg, ui.card().classes("w-full max-w-md p-5"):
-                ui.label("🏈 Request to Join NFL Loser Pool").classes("text-lg font-black mb-1")
-                ui.label("Submit your details below. Once approved by the Commissioner, your login will be activated.").classes("text-xs opacity-75 mb-3")
+                ui.label("Request to Join the NFL Loser Pool").classes("text-lg font-black mb-1")
+                ui.label("Submit your details below. Once approved by the Commissioner, your login will be activated and email sent.").classes("text-xs opacity-75 mb-3")
 
                 pool_sel = ui.select(pool_choices, value=default_choice, label="Pool to Join").classes("w-full mb-2")
                 uname_in = ui.input("Desired Display Username (Shown on Standing)").classes("w-full mb-2")
@@ -192,6 +232,54 @@ def render_login_box():
             join_dlg.open()
 
         ui.button("Request to Join Pool", icon="person_add", on_click=open_guest_join_dialog, color="secondary").props("outline").classes("w-full font-bold")
+
+def render_password_recovery_box():
+    ui.label("Set New Password").classes("text-2xl font-bold mb-1")
+    ui.label("Enter your new password below to finish resetting your account.").classes("text-xs opacity-75 mb-3")
+
+    new_pwd = ui.input("New Password (Min 6 characters)", password=True, password_toggle_button=True).classes("w-full mb-2")
+    conf_pwd = ui.input("Confirm New Password", password=True, password_toggle_button=True).classes("w-full mb-3")
+    token_box = ui.input("").classes("hidden")
+
+    # Extract Supabase recovery access_token from the URL hash fragment
+    ui.run_javascript("""
+        const hash = window.location.hash.substring(1);
+        const params = new URLSearchParams(hash);
+        const token = params.get('access_token') || '';
+        if (token) {
+            const el = document.querySelector('input[type="text"].hidden, .hidden input');
+            if (el) { el.value = token; el.dispatchEvent(new Event('input')); }
+        }
+    """)
+
+    def complete_reset():
+        p1 = (new_pwd.value or "").strip()
+        p2 = (conf_pwd.value or "").strip()
+        tok = (token_box.value or "").strip()
+
+        if len(p1) < 6:
+            ui.notify("Password must be at least 6 characters.", type="negative")
+            return
+        if p1 != p2:
+            ui.notify("Passwords do not match.", type="negative")
+            return
+        if not tok:
+            ui.notify("Invalid or expired recovery link. Request a new reset link on the login screen.", type="negative", timeout=8000)
+            return
+
+        try:
+            # Verify recovery token and update user password via Supabase Admin API
+            user_info = supabase.auth.get_user(tok)
+            if user_info and user_info.user:
+                supabase.auth.admin.update_user_by_id(str(user_info.user.id), {"password": p1})
+                ui.notify("Password updated! Please log in with your new password.", type="positive", timeout=6000)
+                ui.run_javascript("window.location.href = '/'")
+            else:
+                ui.notify("Recovery link expired. Please request a new one.", type="negative")
+        except Exception as err:
+            ui.notify(f"Password reset error: {err}", type="negative", timeout=8000)
+
+    ui.button("Update Password", on_click=complete_reset, color="primary").classes("w-full font-bold")
 
 @ui.page("/")
 @ui.page("/{subpath:path}")
@@ -348,6 +436,10 @@ def spa_shell(subpath: str = ""):
             with ui.card().classes(f"w-full max-w-5xl p-5 rounded-xl shadow-xl {card_theme}").style(f"border-top: 4px solid {pool_hex};"):
 
                 if not user:
+                    if active_path == "/reset-password":
+                        render_password_recovery_box()
+                    else:
+                        render_login_box()
                     render_login_box()
                 else:
                     pool_now = app.storage.user.get("pool", "Main")
