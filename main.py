@@ -152,7 +152,7 @@ def render_login_box():
                     return
 
                 fp_btn.props("loading")
-                app_url = os.environ.get("APP_URL", "https://railway.app").rstrip("/")
+                app_url = os.environ.get("APP_URL", "https://nfl-loser-pool-production.up.railway.app").rstrip("/")
                 try:
                     await run.io_bound(
                         lambda: supabase_auth.auth.reset_password_for_email(
@@ -440,7 +440,6 @@ def spa_shell(subpath: str = ""):
                         render_password_recovery_box()
                     else:
                         render_login_box()
-                    render_login_box()
                 else:
                     pool_now = app.storage.user.get("pool", "Main")
                     ui.sub_pages({
