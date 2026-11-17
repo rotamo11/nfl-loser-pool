@@ -124,23 +124,35 @@ async def render_picks_view(supabase, user, pool_slug: str):
                     else:
                         ui.label(f"Registration for {pool_label} is currently OPEN.").classes("text-xs opacity-80 mb-3")
 
-                        def request_pool_join():
+                        async def request_pool_join():
+                            clean_email = (em_in.value or "").strip().lower()
+                            clean_user = (uname_in.value or "").strip()
+                            if not clean_email or "@" not in clean_email or not clean_user:
+                                ui.notify("Please enter a valid email address and username.", type="negative")
+                                return
+        
+                            sub_btn.props("loading")
                             payload = {
-                                "user_id": user_id,
-                                "email": (user_row.get("email") or user.email or "").strip().lower(),
-                                "username": current_user_name.strip(),
-                                "first_name": (user_row.get("first_name") or "").strip(),
-                                "last_name": (user_row.get("last_name") or "").strip(),
-                                "cell_phone": (user_row.get("cell_phone") or "").strip(),
-                                "game_type": pool_slug,
+                                "user_id": None,
+                                "email": clean_email,
+                                "username": clean_user,
+                                "first_name": (fn_in.value or "").strip(),
+                                "last_name": (ln_in.value or "").strip(),
+                                "cell_phone": (ph_in.value or "").strip(),
+                                "game_type": pool_sel.value,
                                 "status": "Pending",
                             }
-                            supabase.table("enrollment_requests").insert(payload).execute()
-                            notify_admins_of_join_request(supabase, payload)
-                            ui.notify(f"Request sent to join {pool_label}! The Commissioner has been notified.", type="positive")
-                            self_enroll_area.refresh()
-
-                        ui.button(f"Request to Join {pool_label}", on_click=request_pool_join, color="primary").classes("font-bold px-6")
+                            try:
+                                await run.io_bound(lambda: supabase.table("enrollment_requests").insert(payload).execute())
+                                await run.io_bound(notify_admins_of_join_request, supabase, payload)
+                                join_dlg.close()
+                                ui.notify("Join request sent! The Commissioner has been notified.", type="positive", timeout=6000)
+                            finally:
+                                sub_btn.props(remove="loading")
+        
+                        with ui.row().classes("w-full justify-end gap-2 mt-2"):
+                            ui.button("Cancel", on_click=join_dlg.close).props("flat")
+                            sub_btn = ui.button("Submit Request", on_click=submit_guest_request, color="primary").classes("font-bold")
 
                 self_enroll_area()
             else:
