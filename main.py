@@ -1,7 +1,7 @@
 import os
 import time
 from types import SimpleNamespace
-from nicegui import ui, app
+from nicegui import ui, app, run
 from supabase import create_client, Client
 
 from picks_module import render_picks_view
@@ -159,13 +159,14 @@ def render_login_box():
                 em_in = ui.input("Email Address").classes("w-full mb-2")
                 ph_in = ui.input("Cell Phone (Optional)").classes("w-full mb-3")
 
-                def submit_guest_request():
+                async def submit_guest_request():
                     clean_email = (em_in.value or "").strip().lower()
                     clean_user = (uname_in.value or "").strip()
                     if not clean_email or "@" not in clean_email or not clean_user:
                         ui.notify("Please enter a valid email address and username.", type="negative")
                         return
 
+                    sub_btn.props("loading")
                     payload = {
                         "user_id": None,
                         "email": clean_email,
@@ -176,14 +177,17 @@ def render_login_box():
                         "game_type": pool_sel.value,
                         "status": "Pending",
                     }
-                    supabase.table("enrollment_requests").insert(payload).execute()
-                    notify_admins_of_join_request(supabase, payload)
-                    join_dlg.close()
-                    ui.notify("✅ Join request sent! The Commissioner has been notified.", type="positive", timeout=6000)
+                    try:
+                        await run.io_bound(lambda: supabase.table("enrollment_requests").insert(payload).execute())
+                        await run.io_bound(notify_admins_of_join_request, supabase, payload)
+                        join_dlg.close()
+                        ui.notify("Join request sent! The Commissioner has been notified.", type="positive", timeout=6000)
+                    finally:
+                        sub_btn.props(remove="loading")
 
                 with ui.row().classes("w-full justify-end gap-2 mt-2"):
                     ui.button("Cancel", on_click=join_dlg.close).props("flat")
-                    ui.button("Submit Request", on_click=submit_guest_request, color="primary").classes("font-bold")
+                    sub_btn = ui.button("Submit Request", on_click=submit_guest_request, color="primary").classes("font-bold")
 
             join_dlg.open()
 
