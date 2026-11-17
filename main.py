@@ -460,4 +460,5 @@ if __name__ in {"__main__", "__mp_main__"}:
         port=int(os.environ.get("PORT", 8080)),
         title="NFL Loser Pool",
         storage_secret=os.environ.get("STORAGE_SECRET", "nfl_loser_pool_secret_2026_key"),
+        ws_max_size=16777216,
     )
