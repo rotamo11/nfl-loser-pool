@@ -872,30 +872,31 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                             app_url = os.environ.get("APP_URL", "https://nfl-loser-pool-production.up.railway.app").rstrip("/")
                             cur_uname = ed_user.value.strip() or "Player"
                             cur_email = ed_email.value.strip().lower()
+                            std_temp = f"Loser{datetime.datetime.now().year}!"
 
                             if reset_pwd:
-                                new_temp = f"Loser{datetime.datetime.now().year}!"
-                                supabase.auth.admin.update_user_by_id(uid, {"password": new_temp})
+                                supabase.auth.admin.update_user_by_id(uid, {"password": std_temp})
                                 msg_txt = (
                                     f"Hey {cur_uname},\n\n"
                                     f"Your NFL Loser Pool password has been reset!\n\n"
                                     f"Login Link: {app_url}\n"
                                     f"Email: {cur_email}\n"
-                                    f"Temporary Password: {new_temp}\n\n"
+                                    f"Temporary Password: {std_temp}\n\n"
                                     f"Please log in and update your password on the Profile page whenever you're ready."
                                 )
                                 ui.clipboard.write(msg_txt)
-                                ui.notify(f"Password reset to {new_temp} & message copied!", type="positive", timeout=6000)
+                                ui.notify(f"Password reset to {std_temp} & message copied!", type="positive", timeout=6000)
                             else:
                                 msg_txt = (
                                     f"Hey {cur_uname},\n\n"
                                     f"Welcome to the NFL Loser Pool!\n\n"
                                     f"Login Link: {app_url}\n"
-                                    f"Email: {cur_email}\n\n"
-                                    f"Use 'Forgot Password' or let me know if you need a temporary password reset."
+                                    f"Email: {cur_email}\n"
+                                    f"Temporary Password: {std_temp}\n\n"
+                                    f"Please log in and update your password on the Profile page whenever you're ready."
                                 )
                                 ui.clipboard.write(msg_txt)
-                                ui.notify("Welcome message copied to clipboard!", type="positive")
+                                ui.notify("Welcome message with temp password copied!", type="positive")
 
                         with ui.row().classes("w-full items-center gap-2 mt-3 flex-wrap"):
                             ui.button("Copy Welcome Message", icon="content_copy", on_click=lambda: copy_player_welcome(False), color="secondary").props("outline size=sm").classes("font-bold")
