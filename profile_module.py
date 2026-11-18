@@ -137,4 +137,4 @@ def render_profile_view(supabase, user):
             app.storage.user["dark_mode"] = saved_theme
             ui.run_javascript("window.location.href = '/'")
 
-        ui.button("Log Out", icon="logout", on_click=handle_logout, color="red").props("outline").classes("font-bold px-6")
+        ui.button("Logout", icon="logout", on_click=handle_logout, color="red").props("outline").classes("font-bold px-6")
