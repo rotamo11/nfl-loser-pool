@@ -58,8 +58,6 @@ def execute_manual_deadline_lock(supabase, target_week: int) -> str:
         first_prior = next(iter(prior), None)
         if first_prior is not None:
             default_team = def_map[first_prior]
-        if prior:
-            default_team = def_map[prior]
             supabase.table("default_picks").upsert({
                 "week": target_week,
                 "team": default_team,
@@ -95,7 +93,6 @@ def execute_manual_deadline_lock(supabase, target_week: int) -> str:
                 user_pool_picks.append(new_row)
                 all_picks.append(new_row)
                 no_picks += 1
-
     for r in regs:
         uid, gtype = str(r["user_id"]), r["game_type"]
         losses = sum(1 for p in all_picks if str(p["user_id"]) == uid and p["game_type"] == gtype and p.get("pick_state") == "Incorrect")
@@ -109,6 +106,7 @@ def execute_manual_deadline_lock(supabase, target_week: int) -> str:
         f"Week {target_week} lock complete: {len(confirmed_picks)} finalized, "
         f"{auto_byes} auto-BYEs, {auto_defaults} default picks ({default_team or 'None'}), {no_picks} NO_PICK losses."
     )
+
 def execute_manual_reminders(supabase, target_week: int, admin_only_uid: str | None = None) -> str:
     smtp_user = os.environ.get("SMTP_USER", "")
     smtp_pass = os.environ.get("SMTP_PASS", "")
@@ -176,7 +174,6 @@ def execute_manual_reminders(supabase, target_week: int, admin_only_uid: str | N
 
     scope = "Test (Admin Only)" if admin_only_uid else "All Missing Players"
     return f"Week {target_week} reminders ({scope}): {admin_sent} admin alerts, {sent_emails} player emails, {sent_pushes} push alerts sent."
-
 async def render_admin_view(supabase, user, on_badge_change=None):
     is_masquerading = bool(app.storage.user.get("masquerade_uid"))
     if is_masquerading or not (app.storage.user.get("is_admin_cached") or is_admin_user(supabase, user)):
@@ -186,18 +183,16 @@ async def render_admin_view(supabase, user, on_badge_change=None):
     current_week = get_current_nfl_week()
     ui.label("Admin Control Console").classes("text-xl font-black")
 
-    # Parallel initial fetch of core tables so switching tabs is instantaneous
-    users_data, regs_data, picks_data, sched_data = await asyncio.gather(
+    users_data, regs_data, picks_data, sched_data, pending_data = await asyncio.gather(
         run.io_bound(lambda: supabase.table("users").select("*").execute().data or []),
         run.io_bound(lambda: supabase.table("tournament_registrations").select("*").execute().data or []),
         run.io_bound(lambda: supabase.table("user_picks").select("*").execute().data or []),
         run.io_bound(lambda: supabase.table("nfl_schedule").select("*").execute().data or []),
+        run.io_bound(lambda: supabase.table("enrollment_requests").select("id").eq("status", "Pending").execute().data or []),
     )
     cache = {"users": users_data, "regs": regs_data, "picks": picks_data, "sched": sched_data}
-
-    init_pending_cnt = len(
-        supabase.table("enrollment_requests").select("id").eq("status", "Pending").execute().data or []
-    )
+    refresh_hooks = {}
+    init_pending_cnt = len(pending_data)
 
     with ui.tabs().classes("w-full mb-3") as admin_tabs:
         t_results = ui.tab("Results")
@@ -210,9 +205,6 @@ async def render_admin_view(supabase, user, on_badge_change=None):
         t_users = ui.tab("User Management")
 
     with ui.tab_panels(admin_tabs, value=t_results).classes("w-full bg-transparent"):
-        # ================================================================
-        # TAB 1: RESULTS (WEEK SELECTOR, POOL SUMMARIES, & REVERTABLE SCORING)
-        # ================================================================
         with ui.tab_panel(t_results).classes("px-0"):
             week_opts = {w: f"{get_week_label(w)} (current)" if w == current_week else get_week_label(w) for w in range(1, 23)}
             sel_week = ui.select(week_opts, value=current_week, label="Select Week").props("dense outlined").classes("w-52 mb-3")
@@ -223,12 +215,9 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                 enr_regs = [r for r in cache["regs"] if r.get("is_enrolled")]
                 wk_picks = [p for p in cache["picks"] if p["week"] == w_num]
 
-                # Compute Pool Summary Stats
                 def calc_pool_stats(pool_slug: str):
                     p_regs = [r for r in enr_regs if r.get("game_type") == pool_slug]
                     wrong_wk = sum(1 for p in wk_picks if p.get("game_type") == pool_slug and p.get("pick_state") == "Incorrect")
-
-                    # Players eliminated specifically in w_num
                     elim_this_wk = 0
                     for r in p_regs:
                         if r.get("bracket_status") != "Eliminated":
@@ -262,7 +251,6 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                         ui.label(f"Loser Bracket: {sc_l}  |  Eliminated: {sc_e}").classes("text-xs font-extrabold opacity-90")
 
                 ui.label("Select the LOSER of each matchup (or tie) and select SO if it was a shutout.").classes("text-xs font-semibold opacity-75 mb-3")
-
                 matches = [m for m in cache["sched"] if m["week"] == w_num]
                 matches = sorted(matches, key=lambda m: (0, str(m["kickoff_time"]), m["id"]) if m.get("kickoff_time") else (1, "", m["id"]))
 
@@ -318,16 +306,12 @@ async def render_admin_view(supabase, user, on_badge_change=None):
 
                             chk = ui.checkbox("🎯 SO", value=db_so).props("dense").classes("text-xs font-bold shrink-0")
                             controls[mid] = {"away": away, "home": home, "state": state_holder, "chk": chk}
+
                 def run_db_scoring_batch(week_num, snapshot):
                     losers_set, winners_set, shutouts_set, ties_set, pending_teams = set(), set(), set(), set(), set()
-
                     for mid, item in snapshot.items():
                         res_val, so_val = item["res_val"], item["so_val"]
-                        supabase.table("nfl_schedule").update({
-                            "winner": None if res_val == "PENDING" else res_val,
-                            "is_shutout": so_val,
-                        }).eq("id", mid).execute()
-
+                        supabase.table("nfl_schedule").update({"winner": None if res_val == "PENDING" else res_val, "is_shutout": so_val}).eq("id", mid).execute()
                         if res_val == "PENDING":
                             pending_teams.update([item["away"], item["home"]])
                         elif res_val == "TIE":
@@ -356,7 +340,6 @@ async def render_admin_view(supabase, user, on_badge_change=None):
 
                     all_regs = supabase.table("tournament_registrations").select("*").eq("is_enrolled", True).execute().data or []
                     all_picks = supabase.table("user_picks").select("*").execute().data or []
-
                     for r in all_regs:
                         uid, gtype = r["user_id"], r["game_type"]
                         losses = sum(1 for p in all_picks if p["user_id"] == uid and p["game_type"] == gtype and p.get("pick_state") == "Incorrect")
@@ -386,9 +369,6 @@ async def render_admin_view(supabase, user, on_badge_change=None):
 
             sel_week.on_value_change(lambda: results_panel.refresh())
             results_panel()
-        # ================================================================
-        # TAB 2: DEADLINE TOOLS (DEFAULT PICK, LOCK, REMINDERS, PREVIEW)
-        # ================================================================
         with ui.tab_panel(t_deadline).classes("px-0"):
             ui.label("Weekly Auto-Pick Default Team").classes("text-base font-extrabold mb-1")
             def_week_opts = {w: get_week_label(w) for w in range(1, 23)}
@@ -420,7 +400,7 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                 active_team = saved_exact or inherited or "SEA"
 
                 wk_matches = [m for m in cache["sched"] if m["week"] == w_num]
-                teams_set = {t.upper() for m in wk_matches for t in (m.get("away_team"), m.get("home_team")) if t} or {"KC"}
+                teams_set = {t.upper() for m in wk_matches for t in (m.get("away_team"), m.get("home_team")) if t} or {"SEA"}
                 sorted_teams = sorted(teams_set | {active_team})
                 team_sel.options, team_sel.value = sorted_teams, active_team
                 team_sel.update()
@@ -490,6 +470,7 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                 with ui.row().classes("items-center gap-3 flex-wrap"):
                     lock_btn = ui.button("Run Deadline Lock Now", icon="lock_clock", on_click=open_lock_confirm, color="amber-8").classes("font-bold text-white")
                     rem_btn = ui.button("Send Reminders Now", on_click=open_reminder_confirm, color="primary").classes("font-bold")
+
             ui.separator().classes("my-5")
 
             @ui.refreshable
@@ -650,10 +631,11 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                                     else:
                                         updated += 1
 
+                                    email_prefix = next(iter(em.split("@")), "Player")
                                     supabase.table("users").upsert({
                                         "id": uid,
                                         "email": em,
-                                        "username": (row.get("username") or em.split("@")).strip(),
+                                        "username": (row.get("username") or email_prefix).strip(),
                                         "first_name": (row.get("first_name") or "").strip(),
                                         "last_name": (row.get("last_name") or "").strip(),
                                         "cell_phone": (row.get("cell_phone") or "").strip(),
@@ -682,28 +664,12 @@ async def render_admin_view(supabase, user, on_badge_change=None):
         # TAB 4: REGISTRATIONS (PENDING REQUESTS TOP, WINDOWS BELOW)
         # ================================================================
         with ui.tab_panel(t_reg).classes("px-0"):
-            def show_copy_modal(title_txt: str, sub_txt: str, body_txt: str, rows_cnt: int = 7):
-                with ui.dialog() as modal_dlg, ui.card().classes("w-full max-w-md p-5"):
-                    ui.label(title_txt).classes("text-lg font-black mb-1")
-                    ui.label(sub_txt).classes("text-xs opacity-75 mb-3")
-                    ui.textarea("Message", value=body_txt).props(f"readonly outlined rows={rows_cnt}").classes("w-full text-xs mb-3")
-                    with ui.row().classes("w-full justify-end gap-2"):
-                        ui.button(
-                            "Copy Message",
-                            icon="content_copy",
-                            on_click=lambda: (ui.clipboard.write(body_txt), ui.notify("Copied to clipboard!", type="positive")),
-                            color="primary",
-                        ).classes("font-bold")
-                        ui.button("Done", on_click=modal_dlg.close).props("flat")
-                modal_dlg.open()
-
             def handle_approve_click(req_obj: dict):
                 try:
                     clean_em = (req_obj.get("email") or "").strip().lower()
                     email_prefix = next(iter(clean_em.split("@")), "Player")
                     clean_un = (req_obj.get("username") or email_prefix).strip()
                     target_uid = req_obj.get("user_id")
-                    temp_pwd = None
 
                     if not target_uid:
                         existing_u = supabase.table("users").select("id").eq("email", clean_em).execute().data or []
@@ -713,11 +679,7 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                         else:
                             temp_pwd = f"Loser{datetime.datetime.now().year}!"
                             try:
-                                auth_res = supabase.auth.admin.create_user({
-                                    "email": clean_em,
-                                    "password": temp_pwd,
-                                    "email_confirm": True,
-                                })
+                                auth_res = supabase.auth.admin.create_user({"email": clean_em, "password": temp_pwd, "email_confirm": True})
                                 target_uid = str(auth_res.user.id)
                             except Exception:
                                 all_auth = supabase.auth.admin.list_users()
@@ -752,7 +714,8 @@ async def render_admin_view(supabase, user, on_badge_change=None):
 
                     ui.notify(f"Approved {clean_un}! Copy their welcome info in User Management.", type="positive", timeout=6000)
                     pending_requests_panel.refresh()
-                    roster_list.refresh()
+                    if "roster" in refresh_hooks:
+                        refresh_hooks["roster"]()
                 except Exception as err:
                     ui.notify(f"Approval error: {err}", type="negative", timeout=10000)
 
@@ -763,17 +726,9 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                     pending_requests_panel.refresh()
                 except Exception as err:
                     ui.notify(f"Decline error: {err}", type="negative", timeout=10000)
-
             @ui.refreshable
             def pending_requests_panel():
-                reqs = (
-                    supabase.table("enrollment_requests")
-                    .select("*")
-                    .eq("status", "Pending")
-                    .order("created_at", desc=False)
-                    .execute()
-                    .data or []
-                )
+                reqs = supabase.table("enrollment_requests").select("*").eq("status", "Pending").order("created_at", desc=False).execute().data or []
                 cnt = len(reqs)
                 reg_tab_badge.text = str(cnt)
                 reg_tab_badge.classes(remove="hidden") if cnt > 0 else reg_tab_badge.classes(add="hidden")
@@ -805,7 +760,6 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                                 ui.button("Decline", on_click=lambda _e, r=rq: handle_decline_click(r), color="red").props("outline size=sm")
 
             pending_requests_panel()
-            
             ui.separator().classes("my-4")
             ui.label("Self-Enrollment Registration Windows (Eastern Time)").classes("text-base font-extrabold mb-1")
             ui.label("Controls when the Request to Join button appears on the Login screen and un-enrolled Picks tabs.").classes("text-xs opacity-75 mb-3")
@@ -848,7 +802,6 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                                 ui.notify(f"Invalid date format (use YYYY-MM-DD HH:MM): {err}", type="negative")
 
                         ui.button("Save Window", on_click=save_window, color="primary").props("size=sm").classes("font-bold")
-
         # ================================================================
         # TAB 5: USER MANAGEMENT (WITH INLINE MASQUERADE BUTTON)
         # ================================================================
@@ -916,7 +869,6 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                             ed_last = ui.input("Last Name", value=u_row.get("last_name") or "").classes("w-full")
                             ed_phone = ui.input("Cell Phone", value=u_row.get("cell_phone") or "").classes("w-full")
                             ui.input("ntfy.sh Topic (Read-Only)", value=personal_topic).props("readonly").classes("w-full")
-
                         def copy_player_welcome(reset_pwd: bool = False):
                             app_url = os.environ.get("APP_URL", "https://nfl-loser-pool-production.up.railway.app").rstrip("/")
                             cur_uname = ed_user.value.strip() or "Player"
@@ -1036,4 +988,5 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                                     cur_st = r.get("bracket_status") if r.get("bracket_status") in status_opts else "Loser Bracket"
                                     ui.select(status_opts, value=cur_st, on_change=lambda e, rid=r["id"], reg_obj=r: (supabase.table("tournament_registrations").update({"bracket_status": e.value}).eq("id", rid).execute(), reg_obj.update({"bracket_status": e.value}), roster_list.refresh())).props("dense outlined").classes("w-36 text-xs")
 
+            refresh_hooks["roster"] = roster_list.refresh
             roster_list()
