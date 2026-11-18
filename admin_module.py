@@ -174,7 +174,7 @@ def execute_manual_reminders(supabase, target_week: int, admin_only_uid: str | N
     scope = "Test (Admin Only)" if admin_only_uid else "All Missing Players"
     return f"Week {target_week} reminders ({scope}): {admin_sent} admin alerts, {sent_emails} player emails, {sent_pushes} push alerts sent."
 
-async def render_admin_view(supabase, user):
+async def render_admin_view(supabase, user, on_badge_change=None):
     is_masquerading = bool(app.storage.user.get("masquerade_uid"))
     if is_masquerading or not (app.storage.user.get("is_admin_cached") or is_admin_user(supabase, user)):
         ui.label("🔒 Access Denied: Admin Privileges Required.").classes("text-red-500 font-bold text-lg")
@@ -192,11 +192,18 @@ async def render_admin_view(supabase, user):
     )
     cache = {"users": users_data, "regs": regs_data, "picks": picks_data, "sched": sched_data}
 
+    init_pending_cnt = len(
+        supabase.table("enrollment_requests").select("id").eq("status", "Pending").execute().data or []
+    )
+
     with ui.tabs().classes("w-full mb-3") as admin_tabs:
         t_results = ui.tab("Results")
         t_deadline = ui.tab("Deadline Tools")
         t_csv = ui.tab("CSV Import")
-        t_reg = ui.tab("Registrations")
+        with ui.tab("Registrations") as t_reg:
+            reg_tab_badge = ui.badge(str(init_pending_cnt), color="red").classes(
+                f"ml-1.5 text-[10px] font-black {'hidden' if init_pending_cnt == 0 else ''}"
+            )
         t_users = ui.tab("User Management")
 
     with ui.tab_panels(admin_tabs, value=t_results).classes("w-full bg-transparent"):
@@ -681,14 +688,24 @@ async def render_admin_view(supabase, user):
                     .execute()
                     .data or []
                 )
-                ui.label(f"Pending Join Requests ({len(reqs)})").classes("text-base font-extrabold mb-2")
+
+                cnt = len(reqs)
+                reg_tab_badge.text = str(cnt)
+                if cnt > 0:
+                    reg_tab_badge.classes(remove="hidden")
+                else:
+                    reg_tab_badge.classes(add="hidden")
+                if on_badge_change:
+                    on_badge_change()
+
+                ui.label(f"Pending Join Requests ({cnt})").classes("text-base font-extrabold mb-2")
 
                 if not reqs:
                     ui.label("No pending join requests right now.").classes("text-xs opacity-70 italic mb-2")
                     return
 
                 for rq in reqs:
-                    rid, gtype = rq["id"], rq["game_type"]
+                    gtype = rq["game_type"]
                     uname = rq.get("username") or "Player"
                     email = rq.get("email") or ""
                     full_nm = f"{rq.get('first_name') or ''} {rq.get('last_name') or ''}".strip()
@@ -705,49 +722,58 @@ async def render_admin_view(supabase, user):
                                 ui.label(f"{email}  •  {full_nm or 'No name'}  •  {rq.get('cell_phone') or 'No phone'}").classes("text-xs opacity-80")
 
                             with ui.row().classes("items-center gap-2"):
-                                def approve_req(req_obj=rq):
+                                async def approve_req(req_obj):
                                     try:
+                                        clean_em = (req_obj.get("email") or "").strip().lower()
+                                        clean_un = (req_obj.get("username") or clean_em.split("@")[0]).strip()
                                         target_uid = req_obj.get("user_id")
                                         temp_pwd = None
-                                        if not target_uid:
-                                            existing_u = supabase.table("users").select("id").eq("email", req_obj["email"].strip().lower()).execute().data or []
-                                            first_u = next(iter(existing_u), {})
-                                            if first_u:
-                                                target_uid = str(first_u["id"])
+
+                                        def db_approve_worker():
+                                            nonlocal target_uid, temp_pwd
+                                            if not target_uid:
+                                                existing_u = supabase.table("users").select("id").eq("email", clean_em).execute().data or []
+                                                first_u = next(iter(existing_u), {})
+                                                if first_u:
+                                                    target_uid = str(first_u["id"])
+                                                else:
+                                                    temp_pwd = f"Loser{datetime.datetime.now().year}!"
+                                                    auth_res = supabase.auth.admin.create_user({
+                                                        "email": clean_em,
+                                                        "password": temp_pwd,
+                                                        "email_confirm": True,
+                                                    })
+                                                    target_uid = str(auth_res.user.id)
+                                                    supabase.table("users").upsert({
+                                                        "id": target_uid,
+                                                        "email": clean_em,
+                                                        "username": clean_un,
+                                                        "first_name": (req_obj.get("first_name") or "").strip(),
+                                                        "last_name": (req_obj.get("last_name") or "").strip(),
+                                                        "cell_phone": (req_obj.get("cell_phone") or "").strip(),
+                                                        "alert_personal_topic": f"nflloserpool-{target_uid[:8]}",
+                                                        "alert_email": True,
+                                                        "alert_sms": False,
+                                                        "is_admin": False,
+                                                    }).execute()
+
+                                            existing_reg = supabase.table("tournament_registrations").select("id").eq("user_id", target_uid).eq("game_type", req_obj["game_type"]).execute().data or []
+                                            if existing_reg:
+                                                supabase.table("tournament_registrations").update({"is_enrolled": True, "bracket_status": "Loser Bracket"}).eq("id", next(iter(existing_reg))["id"]).execute()
                                             else:
-                                                temp_pwd = f"Loser{datetime.datetime.now().year}!"
-                                                auth_res = supabase.auth.admin.create_user({"email": req_obj["email"].strip().lower(), "password": temp_pwd, "email_confirm": True})
-                                                target_uid = str(auth_res.user.id)
-                                                supabase.table("users").upsert({
-                                                    "id": target_uid,
-                                                    "email": req_obj["email"].strip().lower(),
-                                                    "username": req_obj["username"].strip(),
-                                                    "first_name": (req_obj.get("first_name") or "").strip(),
-                                                    "last_name": (req_obj.get("last_name") or "").strip(),
-                                                    "cell_phone": (req_obj.get("cell_phone") or "").strip(),
-                                                    "alert_personal_topic": f"nflloserpool-{target_uid[:8]}",
-                                                    "alert_email": True,
-                                                    "alert_sms": False,
-                                                    "is_admin": False,
-                                                }).execute()
+                                                supabase.table("tournament_registrations").insert({"user_id": target_uid, "game_type": req_obj["game_type"], "is_enrolled": True, "is_paid": False, "bracket_status": "Loser Bracket"}).execute()
 
-                                        existing_reg = supabase.table("tournament_registrations").select("id").eq("user_id", target_uid).eq("game_type", req_obj["game_type"]).execute().data or []
-                                        if existing_reg:
-                                            supabase.table("tournament_registrations").update({"is_enrolled": True, "bracket_status": "Loser Bracket"}).eq("id", next(iter(existing_reg))["id"]).execute()
-                                        else:
-                                            supabase.table("tournament_registrations").insert({"user_id": target_uid, "game_type": req_obj["game_type"], "is_enrolled": True, "is_paid": False, "bracket_status": "Loser Bracket"}).execute()
+                                            supabase.table("enrollment_requests").update({"status": "Approved", "user_id": target_uid}).eq("id", req_obj["id"]).execute()
+                                            cache["users"] = supabase.table("users").select("*").execute().data or []
+                                            cache["regs"] = supabase.table("tournament_registrations").select("*").execute().data or []
 
-                                        supabase.table("enrollment_requests").update({"status": "Approved", "user_id": target_uid}).eq("id", req_obj["id"]).execute()
-                                        cache["users"] = supabase.table("users").select("*").execute().data or []
-                                        cache["regs"] = supabase.table("tournament_registrations").select("*").execute().data or []
-
+                                        await run.io_bound(db_approve_worker)
                                         app_url = os.environ.get("APP_URL", "https://railway.app").rstrip("/")
                                         pool_lbl = req_obj["game_type"].replace("_", " ")
-                                        clean_em = req_obj["email"].strip().lower()
 
                                         if temp_pwd:
                                             welcome_txt = (
-                                                f"Hey {req_obj['username']},\n\n"
+                                                f"Hey {clean_un},\n\n"
                                                 f"You're approved and enrolled in the NFL Loser Pool ({pool_lbl})!\n\n"
                                                 f"Login Link: {app_url}\n"
                                                 f"Email: {clean_em}\n"
@@ -756,13 +782,13 @@ async def render_admin_view(supabase, user):
                                             )
                                         else:
                                             welcome_txt = (
-                                                f"Hey {req_obj['username']},\n\n"
+                                                f"Hey {clean_un},\n\n"
                                                 f"You're approved and enrolled in the NFL Loser Pool ({pool_lbl})!\n\n"
                                                 f"Log in anytime to submit your picks: {app_url}"
                                             )
 
                                         with ui.dialog() as wel_dlg, ui.card().classes("w-full max-w-md p-5"):
-                                            ui.label(f"Approved: {req_obj['username']}").classes("text-lg font-black mb-1")
+                                            ui.label(f"Approved: {clean_un}").classes("text-lg font-black mb-1")
                                             ui.label("Copy the message below to send them their confirmation:").classes("text-xs opacity-75 mb-3")
                                             ui.textarea("Approval Message", value=welcome_txt).props("readonly outlined rows=7").classes("w-full text-xs mb-3")
                                             with ui.row().classes("w-full justify-end gap-2"):
@@ -779,8 +805,10 @@ async def render_admin_view(supabase, user):
                                     except Exception as err:
                                         ui.notify(f"Approval error: {err}", type="negative", timeout=8000)
 
-                                def decline_req(req_obj=rq):
-                                    supabase.table("enrollment_requests").update({"status": "Declined"}).eq("id", req_obj["id"]).execute()
+                                async def decline_req(req_obj):
+                                    await run.io_bound(
+                                        lambda: supabase.table("enrollment_requests").update({"status": "Declined"}).eq("id", req_obj["id"]).execute()
+                                    )
                                     pool_lbl = req_obj["game_type"].replace("_", " ")
                                     decline_txt = (
                                         f"Hey {req_obj.get('username') or 'there'},\n\n"
@@ -803,10 +831,11 @@ async def render_admin_view(supabase, user):
                                     dec_dlg.open()
                                     pending_requests_panel.refresh()
 
-                                ui.button("Approve", on_click=approve_req, color="positive").props("size=sm").classes("font-bold")
-                                ui.button("Decline", on_click=decline_req, color="red").props("outline size=sm")
+                                ui.button("Approve", on_click=lambda r=rq: approve_req(r), color="positive").props("size=sm").classes("font-bold")
+                                ui.button("Decline", on_click=lambda r=rq: decline_req(r), color="red").props("outline size=sm")
 
             pending_requests_panel()
+            
             ui.separator().classes("my-4")
             ui.label("Self-Enrollment Registration Windows (Eastern Time)").classes("text-base font-extrabold mb-1")
             ui.label("Controls when the Request to Join button appears on the Login screen and un-enrolled Picks tabs.").classes("text-xs opacity-75 mb-3")
