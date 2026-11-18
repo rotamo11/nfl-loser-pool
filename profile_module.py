@@ -43,12 +43,13 @@ def render_profile_view(supabase, user):
             with ui.row().classes("w-full gap-2 no-wrap mb-2"):
                 first_in = ui.input("First Name", value=profile.get("first_name") or "").classes("flex-1")
                 last_in = ui.input("Last Name", value=profile.get("last_name") or "").classes("flex-1")
-                phone_in = ui.input(
-                    "Cell Phone (Optional)",
-                    value=u_row.get("cell_phone") or "",
-                    placeholder="e.g. 207-555-0199",
-                ).classes("w-full")
-                ui.label("Optional — only used as a backup to text you if needed.").classes("text-xs opacity-70 mb-2")
+
+            phone_in = ui.input(
+                "Cell Phone (Optional)",
+                value=profile.get("cell_phone") or "",
+                placeholder="e.g. 207-555-1212",
+            ).classes("w-full")
+            ui.label("Optional — only used as a backup to text you if needed.").classes("text-xs opacity-70 mb-2")
 
             ui.label("Automated Reminder Channels:").classes("text-xs font-bold opacity-80 mt-1")
             email_chk = ui.checkbox(
