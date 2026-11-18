@@ -702,6 +702,21 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                     ui.label("No pending join requests right now.").classes("text-xs opacity-70 italic mb-2")
                     return
 
+                def show_copy_modal(title_txt: str, sub_txt: str, body_txt: str, rows_cnt: int = 7):
+                    with ui.dialog() as modal_dlg, ui.card().classes("w-full max-w-md p-5"):
+                        ui.label(title_txt).classes("text-lg font-black mb-1")
+                        ui.label(sub_txt).classes("text-xs opacity-75 mb-3")
+                        ui.textarea("Message", value=body_txt).props(f"readonly outlined rows={rows_cnt}").classes("w-full text-xs mb-3")
+                        with ui.row().classes("w-full justify-end gap-2"):
+                            ui.button(
+                                "Copy Message",
+                                icon="content_copy",
+                                on_click=lambda: (ui.clipboard.write(body_txt), ui.notify("Copied to clipboard!", type="positive")),
+                                color="primary",
+                            ).classes("font-bold")
+                            ui.button("Done", on_click=modal_dlg.close).props("flat")
+                    modal_dlg.open()
+
                 for rq in reqs:
                     gtype = rq["game_type"]
                     uname = rq.get("username") or "Player"
@@ -718,59 +733,56 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                                     if is_new_acct:
                                         ui.badge("NEW ACCOUNT", color="purple").classes("text-[10px] font-bold")
                                 ui.label(f"{email}  •  {full_nm or 'No name'}  •  {rq.get('cell_phone') or 'No phone'}").classes("text-xs opacity-80")
-
                             with ui.row().classes("items-center gap-2"):
-                                async def approve_req(req_obj):
+                                def approve_req(req_obj=rq):
                                     try:
                                         clean_em = (req_obj.get("email") or "").strip().lower()
-                                        clean_un = (req_obj.get("username") or clean_em.split("@")[0]).strip()
+                                        email_prefix = next(iter(clean_em.split("@")), "Player")
+                                        clean_un = (req_obj.get("username") or email_prefix).strip()
                                         target_uid = req_obj.get("user_id")
                                         temp_pwd = None
 
-                                        def db_approve_worker():
-                                            nonlocal target_uid, temp_pwd
-                                            if not target_uid:
-                                                existing_u = supabase.table("users").select("id").eq("email", clean_em).execute().data or []
-                                                first_u = next(iter(existing_u), {})
-                                                if first_u:
-                                                    target_uid = str(first_u["id"])
-                                                else:
-                                                    temp_pwd = f"Loser{datetime.datetime.now().year}!"
-                                                    auth_res = supabase.auth.admin.create_user({
-                                                        "email": clean_em,
-                                                        "password": temp_pwd,
-                                                        "email_confirm": True,
-                                                    })
-                                                    target_uid = str(auth_res.user.id)
-                                                    supabase.table("users").upsert({
-                                                        "id": target_uid,
-                                                        "email": clean_em,
-                                                        "username": clean_un,
-                                                        "first_name": (req_obj.get("first_name") or "").strip(),
-                                                        "last_name": (req_obj.get("last_name") or "").strip(),
-                                                        "cell_phone": (req_obj.get("cell_phone") or "").strip(),
-                                                        "alert_personal_topic": f"nflloserpool-{target_uid[:8]}",
-                                                        "alert_email": True,
-                                                        "alert_sms": False,
-                                                        "is_admin": False,
-                                                    }).execute()
-
-                                            existing_reg = supabase.table("tournament_registrations").select("id").eq("user_id", target_uid).eq("game_type", req_obj["game_type"]).execute().data or []
-                                            if existing_reg:
-                                                supabase.table("tournament_registrations").update({"is_enrolled": True, "bracket_status": "Loser Bracket"}).eq("id", next(iter(existing_reg))["id"]).execute()
+                                        if not target_uid:
+                                            existing_u = supabase.table("users").select("id").eq("email", clean_em).execute().data or []
+                                            first_u = next(iter(existing_u), {})
+                                            if first_u:
+                                                target_uid = str(first_u["id"])
                                             else:
-                                                supabase.table("tournament_registrations").insert({"user_id": target_uid, "game_type": req_obj["game_type"], "is_enrolled": True, "is_paid": False, "bracket_status": "Loser Bracket"}).execute()
+                                                temp_pwd = f"Loser{datetime.datetime.now().year}!"
+                                                auth_res = supabase.auth.admin.create_user({
+                                                    "email": clean_em,
+                                                    "password": temp_pwd,
+                                                    "email_confirm": True,
+                                                })
+                                                target_uid = str(auth_res.user.id)
+                                                supabase.table("users").upsert({
+                                                    "id": target_uid,
+                                                    "email": clean_em,
+                                                    "username": clean_un,
+                                                    "first_name": (req_obj.get("first_name") or "").strip(),
+                                                    "last_name": (req_obj.get("last_name") or "").strip(),
+                                                    "cell_phone": (req_obj.get("cell_phone") or "").strip(),
+                                                    "alert_personal_topic": f"nflloserpool-{target_uid[:8]}",
+                                                    "alert_email": True,
+                                                    "alert_sms": False,
+                                                    "is_admin": False,
+                                                }).execute()
 
-                                            supabase.table("enrollment_requests").update({"status": "Approved", "user_id": target_uid}).eq("id", req_obj["id"]).execute()
-                                            cache["users"] = supabase.table("users").select("*").execute().data or []
-                                            cache["regs"] = supabase.table("tournament_registrations").select("*").execute().data or []
+                                        existing_reg = supabase.table("tournament_registrations").select("id").eq("user_id", target_uid).eq("game_type", req_obj["game_type"]).execute().data or []
+                                        if existing_reg:
+                                            supabase.table("tournament_registrations").update({"is_enrolled": True, "bracket_status": "Loser Bracket"}).eq("id", next(iter(existing_reg))["id"]).execute()
+                                        else:
+                                            supabase.table("tournament_registrations").insert({"user_id": target_uid, "game_type": req_obj["game_type"], "is_enrolled": True, "is_paid": False, "bracket_status": "Loser Bracket"}).execute()
 
-                                        await run.io_bound(db_approve_worker)
+                                        supabase.table("enrollment_requests").update({"status": "Approved", "user_id": target_uid}).eq("id", req_obj["id"]).execute()
+                                        cache["users"] = supabase.table("users").select("*").execute().data or []
+                                        cache["regs"] = supabase.table("tournament_registrations").select("*").execute().data or []
+
                                         app_url = os.environ.get("APP_URL", "https://railway.app").rstrip("/")
                                         pool_lbl = req_obj["game_type"].replace("_", " ")
 
                                         if temp_pwd:
-                                            welcome_txt = (
+                                            msg_body = (
                                                 f"Hey {clean_un},\n\n"
                                                 f"You're approved and enrolled in the NFL Loser Pool ({pool_lbl})!\n\n"
                                                 f"Login Link: {app_url}\n"
@@ -779,58 +791,30 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                                                 f"Please log in and update your password on the Profile page whenever you're ready."
                                             )
                                         else:
-                                            welcome_txt = (
+                                            msg_body = (
                                                 f"Hey {clean_un},\n\n"
                                                 f"You're approved and enrolled in the NFL Loser Pool ({pool_lbl})!\n\n"
                                                 f"Log in anytime to submit your picks: {app_url}"
                                             )
 
-                                        with ui.dialog() as wel_dlg, ui.card().classes("w-full max-w-md p-5"):
-                                            ui.label(f"Approved: {clean_un}").classes("text-lg font-black mb-1")
-                                            ui.label("Copy the message below to send them their confirmation:").classes("text-xs opacity-75 mb-3")
-                                            ui.textarea("Approval Message", value=welcome_txt).props("readonly outlined rows=7").classes("w-full text-xs mb-3")
-                                            with ui.row().classes("w-full justify-end gap-2"):
-                                                ui.button(
-                                                    "Copy Message",
-                                                    icon="content_copy",
-                                                    on_click=lambda txt=welcome_txt: (ui.clipboard.write(txt), ui.notify("Approval message copied!", type="positive")),
-                                                    color="primary",
-                                                ).classes("font-bold")
-                                                ui.button("Done", on_click=wel_dlg.close).props("flat")
-
-                                        wel_dlg.open()
                                         pending_requests_panel.refresh()
+                                        show_copy_modal(f"Approved: {clean_un}", "Copy the message below to send them their confirmation:", msg_body, 7)
                                     except Exception as err:
                                         ui.notify(f"Approval error: {err}", type="negative", timeout=8000)
 
-                                async def decline_req(req_obj):
-                                    await run.io_bound(
-                                        lambda: supabase.table("enrollment_requests").update({"status": "Declined"}).eq("id", req_obj["id"]).execute()
-                                    )
+                                def decline_req(req_obj=rq):
+                                    supabase.table("enrollment_requests").update({"status": "Declined"}).eq("id", req_obj["id"]).execute()
                                     pool_lbl = req_obj["game_type"].replace("_", " ")
                                     decline_txt = (
                                         f"Hey {req_obj.get('username') or 'there'},\n\n"
                                         f"Thanks for your interest in the NFL Loser Pool ({pool_lbl}). "
                                         f"Unfortunately, we aren't able to approve your join request at this time."
                                     )
-                                    with ui.dialog() as dec_dlg, ui.card().classes("w-full max-w-md p-5"):
-                                        ui.label(f"Declined: {req_obj.get('username') or 'Player'}").classes("text-lg font-black mb-1")
-                                        ui.label("Copy the message below if you'd like to send a follow-up note:").classes("text-xs opacity-75 mb-3")
-                                        ui.textarea("Decline Message", value=decline_txt).props("readonly outlined rows=5").classes("w-full text-xs mb-3")
-                                        with ui.row().classes("w-full justify-end gap-2"):
-                                            ui.button(
-                                                "Copy Message",
-                                                icon="content_copy",
-                                                on_click=lambda txt=decline_txt: (ui.clipboard.write(txt), ui.notify("Decline message copied!", type="positive")),
-                                                color="primary",
-                                            ).classes("font-bold")
-                                            ui.button("Done", on_click=dec_dlg.close).props("flat")
-
-                                    dec_dlg.open()
                                     pending_requests_panel.refresh()
+                                    show_copy_modal(f"Declined: {req_obj.get('username') or 'Player'}", "Copy the message below if you'd like to send a follow-up note:", decline_txt, 5)
 
-                                ui.button("Approve", on_click=lambda r=rq: approve_req(r), color="positive").props("size=sm").classes("font-bold")
-                                ui.button("Decline", on_click=lambda r=rq: decline_req(r), color="red").props("outline size=sm")
+                                ui.button("Approve", on_click=approve_req, color="positive").props("size=sm").classes("font-bold")
+                                ui.button("Decline", on_click=decline_req, color="red").props("outline size=sm")
 
             pending_requests_panel()
             
