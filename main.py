@@ -45,11 +45,12 @@ def get_authenticated_user():
                 app.storage.user["user_email"] = res.user.email or ""
                 app.storage.user["auth_verified_at"] = now
 
-                if "dark_mode" not in app.storage.user:
-                    u_row = supabase.table("users").select("dark_mode").eq("id", str(res.user.id)).execute().data or []
+                if "dark_mode" not in app.storage.user or "first_login_complete" not in app.storage.user:
+                    u_row = supabase.table("users").select("dark_mode, first_login_complete").eq("id", str(res.user.id)).execute().data or []
                     first_row = next(iter(u_row), {})
                     if first_row:
                         app.storage.user["dark_mode"] = bool(first_row.get("dark_mode", False))
+                        app.storage.user["first_login_complete"] = bool(first_row.get("first_login_complete", False))
 
                 real_user = res.user
         except Exception:
@@ -122,12 +123,13 @@ def render_login_box():
                 app.storage.user["user_email"] = res.user.email or ""
                 app.storage.user["auth_verified_at"] = time.time()
 
-                u_row = supabase.table("users").select("dark_mode, is_admin").eq("id", str(res.user.id)).execute().data or []
+                u_row = supabase.table("users").select("dark_mode, is_admin, first_login_complete").eq("id", str(res.user.id)).execute().data or []
                 first_row = next(iter(u_row), {})
                 if first_row:
                     app.storage.user["dark_mode"] = bool(first_row.get("dark_mode", False))
                     app.storage.user["is_admin_cached"] = bool(first_row.get("is_admin", False))
                     app.storage.user["is_admin_cached_at"] = time.time()
+                    app.storage.user["first_login_complete"] = bool(first_row.get("first_login_complete", False))
 
                 ui.notify("Logged in! Session saved for 7 days.", type="positive")
                 ui.navigate.reload()
@@ -449,6 +451,8 @@ def spa_shell(subpath: str = ""):
                         render_password_recovery_box()
                     else:
                         render_login_box()
+                elif not app.storage.user.get("first_login_complete", True) and not app.storage.user.get("masquerade_uid"):
+                    render_first_login_password_box(user)
                 else:
                     pool_now = app.storage.user.get("pool", "Main")
                     ui.sub_pages({
@@ -461,6 +465,38 @@ def spa_shell(subpath: str = ""):
                     }).classes("w-full")
 
     app_shell()
+
+def render_first_login_password_box(user):
+    uid = str(user.id)
+    ui.label("Welcome! Set Your New Password").classes("text-2xl font-bold mb-1")
+    ui.label("Since this is your first time logging in with a temporary password, please set a personal password before continuing.").classes("text-xs opacity-75 mb-3")
+
+    new_pwd = ui.input("New Password (Min 6 characters)", password=True, password_toggle_button=True).classes("w-full mb-2")
+    conf_pwd = ui.input("Confirm New Password", password=True, password_toggle_button=True).classes("w-full mb-3")
+
+    async def save_first_password():
+        p1 = (new_pwd.value or "").strip()
+        p2 = (conf_pwd.value or "").strip()
+        if len(p1) < 6:
+            ui.notify("Password must be at least 6 characters.", type="negative")
+            return
+        if p1 != p2:
+            ui.notify("Passwords do not match.", type="negative")
+            return
+
+        btn.props("loading")
+        try:
+            await run.io_bound(lambda: supabase.auth.admin.update_user_by_id(uid, {"password": p1}))
+            await run.io_bound(lambda: supabase.table("users").update({"first_login_complete": True}).eq("id", uid).execute())
+            app.storage.user["first_login_complete"] = True
+            ui.notify("Password saved! Welcome to the NFL Loser Pool.", type="positive", timeout=5000)
+            ui.run_javascript("window.location.href = '/'")
+        except Exception as err:
+            ui.notify(f"Error updating password: {err}", type="negative", timeout=8000)
+        finally:
+            btn.props(remove="loading")
+
+    btn = ui.button("Save Password & Continue", on_click=save_first_password, color="primary").classes("w-full font-bold")
 
 if __name__ in {"__main__", "__mp_main__"}:
     ui.run(
