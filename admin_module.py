@@ -630,8 +630,17 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                                     else:
                                         updated += 1
 
+                                    is_brand_new = not bool(uid)
+                                    if is_brand_new:
+                                        pwd = (row.get("temporary_password") or "").strip() or f"Loser{datetime.datetime.now().year}!"
+                                        auth_res = supabase.auth.admin.create_user({"email": em, "password": pwd, "email_confirm": True})
+                                        uid = str(auth_res.user.id)
+                                        created += 1
+                                    else:
+                                        updated += 1
+
                                     email_prefix = next(iter(em.split("@")), "Player")
-                                    supabase.table("users").upsert({
+                                    user_payload = {
                                         "id": uid,
                                         "email": em,
                                         "username": (row.get("username") or email_prefix).strip(),
@@ -641,7 +650,11 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                                         "alert_personal_topic": f"nflloserpool-{uid[:8]}",
                                         "is_admin": parse_bool(row.get("is_admin")),
                                         "notes": (row.get("notes") or "").strip(),
-                                    }).execute()
+                                    }
+                                    if is_brand_new:
+                                        user_payload["first_login_complete"] = False
+
+                                    supabase.table("users").upsert(user_payload).execute()
 
                                     for gtype, enr_col, paid_col in [("Main", "main_enrolled", "main_paid"), ("2nd_Chance", "second_enrolled", "second_paid")]:
                                         is_enr, is_pd = parse_bool(row.get(enr_col)), parse_bool(row.get(paid_col))
@@ -699,6 +712,7 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                                 "alert_email": True,
                                 "alert_sms": False,
                                 "is_admin": False,
+                                "first_login_complete": False,
                             }).execute()
 
                     existing_reg = supabase.table("tournament_registrations").select("id").eq("user_id", target_uid).eq("game_type", req_obj["game_type"]).execute().data or []
@@ -869,13 +883,14 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                             ed_phone = ui.input("Cell Phone", value=u_row.get("cell_phone") or "").classes("w-full")
                             ui.input("ntfy.sh Topic (Read-Only)", value=personal_topic).props("readonly").classes("w-full")
                         def copy_player_welcome(reset_pwd: bool = False):
-                            app_url = os.environ.get("APP_URL", "https://nfl-loser-pool-production.up.railway.app").rstrip("/")
+                            app_url = os.environ.get("APP_URL", "https://railway.app").rstrip("/")
                             cur_uname = ed_user.value.strip() or "Player"
                             cur_email = ed_email.value.strip().lower()
                             std_temp = f"Loser{datetime.datetime.now().year}!"
 
                             if reset_pwd:
                                 supabase.auth.admin.update_user_by_id(uid, {"password": std_temp})
+                                supabase.table("users").update({"first_login_complete": False}).eq("id", uid).execute()
                                 msg_txt = (
                                     f"Hey {cur_uname},\n\n"
                                     f"Your NFL Loser Pool password has been reset!\n\n"
