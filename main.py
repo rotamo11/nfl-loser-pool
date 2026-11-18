@@ -141,7 +141,7 @@ def render_login_box():
     def open_forgot_password_dialog():
         with ui.dialog() as fp_dlg, ui.card().classes("w-full max-w-md p-5"):
             ui.label("Reset Your Password").classes("text-lg font-black mb-1")
-            ui.label("Enter your account email address and we'll send you a password reset link.").classes("text-xs opacity-75 mb-3")
+            ui.label("Enter your account email address and we'll send you a password reset link from Supabase Auth.").classes("text-xs opacity-75 mb-3")
 
             fp_email = ui.input("Account Email Address", value=(email_input.value or "").strip()).classes("w-full mb-3")
 
@@ -239,23 +239,10 @@ def render_password_recovery_box():
 
     new_pwd = ui.input("New Password (Min 6 characters)", password=True, password_toggle_button=True).classes("w-full mb-2")
     conf_pwd = ui.input("Confirm New Password", password=True, password_toggle_button=True).classes("w-full mb-3")
-    token_box = ui.input("").classes("hidden")
 
-    # Extract Supabase recovery access_token from the URL hash fragment
-    ui.run_javascript("""
-        const hash = window.location.hash.substring(1);
-        const params = new URLSearchParams(hash);
-        const token = params.get('access_token') || '';
-        if (token) {
-            const el = document.querySelector('input[type="text"].hidden, .hidden input');
-            if (el) { el.value = token; el.dispatchEvent(new Event('input')); }
-        }
-    """)
-
-    def complete_reset():
+    async def complete_reset():
         p1 = (new_pwd.value or "").strip()
         p2 = (conf_pwd.value or "").strip()
-        tok = (token_box.value or "").strip()
 
         if len(p1) < 6:
             ui.notify("Password must be at least 6 characters.", type="negative")
@@ -263,23 +250,45 @@ def render_password_recovery_box():
         if p1 != p2:
             ui.notify("Passwords do not match.", type="negative")
             return
-        if not tok:
-            ui.notify("Invalid or expired recovery link. Request a new reset link on the login screen.", type="negative", timeout=8000)
-            return
 
+        upd_btn.props("loading")
         try:
-            # Verify recovery token and update user password via Supabase Admin API
-            user_info = supabase.auth.get_user(tok)
-            if user_info and user_info.user:
-                supabase.auth.admin.update_user_by_id(str(user_info.user.id), {"password": p1})
-                ui.notify("Password updated! Please log in with your new password.", type="positive", timeout=6000)
-                ui.run_javascript("window.location.href = '/'")
-            else:
-                ui.notify("Recovery link expired. Please request a new one.", type="negative")
+            # Read both PKCE (?code=...) and Implicit (#access_token=...) directly from browser URL
+            url_data = await ui.run_javascript("""
+                const url = new URL(window.location.href);
+                const hashParams = new URLSearchParams(window.location.hash.substring(1));
+                return {
+                    code: url.searchParams.get('code') || '',
+                    access_token: hashParams.get('access_token') || url.searchParams.get('access_token') || ''
+                };
+            """, timeout=5.0)
+
+            code_val = (url_data or {}).get("code", "").strip()
+            token_val = (url_data or {}).get("access_token", "").strip()
+
+            target_uid = None
+            if code_val:
+                session_res = await run.io_bound(lambda: supabase_auth.auth.exchange_code_for_session({"auth_code": code_val}))
+                if session_res and session_res.user:
+                    target_uid = str(session_res.user.id)
+            elif token_val:
+                user_info = await run.io_bound(lambda: supabase.auth.get_user(token_val))
+                if user_info and user_info.user:
+                    target_uid = str(user_info.user.id)
+
+            if not target_uid:
+                ui.notify("Invalid or expired recovery link. Request a new reset link on the login screen.", type="negative", timeout=8000)
+                return
+
+            await run.io_bound(lambda: supabase.auth.admin.update_user_by_id(target_uid, {"password": p1}))
+            ui.notify("Password updated! Please log in with your new password.", type="positive", timeout=6000)
+            ui.run_javascript("window.location.href = '/'")
         except Exception as err:
             ui.notify(f"Password reset error: {err}", type="negative", timeout=8000)
+        finally:
+            upd_btn.props(remove="loading")
 
-    ui.button("Update Password", on_click=complete_reset, color="primary").classes("w-full font-bold")
+    upd_btn = ui.button("Update Password", on_click=complete_reset, color="primary").classes("w-full font-bold")
 
 @ui.page("/")
 @ui.page("/{subpath:path}")
