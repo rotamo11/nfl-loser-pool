@@ -695,8 +695,6 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                     reg_tab_badge.classes(remove="hidden")
                 else:
                     reg_tab_badge.classes(add="hidden")
-                if on_badge_change:
-                    on_badge_change()
 
                 ui.label(f"Pending Join Requests ({cnt})").classes("text-base font-extrabold mb-2")
 
