@@ -930,7 +930,7 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                             ui.input("ntfy.sh Topic (Read-Only)", value=personal_topic).props("readonly").classes("w-full")
 
                         def copy_player_welcome(reset_pwd: bool = False):
-                            app_url = os.environ.get("APP_URL", "https://railway.app").rstrip("/")
+                            app_url = os.environ.get("APP_URL", "https://nfl-loser-pool-production.up.railway.app").rstrip("/")
                             cur_uname = ed_user.value.strip() or "Player"
                             cur_email = ed_email.value.strip().lower()
 
