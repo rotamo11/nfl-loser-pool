@@ -97,52 +97,58 @@ def render_profile_view(supabase, user):
 
             ui.button("Save Profile & Alerts", on_click=save_profile_settings, color="primary").classes("w-full mt-4 font-bold")
 
-        # --- RIGHT COLUMN: SECURITY & PASSWORD UPDATE ---
-        with ui.card().classes("w-full p-4 border border-slate-300 dark:border-slate-700 shadow-none self-start"):
-            ui.label("Account Security & Password").classes("text-base font-extrabold mb-3")
-            ui.label("Update your login password below. Passwords must be at least 6 characters long.").classes("text-xs opacity-75 mb-3")
+        # --- RIGHT COLUMN: SECURITY, COMMISH CONTACT, & LOGOUT ---
+        with ui.column().classes("w-full gap-3 self-start"):
+            with ui.card().classes("w-full p-4 border border-slate-300 dark:border-slate-700 shadow-none"):
+                ui.label("Account Security & Password").classes("text-base font-extrabold mb-3")
+                ui.label("Update your login password below. Passwords must be at least 6 characters long.").classes("text-xs opacity-75 mb-3")
 
-            new_pwd = ui.input(
-                "New Password",
-                password=True,
-                password_toggle_button=True
-            ).classes("w-full mb-2")
+                new_pwd = ui.input(
+                    "New Password",
+                    password=True,
+                    password_toggle_button=True
+                ).classes("w-full mb-2")
 
-            confirm_pwd = ui.input(
-                "Confirm New Password",
-                password=True,
-                password_toggle_button=True
-            ).classes("w-full mb-3")
+                confirm_pwd = ui.input(
+                    "Confirm New Password",
+                    password=True,
+                    password_toggle_button=True
+                ).classes("w-full mb-3")
 
-            def update_password():
-                p1 = new_pwd.value.strip()
-                p2 = confirm_pwd.value.strip()
+                def update_password():
+                    p1 = new_pwd.value.strip()
+                    p2 = confirm_pwd.value.strip()
 
-                if len(p1) < 6:
-                    ui.notify("Password must be at least 6 characters.", type="negative")
-                    return
-                if p1 != p2:
-                    ui.notify("Passwords do not match.", type="negative")
-                    return
+                    if len(p1) < 6:
+                        ui.notify("Password must be at least 6 characters.", type="negative")
+                        return
+                    if p1 != p2:
+                        ui.notify("Passwords do not match.", type="negative")
+                        return
 
-                try:
-                    supabase.auth.admin.update_user_by_id(user_id, {"password": p1})
-                    supabase.table("users").update({"first_login_complete": True}).eq("id", user_id).execute()
-                    new_pwd.value = ""
-                    confirm_pwd.value = ""
-                    ui.notify("Password updated successfully!", type="positive")
-                except Exception as e:
-                    ui.notify(f"Password update failed: {str(e)}", type="negative")
+                    try:
+                        supabase.auth.admin.update_user_by_id(user_id, {"password": p1})
+                        supabase.table("users").update({"first_login_complete": True}).eq("id", user_id).execute()
+                        new_pwd.value = ""
+                        confirm_pwd.value = ""
+                        ui.notify("Password updated successfully!", type="positive")
+                    except Exception as e:
+                        ui.notify(f"Password update failed: {str(e)}", type="negative")
 
-            ui.button("Update Password", on_click=update_password, color="secondary").classes("w-full mt-2 font-bold")
+                ui.button("Update Password", on_click=update_password, color="secondary").classes("w-full mt-2 font-bold")
 
-    # --- BOTTOM SECTION: SIGN OUT ---
-    ui.separator().classes("my-6")
-    with ui.row().classes("w-full justify-end"):
-        def handle_logout():
-            saved_theme = app.storage.user.get("dark_mode", False)
-            app.storage.user.clear()
-            app.storage.user["dark_mode"] = saved_theme
-            ui.run_javascript("window.location.href = '/'")
+            # Commish Contact Link + Bottom-Right Logout Button
+            with ui.row().classes("w-full items-center justify-between gap-2 pt-1"):
+                with ui.row().classes("items-center gap-1 text-xs"):
+                    ui.label("Questions? Email the Commish:").classes("opacity-75")
+                    ui.link("nfl.loser.pool@gmail.com", "mailto:nfl.loser.pool@gmail.com").classes(
+                        "font-bold text-blue-600 dark:text-blue-400 underline"
+                    )
 
-        ui.button("Logout", icon="logout", on_click=handle_logout, color="red").props("outline").classes("font-bold px-6")
+                def handle_logout():
+                    saved_theme = app.storage.user.get("dark_mode", False)
+                    app.storage.user.clear()
+                    app.storage.user["dark_mode"] = saved_theme
+                    ui.run_javascript("window.location.href = '/'")
+
+                ui.button("Logout", icon="logout", on_click=handle_logout, color="red").props("outline").classes("font-bold px-5")
