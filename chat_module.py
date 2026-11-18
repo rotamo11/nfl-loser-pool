@@ -4,7 +4,11 @@ from zoneinfo import ZoneInfo
 from nicegui import ui, app, run
 
 ET_ZONE = ZoneInfo("America/New_York")
-REACTION_EMOJIS = ["👍", "😂", "🔥", "💀", "🏈"]
+REACTION_EMOJIS = [
+    "👍", "👎", "😂", "😭", "💀",
+    "🔥", "🎯", "🤡", "💩", "😱",
+    "🤦", "🙌", "🍻", "🏈", "🏆",
+]
 
 def format_chat_timestamp(iso_str: str) -> str:
     if not iso_str:
@@ -121,9 +125,12 @@ async def render_chat_view(supabase, user):
 
                             with ui.button(icon="add_reaction").props("flat round dense size=xs").tooltip("React"):
                                 with ui.menu():
-                                    with ui.row().classes("p-1 gap-1 no-wrap"):
+                                    with ui.grid(columns=5).classes("p-1.5 gap-1"):
                                         for em in REACTION_EMOJIS:
-                                            ui.button(em, on_click=lambda _e, m_id=mid, r_map=rx_map, emo=em: toggle_reaction(m_id, r_map, emo)).props("flat dense size=sm")
+                                            ui.button(
+                                                em,
+                                                on_click=lambda _e, m_id=mid, r_map=rx_map, emo=em: toggle_reaction(m_id, r_map, emo),
+                                            ).props("flat dense size=sm")
 
                             if is_mine or is_admin:
                                 def delete_msg(m_id=mid):
