@@ -457,7 +457,7 @@ def spa_shell(subpath: str = ""):
                         "/chat": lambda: render_chat_view(supabase, user),
                         "/rules": lambda: render_rules_view(pool_now),
                         "/profile": lambda: render_profile_view(supabase, user),
-                        "/admin": lambda: render_admin_view(supabase, user, on_badge_change=app_shell.refresh),
+                        "/admin": lambda: render_admin_view(supabase, user),
                     }).classes("w-full")
 
     app_shell()
