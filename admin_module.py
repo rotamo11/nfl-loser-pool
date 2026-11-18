@@ -55,6 +55,9 @@ def execute_manual_deadline_lock(supabase, target_week: int) -> str:
     default_team = def_map.get(target_week)
     if not default_team:
         prior = [w for w in sorted(def_map.keys(), reverse=True) if w < target_week]
+        first_prior = next(iter(prior), None)
+        if first_prior is not None:
+            default_team = def_map[first_prior]
         if prior:
             default_team = def_map[prior]
             supabase.table("default_picks").upsert({
@@ -412,8 +415,9 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                 def_map = {int(d["week"]): d["team"].upper() for d in all_defs}
                 saved_exact = def_map.get(w_num)
                 prior_weeks = [w for w in sorted(def_map.keys(), reverse=True) if w < w_num]
-                inherited = def_map[prior_weeks] if (not saved_exact and prior_weeks) else None
-                active_team = saved_exact or inherited or "KC"
+                first_prior = next(iter(prior_weeks), None)
+                inherited = def_map[first_prior] if (not saved_exact and first_prior is not None) else None
+                active_team = saved_exact or inherited or "SEA"
 
                 wk_matches = [m for m in cache["sched"] if m["week"] == w_num]
                 teams_set = {t.upper() for m in wk_matches for t in (m.get("away_team"), m.get("home_team")) if t} or {"KC"}
