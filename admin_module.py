@@ -778,7 +778,7 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                                         cache["users"] = supabase.table("users").select("*").execute().data or []
                                         cache["regs"] = supabase.table("tournament_registrations").select("*").execute().data or []
 
-                                        app_url = os.environ.get("APP_URL", "https://railway.app").rstrip("/")
+                                        app_url = os.environ.get("APP_URL", "https://nfl-loser-pool-production.up.railway.app").rstrip("/")
                                         pool_lbl = req_obj["game_type"].replace("_", " ")
 
                                         if temp_pwd:
@@ -813,8 +813,8 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                                     pending_requests_panel.refresh()
                                     show_copy_modal(f"Declined: {req_obj.get('username') or 'Player'}", "Copy the message below if you'd like to send a follow-up note:", decline_txt, 5)
 
-                                ui.button("Approve", on_click=approve_req, color="positive").props("size=sm").classes("font-bold")
-                                ui.button("Decline", on_click=decline_req, color="red").props("outline size=sm")
+                                ui.button("Approve", on_click=lambda _e, r=rq: approve_req(r), color="positive").props("size=sm").classes("font-bold")
+                                ui.button("Decline", on_click=lambda _e, r=rq: decline_req(r), color="red").props("outline size=sm")
 
             pending_requests_panel()
             
