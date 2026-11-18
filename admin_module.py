@@ -716,7 +716,6 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                                 })
                                 target_uid = str(auth_res.user.id)
                             except Exception:
-                                # Email already exists in auth.users from a prior test — find and reset password
                                 all_auth = supabase.auth.admin.list_users()
                                 matched = next((au for au in all_auth if (getattr(au, "email", "") or "").lower() == clean_em), None)
                                 if not matched:
@@ -736,6 +735,7 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                                 "alert_sms": False,
                                 "is_admin": False,
                             }).execute()
+
                     existing_reg = supabase.table("tournament_registrations").select("id").eq("user_id", target_uid).eq("game_type", req_obj["game_type"]).execute().data or []
                     if existing_reg:
                         supabase.table("tournament_registrations").update({"is_enrolled": True, "bracket_status": "Loser Bracket"}).eq("id", next(iter(existing_reg))["id"]).execute()
@@ -746,41 +746,16 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                     cache["users"] = supabase.table("users").select("*").execute().data or []
                     cache["regs"] = supabase.table("tournament_registrations").select("*").execute().data or []
 
-                    app_url = os.environ.get("APP_URL", "https://railway.app").rstrip("/")
-                    pool_lbl = req_obj["game_type"].replace("_", " ")
-
-                    if temp_pwd:
-                        msg_body = (
-                            f"Hey {clean_un},\n\n"
-                            f"You're approved and enrolled in the NFL Loser Pool ({pool_lbl})!\n\n"
-                            f"Login Link: {app_url}\n"
-                            f"Email: {clean_em}\n"
-                            f"Temporary Password: {temp_pwd}\n\n"
-                            f"Please log in and update your password on the Profile page whenever you're ready."
-                        )
-                    else:
-                        msg_body = (
-                            f"Hey {clean_un},\n\n"
-                            f"You're approved and enrolled in the NFL Loser Pool ({pool_lbl})!\n\n"
-                            f"Log in anytime to submit your picks: {app_url}"
-                        )
-
+                    ui.notify(f"Approved {clean_un}! Copy their welcome info in User Management.", type="positive", timeout=6000)
                     pending_requests_panel.refresh()
-                    show_copy_modal(f"Approved: {clean_un}", "Copy the message below to send them their confirmation:", msg_body, 7)
                 except Exception as err:
                     ui.notify(f"Approval error: {err}", type="negative", timeout=10000)
 
             def handle_decline_click(req_obj: dict):
                 try:
                     supabase.table("enrollment_requests").update({"status": "Declined"}).eq("id", req_obj["id"]).execute()
-                    pool_lbl = req_obj["game_type"].replace("_", " ")
-                    decline_txt = (
-                        f"Hey {req_obj.get('username') or 'there'},\n\n"
-                        f"Thanks for your interest in the NFL Loser Pool ({pool_lbl}). "
-                        f"Unfortunately, we aren't able to approve your join request at this time."
-                    )
+                    ui.notify(f"Declined {req_obj.get('username') or 'Player'}.", type="info")
                     pending_requests_panel.refresh()
-                    show_copy_modal(f"Declined: {req_obj.get('username') or 'Player'}", "Copy the message below if you'd like to send a follow-up note:", decline_txt, 5)
                 except Exception as err:
                     ui.notify(f"Decline error: {err}", type="negative", timeout=10000)
 
