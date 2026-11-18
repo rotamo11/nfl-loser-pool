@@ -444,32 +444,32 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                             ui.button("Confirm & Lock Week", on_click=confirm_run_lock, color="amber-8").classes("font-bold text-white")
                     lock_dlg.open()
 
-                def open_reminder_confirm():
+                def copy_missing_emails():
                     w_target = def_week_sel.value
-                    with ui.dialog() as rem_dlg, ui.card().classes("p-5 max-w-md"):
-                        ui.label(f"Send Reminders for {get_week_label(w_target)}?").classes("text-lg font-black")
+                    active_regs = [r for r in cache["regs"] if r.get("is_enrolled") and r.get("bracket_status") != "Eliminated"]
+                    wk_matches = [m for m in cache["sched"] if m["week"] == w_target]
+                    req_count = 1 if w_target <= 14 else (2 if w_target <= 18 else max(1, len(wk_matches)))
+                    user_email_map = {str(u["id"]): (u.get("email") or "").strip().lower() for u in cache["users"] if u.get("email")}
 
-                        async def trigger_reminders(only_me: bool):
-                            rem_dlg.close()
-                            rem_btn.props("loading")
-                            notif = ui.notification(f"Sending Week {w_target} reminders...", spinner=True, timeout=None, type="info")
-                            try:
-                                msg = await run.io_bound(execute_manual_reminders, supabase, w_target, str(user.id) if only_me else None)
-                                notif.message, notif.spinner, notif.type, notif.timeout = msg, False, "positive", 6.0
-                            except Exception as err:
-                                notif.message, notif.spinner, notif.type, notif.timeout = f"Reminder error: {err}", False, "negative", 8.0
-                            finally:
-                                rem_btn.props(remove="loading")
+                    missing_emails = set()
+                    for r in active_regs:
+                        uid = str(r["user_id"])
+                        gtype = r["game_type"]
+                        wk_cnt = sum(1 for p in cache["picks"] if str(p["user_id"]) == uid and p["game_type"] == gtype and p["week"] == w_target)
+                        if wk_cnt < req_count and user_email_map.get(uid):
+                            missing_emails.add(user_email_map[uid])
 
-                        with ui.row().classes("w-full justify-end gap-2 mt-3 flex-wrap"):
-                            ui.button("Cancel", on_click=rem_dlg.close).props("flat")
-                            ui.button("Test (Only Me)", on_click=lambda: trigger_reminders(True), color="primary").props("outline")
-                            ui.button("Send to All Missing", on_click=lambda: trigger_reminders(False), color="primary").classes("font-bold")
-                    rem_dlg.open()
+                    if not missing_emails:
+                        ui.notify(f"No missing picks for {get_week_label(w_target)}!", type="positive")
+                        return
+
+                    email_list_str = ", ".join(sorted(missing_emails))
+                    ui.clipboard.write(email_list_str)
+                    ui.notify(f"Copied {len(missing_emails)} missing player email(s) to clipboard!", type="positive", timeout=6000)
 
                 with ui.row().classes("items-center gap-3 flex-wrap"):
                     lock_btn = ui.button("Run Deadline Lock Now", icon="lock_clock", on_click=open_lock_confirm, color="amber-8").classes("font-bold text-white")
-                    rem_btn = ui.button("Send Reminders Now", on_click=open_reminder_confirm, color="primary").classes("font-bold")
+                    ui.button("Copy Missing Player Emails", icon="content_copy", on_click=copy_missing_emails, color="primary").classes("font-bold")
 
             ui.separator().classes("my-5")
 
@@ -479,9 +479,8 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                 user_name_map = {str(u["id"]): f"{u.get('username') or 'Unknown'} ({u.get('first_name') or ''} {u.get('last_name') or ''})".strip() for u in cache["users"]}
                 active_regs = [r for r in cache["regs"] if r.get("is_enrolled") and r.get("bracket_status") != "Eliminated"]
                 wk_matches = [m for m in cache["sched"] if m["week"] == w_target]
-                req_count = get_required_picks(w_target, len(wk_matches))
-                active_default, _ = resolve_week_default_info(supabase, w_target)
-
+                req_count = 1 if w_target <= 14 else (2 if w_target <= 18 else max(1, len(wk_matches)))
+                active_default = (team_sel.value or "SEA").strip().upper()
                 def get_pool_missing(pool_name: str):
                     missing_list = []
                     for r in [x for x in active_regs if x.get("game_type") == pool_name]:
