@@ -748,6 +748,7 @@ async def render_admin_view(supabase, user, on_badge_change=None):
 
                     ui.notify(f"Approved {clean_un}! Copy their welcome info in User Management.", type="positive", timeout=6000)
                     pending_requests_panel.refresh()
+                    roster_list.refresh()
                 except Exception as err:
                     ui.notify(f"Approval error: {err}", type="negative", timeout=10000)
 
