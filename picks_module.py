@@ -349,7 +349,7 @@ async def render_picks_view(supabase, user, pool_slug: str):
                                 ).classes("flex-1 text-xs")
 
                     if is_locked:
-                        ui.label(f"🔒 Kickoff Passed ({time_label})").classes("text-xs text-red-500 font-semibold mt-1")
+                        ui.label(f"🔒 Deadline or Kickoff Passed ({time_label})").classes("text-xs text-red-500 font-semibold mt-1")
                     else:
                         ui.label(f"{time_label}").classes("text-xs text-gray-500 dark:text-gray-400 mt-1")
 
