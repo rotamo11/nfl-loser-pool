@@ -52,19 +52,23 @@ def sync_week_schedule_from_espn(supabase, target_week: int) -> str:
         data = json.loads(resp.read().decode("utf-8"))
 
     existing_rows = supabase.table("nfl_schedule").select("*").eq("week", target_week).execute().data or []
-    existing_by_pair = {
-        (r["away_team"].upper().strip(), r["home_team"].upper().strip()): r
-        for r in existing_rows
-    }
+    existing_by_pair = {}
+    tbd_placeholders = []
+    for r in existing_rows:
+        aw = (r.get("away_team") or "").upper().strip()
+        hm = (r.get("home_team") or "").upper().strip()
+        if aw == "TBD" and hm == "TBD":
+            tbd_placeholders.append(r)
+        else:
+            existing_by_pair[(aw, hm)] = r
 
     updated_cnt, inserted_cnt = 0, 0
-
     for ev in data.get("events", []):
         comps = ev.get("competitions") or []
         comp = next(iter(comps), None)
         if not comp:
             continue
-        
+
         competitors = comp.get("competitors") or []
         away_abbr, home_abbr = "", ""
         for c in competitors:
@@ -75,7 +79,7 @@ def sync_week_schedule_from_espn(supabase, target_week: int) -> str:
             elif c.get("homeAway") == "home":
                 home_abbr = norm_abbr
 
-        if not away_abbr or not home_abbr:
+        if not away_abbr or not home_abbr or (away_abbr == "TBD" and home_abbr == "TBD"):
             continue
 
         raw_date = ev.get("date") or comp.get("date") or ""
@@ -83,7 +87,6 @@ def sync_week_schedule_from_espn(supabase, target_week: int) -> str:
         if raw_date:
             dt_utc = datetime.datetime.fromisoformat(raw_date.replace("Z", "+00:00"))
             dt_et = dt_utc.astimezone(ET_ZONE)
-            # If ESPN flags timeTBD, store None so it displays as TBD
             if not comp.get("timeTBD", False):
                 new_ko_et = dt_et.strftime("%Y-%m-%d %H:%M:%S")
 
@@ -92,6 +95,14 @@ def sync_week_schedule_from_espn(supabase, target_week: int) -> str:
             if str(match_row.get("kickoff_time") or "") != str(new_ko_et or ""):
                 supabase.table("nfl_schedule").update({"kickoff_time": new_ko_et}).eq("id", match_row["id"]).execute()
                 updated_cnt += 1
+        elif tbd_placeholders:
+            placeholder_row = tbd_placeholders.pop(0)
+            supabase.table("nfl_schedule").update({
+                "away_team": away_abbr,
+                "home_team": home_abbr,
+                "kickoff_time": new_ko_et,
+            }).eq("id", placeholder_row["id"]).execute()
+            updated_cnt += 1
         else:
             supabase.table("nfl_schedule").insert({
                 "week": target_week,
@@ -101,7 +112,7 @@ def sync_week_schedule_from_espn(supabase, target_week: int) -> str:
             }).execute()
             inserted_cnt += 1
 
-    return f"ESPN Sync ({get_week_label(target_week)}): {updated_cnt} kickoff time(s) updated, {inserted_cnt} new game(s) added."
+    return f"ESPN Sync ({get_week_label(target_week)}): {updated_cnt} game(s) updated, {inserted_cnt} new game(s) added."
 
 def execute_manual_deadline_lock(supabase, target_week: int) -> str:
     confirmed_picks = (
