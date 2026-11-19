@@ -22,7 +22,7 @@ def get_open_registration_pools(supabase) -> dict[str, dict]:
 
 def notify_admins_of_join_request(supabase, req_data: dict):
     """Notifies all is_admin=True users via instant ntfy.sh HTTPS push."""
-    app_url = os.environ.get("APP_URL", "https://railway.app").rstrip("/")
+    app_url = os.environ.get("APP_URL", "https://nfl-loser-pool-production.up.railway.app").rstrip("/")
     review_url = f"{app_url}/admin"
 
     pool_label = req_data.get("game_type", "Main").replace("_", " ")
