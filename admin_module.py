@@ -3,6 +3,8 @@ import csv
 import io
 import asyncio
 import datetime
+import json
+import urllib.request
 from zoneinfo import ZoneInfo
 from nicegui import ui, app, run
 from picks_module import get_current_nfl_week, get_week_label, get_logo_url
@@ -27,6 +29,77 @@ def is_admin_user(supabase, user) -> bool:
 def purge_future_picks_for_eliminated(supabase, user_id: str, game_type: str, after_week: int):
     """Removes any pre-entered picks in weeks strictly after the elimination week."""
     supabase.table("user_picks").delete().eq("user_id", str(user_id)).eq("game_type", game_type).gt("week", after_week).execute()
+
+ESPN_TEAM_MAP = {
+    "WSH": "WAS",
+    "JAC": "JAX",
+}
+
+def sync_week_schedule_from_espn(supabase, target_week: int) -> str:
+    """Fetches official NFL kickoff times for target_week (1-18 Reg, 19-22 Post) from ESPN's public API."""
+    if target_week <= 18:
+        seasontype = 2
+        espn_week = target_week
+    else:
+        seasontype = 3
+        espn_week = {19: 1, 20: 2, 21: 3, 22: 5}.get(target_week, target_week - 18)
+
+    espn_host = ".".join(["site", "api", "espn", "com"])
+    url = f"https://{espn_host}/apis/site/v2/sports/football/nfl/scoreboard?seasontype={seasontype}&week={espn_week}"
+
+    req = urllib.request.Request(url, headers={"User-Agent": "NFLLoserPool/1.0"})
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        data = json.loads(resp.read().decode("utf-8"))
+
+    existing_rows = supabase.table("nfl_schedule").select("*").eq("week", target_week).execute().data or []
+    existing_by_pair = {
+        (r["away_team"].upper().strip(), r["home_team"].upper().strip()): r
+        for r in existing_rows
+    }
+
+    updated_cnt, inserted_cnt = 0, 0
+    for ev in data.get("events", []):
+        comps = ev.get("competitions") or []
+        if not comps:
+            continue
+        comp = comps[0]
+        competitors = comp.get("competitors") or []
+        away_abbr, home_abbr = "", ""
+        for c in competitors:
+            raw_abbr = (c.get("team", {}).get("abbreviation") or "").upper().strip()
+            norm_abbr = ESPN_TEAM_MAP.get(raw_abbr, raw_abbr)
+            if c.get("homeAway") == "away":
+                away_abbr = norm_abbr
+            elif c.get("homeAway") == "home":
+                home_abbr = norm_abbr
+
+        if not away_abbr or not home_abbr:
+            continue
+
+        raw_date = ev.get("date") or comp.get("date") or ""
+        new_ko_et = None
+        if raw_date:
+            dt_utc = datetime.datetime.fromisoformat(raw_date.replace("Z", "+00:00"))
+            dt_et = dt_utc.astimezone(ET_ZONE)
+            # If ESPN flags timeTBD, store None so it displays as TBD
+            if not comp.get("timeTBD", False):
+                new_ko_et = dt_et.strftime("%Y-%m-%d %H:%M:%S")
+
+        match_row = existing_by_pair.get((away_abbr, home_abbr))
+        if match_row:
+            if str(match_row.get("kickoff_time") or "") != str(new_ko_et or ""):
+                supabase.table("nfl_schedule").update({"kickoff_time": new_ko_et}).eq("id", match_row["id"]).execute()
+                updated_cnt += 1
+        else:
+            supabase.table("nfl_schedule").insert({
+                "week": target_week,
+                "away_team": away_abbr,
+                "home_team": home_abbr,
+                "kickoff_time": new_ko_et,
+            }).execute()
+            inserted_cnt += 1
+
+    return f"ESPN Sync ({get_week_label(target_week)}): {updated_cnt} kickoff time(s) updated, {inserted_cnt} new game(s) added."
 
 def execute_manual_deadline_lock(supabase, target_week: int) -> str:
     confirmed_picks = (
@@ -211,7 +284,24 @@ async def render_admin_view(supabase, user, on_badge_change=None):
     with ui.tab_panels(admin_tabs, value=t_results).classes("w-full bg-transparent"):
         with ui.tab_panel(t_results).classes("px-0"):
             week_opts = {w: f"{get_week_label(w)} (current)" if w == current_week else get_week_label(w) for w in range(1, 23)}
-            sel_week = ui.select(week_opts, value=current_week, label="Select Week").props("dense outlined").classes("w-52 mb-3")
+            with ui.row().classes("w-full items-center justify-between gap-2 mb-3 flex-wrap"):
+                sel_week = ui.select(week_opts, value=current_week, label="Select Week").props("dense outlined").classes("w-52")
+
+                async def run_espn_sync():
+                    w_target = sel_week.value
+                    sync_btn.props("loading")
+                    notif = ui.notification(f"Syncing {get_week_label(w_target)} schedule from ESPN...", spinner=True, timeout=None, type="info")
+                    try:
+                        summary_msg = await run.io_bound(sync_week_schedule_from_espn, supabase, w_target)
+                        cache["sched"] = await run.io_bound(lambda: supabase.table("nfl_schedule").select("*").execute().data or [])
+                        notif.message, notif.spinner, notif.type, notif.timeout = summary_msg, False, "positive", 5.0
+                        results_panel.refresh()
+                    except Exception as err:
+                        notif.message, notif.spinner, notif.type, notif.timeout = f"ESPN sync failed: {err}", False, "negative", 8.0
+                    finally:
+                        sync_btn.props(remove="loading")
+
+                sync_btn = ui.button("Sync Schedule from ESPN", icon="sync", on_click=run_espn_sync, color="secondary").props("outline").classes("font-bold")
 
             @ui.refreshable
             def results_panel():
