@@ -6,7 +6,7 @@ from picks_module import get_current_nfl_week, get_logo_url
 def get_week_col_header(w: int) -> str:
     if w <= 18:
         return f"Wk {w}"
-    return {19: "WC", 20: "Div", 21: "Conf", 22: "SB"}.get(w, f"Wk {w}")
+    return {19: "Wild Card", 20: "Divisional", 21: "Conference", 22: "Super Bowl"}.get(w, f"Wk {w}")
 
 def get_week_full_label(w: int) -> str:
     if w <= 18:
