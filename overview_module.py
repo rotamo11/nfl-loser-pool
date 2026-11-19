@@ -84,8 +84,8 @@ async def render_overview_view(supabase, user, pool_slug: str):
     with ui.row().classes("w-full items-center justify-between gap-2 mb-3 flex-wrap"):
         dist_week_select = ui.select(
             week_opts,
-            value=end_week,
-            label="Select Week",
+            value=max(start_week, current_week), # after tesing, revert this to: value=end_week,
+            label="Select Week (Wed-Tue)",
         ).props("dense outlined").classes("w-52")
 
         if is_adm:
