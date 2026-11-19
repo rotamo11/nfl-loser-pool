@@ -58,11 +58,13 @@ def sync_week_schedule_from_espn(supabase, target_week: int) -> str:
     }
 
     updated_cnt, inserted_cnt = 0, 0
+
     for ev in data.get("events", []):
         comps = ev.get("competitions") or []
-        if not comps:
+        comp = next(iter(comps), None)
+        if not comp:
             continue
-        comp = comps[0]
+        
         competitors = comp.get("competitors") or []
         away_abbr, home_abbr = "", ""
         for c in competitors:
