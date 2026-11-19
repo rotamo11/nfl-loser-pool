@@ -8,7 +8,7 @@ import urllib.request
 from zoneinfo import ZoneInfo
 from nicegui import ui, app, run
 from picks_module import get_current_nfl_week, get_week_label, get_logo_url
-from enrollment_helper import ET_ZONE
+from enrollment_helper import ET_ZONE, get_open_registration_pools
 from background_cron_reminders import (
     send_smtp_email,
     send_ntfy_push,
@@ -911,25 +911,43 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                     ui.label("No pending join requests right now.").classes("text-xs opacity-70 italic mb-2")
                     return
 
+                email_to_uid = {
+                    (u.get("email") or "").strip().lower(): str(u["id"])
+                    for u in cache["users"] if u.get("email")
+                }
+                enrolled_pairs = {
+                    (str(r["user_id"]), r["game_type"])
+                    for r in cache["regs"] if r.get("is_enrolled")
+                }
+
                 for rq in reqs:
                     gtype = rq["game_type"]
                     uname = rq.get("username") or "Player"
-                    email = rq.get("email") or ""
+                    email = (rq.get("email") or "").strip().lower()
                     full_nm = f"{rq.get('first_name') or ''} {rq.get('last_name') or ''}".strip()
-                    is_new_acct = not bool(rq.get("user_id"))
+                    matched_uid = str(rq["user_id"]) if rq.get("user_id") else email_to_uid.get(email)
+                    is_new_acct = not bool(matched_uid)
+                    is_duplicate_enrolled = bool(matched_uid and (matched_uid, gtype) in enrolled_pairs)
 
-                    with ui.card().classes("w-full p-3 mb-2 border border-blue-500/40 shadow-none"):
+                    card_border = "border-red-500/50" if is_duplicate_enrolled else "border-blue-500/40"
+                    with ui.card().classes(f"w-full p-3 mb-2 border {card_border} shadow-none"):
                         with ui.row().classes("w-full items-center justify-between gap-2 flex-wrap"):
                             with ui.column().classes("gap-0.5"):
-                                with ui.row().classes("items-center gap-2"):
+                                with ui.row().classes("items-center gap-2 flex-wrap"):
                                     ui.label(uname).classes("text-sm font-extrabold")
                                     ui.badge(gtype.replace("_", " "), color="amber-8" if gtype == "2nd_Chance" else "primary").classes("text-[10px] font-bold")
-                                    if is_new_acct:
+                                    if is_duplicate_enrolled:
+                                        ui.badge("ALREADY ENROLLED (DUPLICATE)", color="red").classes("text-[10px] font-bold")
+                                    elif is_new_acct:
                                         ui.badge("NEW ACCOUNT", color="purple").classes("text-[10px] font-bold")
                                 ui.label(f"{email}  •  {full_nm or 'No name'}  •  {rq.get('cell_phone') or 'No phone'}").classes("text-xs opacity-80")
 
                             with ui.row().classes("items-center gap-2"):
-                                ui.button("Approve", on_click=lambda _e, r=rq: handle_approve_click(r), color="positive").props("size=sm").classes("font-bold")
+                                ui.button(
+                                    "Approve",
+                                    on_click=lambda _e, r=rq: handle_approve_click(r),
+                                    color="positive" if not is_duplicate_enrolled else "grey-5",
+                                ).props(f"{'disable' if is_duplicate_enrolled else ''} size=sm").classes("font-bold")
                                 ui.button("Decline", on_click=lambda _e, r=rq: handle_decline_click(r), color="red").props("outline size=sm")
 
             pending_requests_panel()
@@ -1130,10 +1148,16 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                                 ui.button("Save Changes", on_click=save_user_edits, color="primary")
                     dlg.open()
 
+                open_pools = get_open_registration_pools(supabase)
+                selected_pool = pool_filter.value
+                is_pool_open = selected_pool in open_pools
+
                 for u in filtered_users:
                     uid = str(u["id"])
                     uname = u.get("username") or "Unknown"
                     r = reg_by_uid.get(uid)
+                    is_enrolled_now = bool(r and r.get("is_enrolled"))
+
                     with ui.card().classes("w-full p-2.5 mb-2 border border-slate-200 dark:border-slate-700 shadow-none"):
                         with ui.row().classes("w-full items-start justify-between gap-2"):
                             with ui.column().classes("gap-0.5 flex-1 min-w-0"):
@@ -1156,13 +1180,29 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                                 if u.get("notes"):
                                     ui.label(f"{u['notes']}").classes("text-xs text-amber-700 dark:text-amber-300 italic mt-0.5")
 
-                            if r:
+                            if is_enrolled_now:
                                 with ui.row().classes("items-center gap-2 shrink-0"):
-                                    ui.checkbox("Enrolled", value=bool(r.get("is_enrolled")), on_change=lambda e, rid=r["id"], reg_obj=r: (supabase.table("tournament_registrations").update({"is_enrolled": e.value}).eq("id", rid).execute(), reg_obj.update({"is_enrolled": e.value}), roster_list.refresh())).props("dense")
-                                    ui.checkbox("Paid", value=bool(r.get("is_paid")), on_change=lambda e, rid=r["id"], reg_obj=r: (supabase.table("tournament_registrations").update({"is_paid": e.value}).eq("id", rid).execute(), reg_obj.update({"is_paid": e.value}), roster_list.refresh())).props("dense")
+                                    ui.checkbox(
+                                        "Enrolled",
+                                        value=True,
+                                        on_change=lambda e, rid=r["id"], reg_obj=r: (
+                                            supabase.table("tournament_registrations").update({"is_enrolled": e.value}).eq("id", rid).execute(),
+                                            reg_obj.update({"is_enrolled": e.value}),
+                                            roster_list.refresh(),
+                                        ),
+                                    ).props("dense")
+                                    ui.checkbox(
+                                        "Paid",
+                                        value=bool(r.get("is_paid")),
+                                        on_change=lambda e, rid=r["id"], reg_obj=r: (
+                                            supabase.table("tournament_registrations").update({"is_paid": e.value}).eq("id", rid).execute(),
+                                            reg_obj.update({"is_paid": e.value}),
+                                            roster_list.refresh(),
+                                        ),
+                                    ).props("dense")
                                     cur_st = r.get("bracket_status") if r.get("bracket_status") in status_opts else "Loser Bracket"
 
-                                    def on_manual_status_change(e, rid=r["id"], reg_obj=r, target_uid=uid, target_pool=pool_filter.value):
+                                    def on_manual_status_change(e, rid=r["id"], reg_obj=r, target_uid=uid, target_pool=selected_pool):
                                         supabase.table("tournament_registrations").update({"bracket_status": e.value}).eq("id", rid).execute()
                                         reg_obj.update({"bracket_status": e.value})
                                         if e.value == "Eliminated":
@@ -1178,6 +1218,31 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                                         value=cur_st,
                                         on_change=on_manual_status_change,
                                     ).props("dense outlined").classes("w-36 text-xs")
+                            elif is_pool_open:
+                                def enroll_player_now(target_uid=uid, target_name=uname, reg_row=r, gtype=selected_pool):
+                                    if reg_row:
+                                        updates = {"is_enrolled": True, "is_paid": False, "bracket_status": "Loser Bracket"}
+                                        supabase.table("tournament_registrations").update(updates).eq("id", reg_row["id"]).execute()
+                                        reg_row.update(updates)
+                                    else:
+                                        new_reg = {
+                                            "user_id": target_uid,
+                                            "game_type": gtype,
+                                            "is_enrolled": True,
+                                            "is_paid": False,
+                                            "bracket_status": "Loser Bracket",
+                                        }
+                                        ins_res = supabase.table("tournament_registrations").insert(new_reg).execute().data or []
+                                        cache["regs"].append(next(iter(ins_res), new_reg))
+                                    ui.notify(f"Enrolled {target_name} in {gtype.replace('_', ' ')}!", type="positive")
+                                    roster_list.refresh()
+
+                                ui.button(
+                                    "Enroll Player",
+                                    icon="person_add",
+                                    on_click=enroll_player_now,
+                                    color="primary",
+                                ).props("size=sm unelevated").classes("font-bold shrink-0")
 
             refresh_hooks["roster"] = roster_list.refresh
             roster_list()
