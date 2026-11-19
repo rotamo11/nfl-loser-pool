@@ -78,6 +78,9 @@ async def render_overview_view(supabase, user, pool_slug: str):
         ui.label(f"Status: {viewer_status}").classes("text-sm md:text-base font-extrabold")
         ui.badge(f"Remaining Active: {active_total} / {len(regs)}", color="primary").classes("text-xs font-bold px-2.5 py-1")
 
+    is_masquerading = bool(app.storage.user.get("masquerade_uid"))
+    is_adm = False if is_masquerading else bool(app.storage.user.get("is_admin_cached", False))
+
     # Line 3: Enclosed Rectangle Week Selector (left) & Admin Reveal Toggle (right)
     week_opts = {
         w: f"{get_week_full_label(w)} (present)" if w == current_week else get_week_full_label(w)
@@ -87,7 +90,7 @@ async def render_overview_view(supabase, user, pool_slug: str):
         dist_week_select = ui.select(
             week_opts,
             value=end_week,
-            label="Select Week (Wed-Tue)",
+            label="Select Week",
         ).props("dense outlined").classes("w-52")
 
         if is_adm:
@@ -100,7 +103,7 @@ async def render_overview_view(supabase, user, pool_slug: str):
                 value=bool(app.storage.user.get("admin_reveal_override", False)),
                 on_change=on_admin_reveal_toggle,
             ).classes("text-xs font-bold")
-    
+
     if not is_viewer_enrolled:
         ui.label(
             f"Note: You are viewing the {pool_label} Pool as a spectator. Current-week picks reveal once all picks for the week are finalized."
