@@ -201,7 +201,8 @@ async def render_overview_view(supabase, user, pool_slug: str):
                     with ui.row().classes(f"items-center py-2 px-2 {header_bg} border-b {border_cls} text-xs font-extrabold no-wrap gap-1"):
                         ui.label("Player").classes(f"w-36 md:w-44 shrink-0 sticky left-0 z-10 {header_bg} px-2 py-0.5")
                         for w in visible_weeks:
-                            ui.label(get_week_col_header(w)).classes("w-16 shrink-0 text-center")
+                            col_w = "w-24 shrink-0" if w >= 19 else "w-16 shrink-0"
+                            ui.label(get_week_col_header(w)).classes(f"{col_w} text-center")
 
                     for pl in players_list:
                         uid = pl["uid"]
@@ -221,9 +222,10 @@ async def render_overview_view(supabase, user, pool_slug: str):
                                         ui.label(pl["full_name"])
 
                             for w in visible_weeks:
+                                col_w = "w-24 shrink-0" if w >= 19 else "w-16 shrink-0"
                                 week_entries = user_week_map.get(w, [])
                                 if not week_entries:
-                                    ui.label("•").classes(f"w-16 shrink-0 text-center font-bold text-sm {'text-slate-600' if is_dark else 'text-gray-400'}")
+                                    ui.label("•").classes(f"{col_w} text-center font-bold text-sm {'text-slate-600' if is_dark else 'text-gray-400'}")
                                     continue
 
                                 can_reveal = (
@@ -235,10 +237,10 @@ async def render_overview_view(supabase, user, pool_slug: str):
                                 )
                                 if not can_reveal:
                                     hid_cls = "bg-slate-800 text-slate-400" if is_dark else "bg-gray-200/70 text-gray-500"
-                                    with ui.element("div").classes("w-16 shrink-0 flex justify-center"):
+                                    with ui.element("div").classes(f"{col_w} flex justify-center"):
                                         ui.label("🔒 Hid").classes(f"px-1.5 py-0.5 rounded text-[10px] font-bold {hid_cls}")
                                 else:
-                                    with ui.column().classes("w-16 shrink-0 items-center justify-center gap-0.5"):
+                                    with ui.column().classes(f"{col_w} items-center justify-center gap-1"):
                                         for entry in week_entries:
                                             raw_team = entry["team_picked"]
                                             state = entry["pick_state"]
