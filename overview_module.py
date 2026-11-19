@@ -78,18 +78,29 @@ async def render_overview_view(supabase, user, pool_slug: str):
         ui.label(f"Status: {viewer_status}").classes("text-sm md:text-base font-extrabold")
         ui.badge(f"Remaining Active: {active_total} / {len(regs)}", color="primary").classes("text-xs font-bold px-2.5 py-1")
 
-    # Line 3: Enclosed Rectangle Week Selector with "(present)" tag
+    # Line 3: Enclosed Rectangle Week Selector (left) & Admin Reveal Toggle (right)
     week_opts = {
         w: f"{get_week_full_label(w)} (present)" if w == current_week else get_week_full_label(w)
         for w in visible_weeks
     }
-    with ui.row().classes("w-full items-center mb-3"):
+    with ui.row().classes("w-full items-center justify-between gap-2 mb-3 flex-wrap"):
         dist_week_select = ui.select(
             week_opts,
             value=end_week,
             label="Select Week (Wed-Tue)",
         ).props("dense outlined").classes("w-52")
 
+        if is_adm:
+            def on_admin_reveal_toggle(e):
+                app.storage.user["admin_reveal_override"] = bool(e.value)
+                overview_body.refresh()
+
+            ui.switch(
+                "Admin: Reveal All Picks",
+                value=bool(app.storage.user.get("admin_reveal_override", False)),
+                on_change=on_admin_reveal_toggle,
+            ).classes("text-xs font-bold")
+    
     if not is_viewer_enrolled:
         ui.label(
             f"Note: You are viewing the {pool_label} Pool as a spectator. Current-week picks reveal once all picks for the week are finalized."
