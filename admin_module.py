@@ -287,7 +287,7 @@ async def render_admin_view(supabase, user, on_badge_change=None):
         with ui.tab_panel(t_results).classes("px-0"):
             week_opts = {w: f"{get_week_label(w)} (current)" if w == current_week else get_week_label(w) for w in range(1, 23)}
             with ui.row().classes("w-full items-center justify-between gap-2 mb-3 flex-wrap"):
-                sel_week = ui.select(week_opts, value=current_week, label="Select Week").props("dense outlined").classes("w-52")
+                sel_week = ui.select(week_opts, value=current_week, label="Select Week (Wed-Tue)").props("dense outlined").classes("w-52")
 
                 async def run_espn_sync():
                     w_target = sel_week.value
@@ -506,7 +506,7 @@ async def render_admin_view(supabase, user, on_badge_change=None):
             def_week_opts = {w: get_week_label(w) for w in range(1, 23)}
 
             with ui.row().classes("w-full items-center gap-3 mb-2 flex-wrap"):
-                def_week_sel = ui.select(def_week_opts, value=current_week, label="Select Week").classes("w-48")
+                def_week_sel = ui.select(def_week_opts, value=current_week, label="Select Week (Wed-Tue)").classes("w-48")
                 team_sel = ui.select([], label="Default Team").classes("w-40")
 
                 def save_default_team():
