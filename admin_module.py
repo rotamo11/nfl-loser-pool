@@ -271,16 +271,50 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                     init_val = db_loser if db_loser in ["PENDING", away, home, "TIE"] else "PENDING"
 
                     time_label = "TBD"
+                    edit_seed = ""
                     if kickoff_raw := m.get("kickoff_time"):
                         dt_naive = datetime.datetime.fromisoformat(str(kickoff_raw).replace(" ", "T")[:19])
                         dt_et = dt_naive.replace(tzinfo=ET_ZONE)
                         time_label = dt_et.strftime("%a %-m/%-d/%y %-I:%M %p ET")
+                        edit_seed = dt_et.strftime("%Y-%m-%d %H:%M")
 
                     state_holder = {"value": init_val}
                     with ui.card().classes("w-full p-2.5 mb-2 border border-slate-300 dark:border-slate-700 shadow-none"):
                         with ui.row().classes("w-full items-center justify-between gap-2 flex-wrap"):
                             with ui.row().classes("items-center gap-2.5 flex-wrap"):
-                                ui.label(time_label).classes("text-xs font-semibold opacity-75 w-40 shrink-0")
+                                with ui.label(time_label).classes(
+                                    "text-xs font-semibold opacity-80 hover:opacity-100 hover:underline cursor-pointer w-40 shrink-0"
+                                ).tooltip("Click to edit kickoff time (ET)"):
+                                    with ui.menu().props("anchor='bottom left' self='top left'") as ko_menu:
+                                        with ui.column().classes("p-3 gap-2 w-60"):
+                                            ui.label(f"Edit Kickoff ({away} @ {home})").classes("text-xs font-extrabold")
+                                            ko_in = ui.input(
+                                                "YYYY-MM-DD HH:MM (ET) or TBD",
+                                                value=edit_seed or "TBD",
+                                            ).props("dense outlined").classes("w-full text-xs")
+
+                                            def save_kickoff_time(match_id=mid, match_obj=m, inp=ko_in, menu_ref=ko_menu):
+                                                raw_val = (inp.value or "").strip()
+                                                try:
+                                                    if not raw_val or raw_val.upper() == "TBD":
+                                                        new_iso = None
+                                                    else:
+                                                        parsed_et = datetime.datetime.strptime(raw_val, "%Y-%m-%d %H:%M")
+                                                        new_iso = parsed_et.strftime("%Y-%m-%d %H:%M:%S")
+
+                                                    supabase.table("nfl_schedule").update({"kickoff_time": new_iso}).eq("id", match_id).execute()
+                                                    match_obj["kickoff_time"] = new_iso
+                                                    menu_ref.close()
+                                                    ui.notify(f"Updated {away} @ {home} kickoff time!", type="positive")
+                                                    results_panel.refresh()
+                                                except ValueError:
+                                                    ui.notify("Use format YYYY-MM-DD HH:MM (24-hr ET) or TBD.", type="negative")
+
+                                            ko_in.on("keydown.enter", save_kickoff_time)
+                                            with ui.row().classes("w-full justify-end gap-1.5"):
+                                                ui.button("Cancel", on_click=ko_menu.close).props("flat dense size=xs")
+                                                ui.button("Save", on_click=save_kickoff_time, color="primary").props("dense size=xs").classes("font-bold")
+
                                 opt_buttons = {}
 
                                 def make_selector(choice_val, btns_dict, holder):
