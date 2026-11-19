@@ -290,8 +290,10 @@ async def render_picks_view(supabase, user, pool_slug: str):
                                         ui.html(f'<img src="{logo_u}" class="w-6 h-4 object-contain p-0.5 shrink-0" />')
                                     ui.label(btn_text).classes("leading-none")
 
+                    # 7. Per-Matchup Confirm / Finalize / Reset Buttons
                     if sel_away or sel_home or db_pick:
                         chosen_team = away if sel_away else home
+                        can_act = not (is_locked or is_db_fin)
                         with ui.row().classes("w-full gap-2 mt-2"):
                             def save_confirm(t=chosen_team, early=is_early):
                                 if max_picks == 1:
@@ -306,9 +308,13 @@ async def render_picks_view(supabase, user, pool_slug: str):
                                 ui.notify(f"Pick {state}!", type="positive")
                                 matchup_board.refresh()
 
-                            ui.button("Confirm", on_click=save_confirm, color="primary" if is_db_conf else "blue-2").props(
-                                f"{'disable' if (is_locked or is_db_fin) else ''} dense unelevated"
-                            ).classes("flex-1 text-xs")
+                            ui.button(
+                                "Confirmed" if is_db_conf else "Confirm",
+                                on_click=save_confirm,
+                                color="blue-8" if (can_act and is_db_conf) else ("primary" if can_act else "blue-2"),
+                            ).props(
+                                f"{'' if can_act else 'disable'} dense unelevated"
+                            ).classes("flex-1 text-xs font-bold")
 
                             def open_finalize_dialog(t=chosen_team):
                                 with ui.dialog() as dialog, ui.card():
@@ -323,8 +329,11 @@ async def render_picks_view(supabase, user, pool_slug: str):
                                             else:
                                                 supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", pool_slug).eq("week", target_week).eq("team_picked", t).execute()
                                             supabase.table("user_picks").insert({
-                                                "user_id": user_id, "game_type": pool_slug, "week": target_week,
-                                                "team_picked": t, "pick_state": "Finalized"
+                                                "user_id": user_id,
+                                                "game_type": pool_slug,
+                                                "week": target_week,
+                                                "team_picked": t,
+                                                "pick_state": "Finalized",
                                             }).execute()
                                             dialog.close()
                                             ui.notify(f"{t} Finalized!", type="positive")
@@ -333,9 +342,13 @@ async def render_picks_view(supabase, user, pool_slug: str):
                                         ui.button("Yes, Finalize", on_click=commit_final, color="green")
                                 dialog.open()
 
-                            ui.button("🔒 Finalized" if is_db_fin else "Finalize", on_click=open_finalize_dialog, color="green" if is_db_fin else "green-2").props(
-                                f"{'disable' if (is_locked or is_db_fin) else ''} dense unelevated"
-                            ).classes("flex-1 text-xs")
+                            ui.button(
+                                "🔒 Finalized" if is_db_fin else "Finalize",
+                                on_click=open_finalize_dialog,
+                                color="positive" if can_act else "green-2",
+                            ).props(
+                                f"{'' if can_act else 'disable'} dense unelevated"
+                            ).classes("flex-1 text-xs font-bold")
 
                             if not is_db_fin:
                                 def reset_choice(t=chosen_team, in_db=is_db_conf):
@@ -345,9 +358,13 @@ async def render_picks_view(supabase, user, pool_slug: str):
                                         ui.notify("Confirmed pick removed.", type="info")
                                     matchup_board.refresh()
 
-                                ui.button("Reset", on_click=reset_choice, color="red-2").props(
+                                ui.button(
+                                    "Reset",
+                                    on_click=reset_choice,
+                                    color="red-6" if not is_locked else "red-2",
+                                ).props(
                                     f"{'disable' if is_locked else ''} dense unelevated"
-                                ).classes("flex-1 text-xs")
+                                ).classes("flex-1 text-xs font-bold")
 
                     if is_locked:
                         ui.label(f"🔒 Deadline or Kickoff Passed ({time_label})").classes("text-xs text-red-500 font-semibold mt-1")
@@ -381,9 +398,9 @@ async def render_picks_view(supabase, user, pool_slug: str):
                     matchup_board.refresh()
 
                 ui.button(
-                    "Confirm BYE" if not db_bye_this_week else "BYE Confirmed",
+                    "BYE Confirmed" if db_bye_this_week else "Confirm BYE",
                     on_click=confirm_bye,
-                    color="primary" if db_bye_this_week else "blue-3",
+                    color="blue-8" if (not bye_disabled and db_bye_this_week) else ("primary" if not bye_disabled else "blue-2"),
                 ).props(f"{'disable' if bye_disabled else ''} unelevated").classes("flex-1 font-bold")
 
                 def open_bye_finalize():
@@ -410,7 +427,11 @@ async def render_picks_view(supabase, user, pool_slug: str):
                             ui.button("Yes, Finalize BYE", on_click=lock_bye, color="green")
                     dlg.open()
 
-                ui.button("Finalize BYE", on_click=open_bye_finalize, color="green-3").props(f"{'disable' if bye_disabled else ''} unelevated").classes("flex-1 font-bold")
+                ui.button(
+                    "Finalize BYE",
+                    on_click=open_bye_finalize,
+                    color="positive" if not bye_disabled else "green-2",
+                ).props(f"{'disable' if bye_disabled else ''} unelevated").classes("flex-1 font-bold")
 
                 if db_bye_this_week:
                     def clear_bye():
@@ -418,6 +439,10 @@ async def render_picks_view(supabase, user, pool_slug: str):
                         ui.notify("BYE selection removed.", type="info")
                         matchup_board.refresh()
 
-                    ui.button("Reset BYE", on_click=clear_bye, color="red-3").props(f"{'disable' if bye_disabled else ''} unelevated").classes("flex-1 font-bold")
+                    ui.button(
+                        "Reset BYE",
+                        on_click=clear_bye,
+                        color="red-6" if not bye_disabled else "red-2",
+                    ).props(f"{'disable' if bye_disabled else ''} unelevated").classes("flex-1 font-bold")
 
     matchup_board()
