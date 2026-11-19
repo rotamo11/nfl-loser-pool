@@ -57,7 +57,7 @@ def sync_week_schedule_from_espn(supabase, target_week: int) -> str:
     for r in existing_rows:
         aw = (r.get("away_team") or "").upper().strip()
         hm = (r.get("home_team") or "").upper().strip()
-        if aw == "TBD" and hm == "TBD":
+        if aw.startswith("TBD") and hm.startswith("TBD"):
             tbd_placeholders.append(r)
         else:
             existing_by_pair[(aw, hm)] = r
@@ -450,34 +450,51 @@ async def render_admin_view(supabase, user, on_badge_change=None):
 
                 def run_db_scoring_batch(week_num, snapshot):
                     losers_set, winners_set, shutouts_set, ties_set, pending_teams = set(), set(), set(), set(), set()
+
                     for mid, item in snapshot.items():
                         res_val, so_val = item["res_val"], item["so_val"]
-                        supabase.table("nfl_schedule").update({"winner": None if res_val == "PENDING" else res_val, "is_shutout": so_val}).eq("id", mid).execute()
                         if res_val == "PENDING":
+                            supabase.table("nfl_schedule").update({
+                                "winner": None,
+                                "is_shutout": False,
+                            }).eq("id", mid).execute()
                             pending_teams.update([item["away"], item["home"]])
-                        elif res_val == "TIE":
-                            ties_set.update([item["away"], item["home"]])
-                        elif res_val in [item["away"], item["home"]]:
-                            losers_set.add(res_val)
-                            opp = item["home"] if res_val == item["away"] else item["away"]
-                            winners_set.add(opp)
-                            if so_val:
-                                shutouts_set.add(res_val)
+                        else:
+                            supabase.table("nfl_schedule").update({
+                                "winner": res_val,
+                                "is_shutout": so_val,
+                            }).eq("id", mid).execute()
+                            if res_val == "TIE":
+                                ties_set.update([item["away"], item["home"]])
+                            elif res_val in [item["away"], item["home"]]:
+                                losers_set.add(res_val)
+                                opp = item["home"] if res_val == item["away"] else item["away"]
+                                winners_set.add(opp)
+                                if so_val:
+                                    shutouts_set.add(res_val)
 
                     week_picks = supabase.table("user_picks").select("*").eq("week", week_num).execute().data or []
                     for p in week_picks:
-                        raw_t = p["team_picked"].upper()
+                        raw_t = (p.get("team_picked") or "").upper().strip()
                         base_t = raw_t.replace("_SO", "")
                         if base_t == "BYE":
                             supabase.table("user_picks").update({"pick_state": "Correct"}).eq("id", p["id"]).execute()
                         elif base_t in pending_teams:
-                            if p.get("pick_state") in ["Correct", "Incorrect"] or raw_t.endswith("_SO"):
-                                supabase.table("user_picks").update({"pick_state": "Finalized", "team_picked": base_t}).eq("id", p["id"]).execute()
+                            supabase.table("user_picks").update({
+                                "pick_state": "Finalized",
+                                "team_picked": base_t,
+                            }).eq("id", p["id"]).execute()
                         elif base_t in losers_set:
                             final_t = f"{base_t}_SO" if base_t in shutouts_set else base_t
-                            supabase.table("user_picks").update({"pick_state": "Correct", "team_picked": final_t}).eq("id", p["id"]).execute()
+                            supabase.table("user_picks").update({
+                                "pick_state": "Correct",
+                                "team_picked": final_t,
+                            }).eq("id", p["id"]).execute()
                         elif base_t in winners_set or base_t in ties_set:
-                            supabase.table("user_picks").update({"pick_state": "Incorrect", "team_picked": base_t}).eq("id", p["id"]).execute()
+                            supabase.table("user_picks").update({
+                                "pick_state": "Incorrect",
+                                "team_picked": base_t,
+                            }).eq("id", p["id"]).execute()
 
                     all_regs = supabase.table("tournament_registrations").select("*").eq("is_enrolled", True).execute().data or []
                     all_picks = supabase.table("user_picks").select("*").execute().data or []
