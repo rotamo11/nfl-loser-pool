@@ -201,8 +201,7 @@ async def render_overview_view(supabase, user, pool_slug: str):
                     with ui.row().classes(f"items-center py-2 px-2 {header_bg} border-b {border_cls} text-xs font-extrabold no-wrap gap-1"):
                         ui.label("Player").classes(f"w-36 md:w-44 shrink-0 sticky left-0 z-10 {header_bg} px-2 py-0.5")
                         for w in visible_weeks:
-                            col_w = "w-24 shrink-0" if w >= 19 else "w-16 shrink-0"
-                            ui.label(get_week_col_header(w)).classes(f"{col_w} text-center")
+                            ui.label(get_week_col_header(w)).classes(f"{week_col_widths[w]} text-center")
 
                     for pl in players_list:
                         uid = pl["uid"]
@@ -222,7 +221,7 @@ async def render_overview_view(supabase, user, pool_slug: str):
                                         ui.label(pl["full_name"])
 
                             for w in visible_weeks:
-                                col_w = "w-24 shrink-0" if w >= 19 else "w-16 shrink-0"
+                                col_w = week_col_widths[w]
                                 week_entries = user_week_map.get(w, [])
                                 if not week_entries:
                                     ui.label("•").classes(f"{col_w} text-center font-bold text-sm {'text-slate-600' if is_dark else 'text-gray-400'}")
@@ -240,7 +239,7 @@ async def render_overview_view(supabase, user, pool_slug: str):
                                     with ui.element("div").classes(f"{col_w} flex justify-center"):
                                         ui.label("🔒 Hid").classes(f"px-1.5 py-0.5 rounded text-[10px] font-bold {hid_cls}")
                                 else:
-                                    with ui.column().classes(f"{col_w} items-center justify-center gap-1"):
+                                    with ui.row().classes(f"{col_w} items-center justify-center gap-1 no-wrap"):
                                         for entry in week_entries:
                                             raw_team = entry["team_picked"]
                                             state = entry["pick_state"]
@@ -257,7 +256,7 @@ async def render_overview_view(supabase, user, pool_slug: str):
                                             else:
                                                 pill_cls = "bg-amber-500/20 text-amber-300 border-amber-500/40" if is_dark else "bg-amber-500/20 text-amber-800 border-amber-500/40"
 
-                                            with ui.row().classes(f"px-1.5 py-0.5 rounded border text-[11px] font-extrabold items-center justify-center gap-1 no-wrap {pill_cls}"):
+                                            with ui.row().classes(f"px-1.5 py-0.5 rounded border text-[11px] font-extrabold items-center justify-center gap-1 no-wrap shrink-0 {pill_cls}"):
                                                 if url := get_logo_url(clean_code):
                                                     ui.html(f'<img src="{url}" class="w-4 h-3 object-contain p-0.5 shrink-0" />')
                                                 ui.label(display_txt).classes("leading-none")
