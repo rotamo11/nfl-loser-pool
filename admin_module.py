@@ -344,21 +344,16 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                 m_wrong, m_elim_wk, m_l, m_w, m_e = calc_pool_stats("Main")
                 sc_wrong, sc_elim_wk, sc_l, _, sc_e = calc_pool_stats("2nd_Chance")
 
+                wk_title = get_week_label(w_num)
                 with ui.grid().classes("w-full grid-cols-1 md:grid-cols-2 gap-3 mb-4"):
                     with ui.card().classes("p-3.5 text-white shadow-none").style("background-color: #1d3d70;"):
-                        if sel_week < 19:
-                            ui.label(f"Week {sel_week} Summary - Main Pool").classes("font-black text-sm md:text-base mb-1")
-                        else:
-                            ui.label(f"{sel_week} Summary - Main Pool").classes("font-black text-sm md:text-base mb-1")
+                        ui.label(f"{wk_title} Summary - Main Pool").classes("font-black text-sm md:text-base mb-1")
                         ui.label(f"Wrong Picks This Week: {m_wrong}").classes("text-xs font-bold")
                         ui.label(f"Players Eliminated This Week: {m_elim_wk}").classes("text-xs font-bold mb-1")
                         ui.label(f"Loser Bracket: {m_l}  |  Winner Bracket: {m_w}  |  Eliminated: {m_e}").classes("text-xs font-extrabold opacity-90")
 
                     with ui.card().classes("p-3.5 text-white shadow-none").style("background-color: #974706;"):
-                        if sel_week < 19:
-                            ui.label(f"Week {sel_week} Summary - 2nd Chance Pool").classes("font-black text-sm md:text-base mb-1")
-                        else:
-                            ui.label(f"{sel_week} Summary - 2nd Chance Pool").classes("font-black text-sm md:text-base mb-1")
+                        ui.label(f"{wk_title} Summary - 2nd Chance Pool").classes("font-black text-sm md:text-base mb-1")
                         ui.label(f"Wrong Picks This Week: {sc_wrong}").classes("text-xs font-bold")
                         ui.label(f"Players Eliminated This Week: {sc_elim_wk}").classes("text-xs font-bold mb-1")
                         ui.label(f"Loser Bracket: {sc_l}  |  Eliminated: {sc_e}").classes("text-xs font-extrabold opacity-90")
