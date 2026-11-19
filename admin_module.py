@@ -989,6 +989,8 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                                     "updated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
                                 }).execute()
                                 ui.notify(f"Saved {gt.replace('_', ' ')} registration window!", type="positive")
+                                if "roster" in refresh_hooks:
+                                    refresh_hooks["roster"]()
                             except Exception as err:
                                 ui.notify(f"Invalid date format (use YYYY-MM-DD HH:MM): {err}", type="negative")
 
@@ -1061,7 +1063,7 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                             ed_phone = ui.input("Cell Phone", value=u_row.get("cell_phone") or "").classes("w-full")
                             ui.input("ntfy.sh Topic (Read-Only)", value=personal_topic).props("readonly").classes("w-full")
                         def copy_player_welcome(reset_pwd: bool = False):
-                            app_url = os.environ.get("APP_URL", "https://railway.app").rstrip("/")
+                            app_url = os.environ.get("APP_URL", "https://nfl-loser-pool-production.up.railway.app").rstrip("/")
                             cur_uname = ed_user.value.strip() or "Player"
                             cur_email = ed_email.value.strip().lower()
                             std_temp = f"Loser{datetime.datetime.now().year}!"
