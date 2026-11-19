@@ -5,9 +5,12 @@ from nicegui import ui, app, run
 
 ET_ZONE = ZoneInfo("America/New_York")
 REACTION_EMOJIS = [
-    "👍", "👎", "😂", "😭", "💀",
-    "🔥", "🎯", "🤡", "💩", "😱",
-    "🤦", "🙌", "🍻", "🏈", "🏆",
+    "👍", "👎", "🤞", "🙌", "🫶", 
+    "😂", "😭", "🤯", "😱", "🥳", 
+    "🤦", "🤷", "🤡", "💩", "💀", 
+    "❤️", "🔥", "🎉", "💯", "🎯",
+    "🌭", "🍕", "🎂", "💣", "🧨",
+    "‼️", "❓", "🏆", "🍻", "🏈", 
 ]
 
 def format_chat_timestamp(iso_str: str) -> str:
@@ -124,13 +127,13 @@ async def render_chat_view(supabase, user):
                             ui.button(icon="reply", on_click=start_reply).props("flat round dense size=xs").tooltip("Quote & Reply")
 
                             with ui.button(icon="add_reaction").props("flat round dense size=xs").tooltip("React"):
-                                with ui.menu():
-                                    with ui.grid(columns=5).classes("p-1.5 gap-1"):
+                                with ui.menu().classes("p-2 rounded-xl shadow-xl"):
+                                    with ui.grid(columns=5).classes("gap-1.5"):
                                         for em in REACTION_EMOJIS:
                                             ui.button(
                                                 em,
                                                 on_click=lambda _e, m_id=mid, r_map=rx_map, emo=em: toggle_reaction(m_id, r_map, emo),
-                                            ).props("flat dense size=sm")
+                                            ).props("flat dense no-caps").classes("text-2xl p-1.5 min-w-[44px] min-h-[44px] rounded-lg")
 
                             if is_mine or is_admin:
                                 def delete_msg(m_id=mid):
