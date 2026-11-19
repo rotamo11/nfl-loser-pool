@@ -313,24 +313,27 @@ async def render_picks_view(supabase, user, pool_slug: str):
                         can_act = not (is_locked or is_db_fin)
                         with ui.row().classes("w-full gap-2 mt-2"):
                             def save_confirm(t=chosen_team, early=is_early):
-                                if max_picks == 1:
-                                    supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", pool_slug).eq("week", target_week).execute()
-                                    draft_picks.clear()
-                                    draft_picks.add(t)
-                                else:
-                                    supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", pool_slug).eq("week", target_week).eq("team_picked", t).execute()
-                                    draft_picks.add(t)
+                                try:
+                                    if max_picks == 1:
+                                        supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", pool_slug).eq("week", target_week).execute()
+                                        draft_picks.clear()
+                                        draft_picks.add(t)
+                                    else:
+                                        supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", pool_slug).eq("week", target_week).eq("team_picked", t).execute()
+                                        draft_picks.add(t)
 
-                                state = "Finalized" if early else "Confirmed"
-                                supabase.table("user_picks").insert({
-                                    "user_id": user_id,
-                                    "game_type": pool_slug,
-                                    "week": target_week,
-                                    "team_picked": t,
-                                    "pick_state": state,
-                                }).execute()
-                                ui.notify(f"Pick {state}!", type="positive")
-                                matchup_board.refresh()
+                                    state = "Finalized" if early else "Confirmed"
+                                    supabase.table("user_picks").insert({
+                                        "user_id": user_id,
+                                        "game_type": pool_slug,
+                                        "week": target_week,
+                                        "team_picked": t,
+                                        "pick_state": state,
+                                    }).execute()
+                                    ui.notify(f"Pick {state}: {t}!", type="positive")
+                                    matchup_board.refresh()
+                                except Exception as err:
+                                    ui.notify(f"Error saving pick: {err}", type="negative", timeout=8000)
 
                             ui.button(
                                 "Confirmed" if is_db_conf else "Confirm",
@@ -348,24 +351,27 @@ async def render_picks_view(supabase, user, pool_slug: str):
                                         ui.button("Cancel", on_click=dialog.close).props("flat")
 
                                         def commit_final():
-                                            if max_picks == 1:
-                                                supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", pool_slug).eq("week", target_week).execute()
-                                                draft_picks.clear()
-                                                draft_picks.add(t)
-                                            else:
-                                                supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", pool_slug).eq("week", target_week).eq("team_picked", t).execute()
-                                                draft_picks.add(t)
+                                            try:
+                                                if max_picks == 1:
+                                                    supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", pool_slug).eq("week", target_week).execute()
+                                                    draft_picks.clear()
+                                                    draft_picks.add(t)
+                                                else:
+                                                    supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", pool_slug).eq("week", target_week).eq("team_picked", t).execute()
+                                                    draft_picks.add(t)
 
-                                            supabase.table("user_picks").insert({
-                                                "user_id": user_id,
-                                                "game_type": pool_slug,
-                                                "week": target_week,
-                                                "team_picked": t,
-                                                "pick_state": "Finalized",
-                                            }).execute()
-                                            dialog.close()
-                                            ui.notify(f"{t} Finalized!", type="positive")
-                                            matchup_board.refresh()
+                                                supabase.table("user_picks").insert({
+                                                    "user_id": user_id,
+                                                    "game_type": pool_slug,
+                                                    "week": target_week,
+                                                    "team_picked": t,
+                                                    "pick_state": "Finalized",
+                                                }).execute()
+                                                dialog.close()
+                                                ui.notify(f"{t} Finalized!", type="positive")
+                                                matchup_board.refresh()
+                                            except Exception as err:
+                                                ui.notify(f"Error finalizing pick: {err}", type="negative", timeout=8000)
 
                                         ui.button("Yes, Finalize", on_click=commit_final, color="green")
                                 dialog.open()
