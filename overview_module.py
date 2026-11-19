@@ -90,7 +90,7 @@ async def render_overview_view(supabase, user, pool_slug: str):
         dist_week_select = ui.select(
             week_opts,
             value=end_week,
-            label="Select Week",
+            label="Select Week (Wed-Tue)",
         ).props("dense outlined").classes("w-52")
 
         if is_adm:
