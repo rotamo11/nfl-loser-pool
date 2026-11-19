@@ -41,34 +41,45 @@ def render_history_rail(all_picks: list, all_matches: list, start_week: int):
     for p in all_picks:
         picks_by_wk.setdefault(p["week"], []).append(p)
 
-    with ui.row().classes("w-full overflow-x-auto no-wrap gap-1 pb-2 mb-3"):
+    with ui.row().classes("w-full overflow-x-auto no-wrap gap-1.5 pb-2 mb-3 items-stretch"):
         for w in range(start_week, 23):
             wk_hdr = get_week_label(w) if w >= 19 else f"Wk {w}"
             wk_list = picks_by_wk.get(w, [])
             if not wk_list:
-                with ui.column().classes("min-w-[52px] min-h-[64px] border border-dashed border-gray-400/50 rounded items-center justify-center p-1 opacity-50 shrink-0"):
+                with ui.column().classes("min-w-[54px] min-h-[68px] border border-dashed border-gray-400/50 rounded items-center justify-center p-1 opacity-50 shrink-0"):
                     ui.label(wk_hdr).classes("text-[9px] font-bold text-center leading-tight")
                     ui.label("•").classes("text-xs")
             else:
+                pick_results = []
                 for p in wk_list:
-                    raw_pick = p["team_picked"].upper()
-                    clean_team = raw_pick.replace("_SO", "").strip()
-                    state = p.get("pick_state", "Pending")
-                    res = outcomes.get(w, {}).get(clean_team, "Pending")
-
-                    if clean_team == "BYE" or state == "Correct" or res == "Correct":
-                        box_cls = "bg-emerald-500/15 border-emerald-500"
-                    elif state == "Incorrect" or res == "Incorrect":
-                        box_cls = "bg-red-500/15 border-red-500"
+                    clean_t = p["team_picked"].upper().replace("_SO", "").strip()
+                    st = p.get("pick_state", "Pending")
+                    res = outcomes.get(w, {}).get(clean_t, "Pending")
+                    if clean_t == "BYE" or st == "Correct" or res == "Correct":
+                        pick_results.append("Correct")
+                    elif st == "Incorrect" or res == "Incorrect":
+                        pick_results.append("Incorrect")
                     else:
-                        box_cls = "bg-slate-400/10 border-slate-400/40"
+                        pick_results.append("Pending")
 
-                    with ui.column().classes(f"min-w-[56px] min-h-[64px] border rounded items-center justify-center p-1 shrink-0 {box_cls}"):
-                        ui.label(wk_hdr).classes("text-[9px] font-bold opacity-75 text-center leading-tight")
-                        if url := get_logo_url(clean_team):
-                            ui.html(f'<img src="{url}" class="w-7 h-5 object-contain p-0.5 my-0.5" />')
-                        tag = f"{clean_team}{'🎯' if raw_pick.endswith('_SO') else ''}"
-                        ui.label(tag).classes("text-[10px] font-extrabold leading-none")
+                if "Incorrect" in pick_results:
+                    box_cls = "bg-red-500/15 border-red-500"
+                elif all(r == "Correct" for r in pick_results):
+                    box_cls = "bg-emerald-500/15 border-emerald-500"
+                else:
+                    box_cls = "bg-slate-400/10 border-slate-400/40"
+
+                with ui.column().classes(f"min-w-[60px] min-h-[68px] border rounded items-center justify-center p-1.5 shrink-0 gap-1 {box_cls}"):
+                    ui.label(wk_hdr).classes("text-[9px] font-bold opacity-75 text-center leading-tight")
+                    with ui.row().classes("items-center justify-center gap-2 no-wrap"):
+                        for p in wk_list:
+                            raw_pick = p["team_picked"].upper()
+                            clean_team = raw_pick.replace("_SO", "").strip()
+                            with ui.column().classes("items-center gap-0.5 shrink-0"):
+                                if url := get_logo_url(clean_team):
+                                    ui.html(f'<img src="{url}" class="w-7 h-5 object-contain p-0.5" />')
+                                tag = f"{clean_team}{'🎯' if raw_pick.endswith('_SO') else ''}"
+                                ui.label(tag).classes("text-[10px] font-extrabold leading-none")
 
 async def render_picks_view(supabase, user, pool_slug: str):
     user_id = str(user.id)
@@ -212,10 +223,9 @@ async def render_picks_view(supabase, user, pool_slug: str):
             if p["week"] < 19 and not p["team_picked"].endswith("_SO") and p["week"] != target_week
         }
 
-        if not draft_picks:
-            for p in week_picks:
-                if p["pick_state"] == "Confirmed":
-                    draft_picks.add(p["team_picked"].replace("_SO", "").upper())
+        # Always keep all saved picks for target_week in draft_picks so multi-pick limits & highlights stay accurate
+        saved_week_teams = {p["team_picked"].replace("_SO", "").upper() for p in week_picks}
+        draft_picks.update(saved_week_teams)
 
         matches = [m for m in all_matches if m["week"] == target_week]
         matches = sorted(matches, key=lambda m: (0, str(m["kickoff_time"]), m["id"]) if m.get("kickoff_time") else (1, "", m["id"]))
@@ -305,12 +315,19 @@ async def render_picks_view(supabase, user, pool_slug: str):
                             def save_confirm(t=chosen_team, early=is_early):
                                 if max_picks == 1:
                                     supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", pool_slug).eq("week", target_week).execute()
+                                    draft_picks.clear()
+                                    draft_picks.add(t)
                                 else:
                                     supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", pool_slug).eq("week", target_week).eq("team_picked", t).execute()
+                                    draft_picks.add(t)
+
                                 state = "Finalized" if early else "Confirmed"
                                 supabase.table("user_picks").insert({
-                                    "user_id": user_id, "game_type": pool_slug, "week": target_week,
-                                    "team_picked": t, "pick_state": state
+                                    "user_id": user_id,
+                                    "game_type": pool_slug,
+                                    "week": target_week,
+                                    "team_picked": t,
+                                    "pick_state": state,
                                 }).execute()
                                 ui.notify(f"Pick {state}!", type="positive")
                                 matchup_board.refresh()
@@ -333,8 +350,12 @@ async def render_picks_view(supabase, user, pool_slug: str):
                                         def commit_final():
                                             if max_picks == 1:
                                                 supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", pool_slug).eq("week", target_week).execute()
+                                                draft_picks.clear()
+                                                draft_picks.add(t)
                                             else:
                                                 supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", pool_slug).eq("week", target_week).eq("team_picked", t).execute()
+                                                draft_picks.add(t)
+
                                             supabase.table("user_picks").insert({
                                                 "user_id": user_id,
                                                 "game_type": pool_slug,
