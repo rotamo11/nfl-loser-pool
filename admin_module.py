@@ -24,6 +24,10 @@ def is_admin_user(supabase, user) -> bool:
     except Exception:
         return False
 
+def purge_future_picks_for_eliminated(supabase, user_id: str, game_type: str, after_week: int):
+    """Removes any pre-entered picks in weeks strictly after the elimination week."""
+    supabase.table("user_picks").delete().eq("user_id", str(user_id)).eq("game_type", game_type).gt("week", after_week).execute()
+
 def execute_manual_deadline_lock(supabase, target_week: int) -> str:
     confirmed_picks = (
         supabase.table("user_picks")
@@ -347,9 +351,11 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                             "Loser Bracket" if losses == 0 else ("Winner Bracket" if losses == 1 else "Eliminated")
                         )
                         supabase.table("tournament_registrations").update({"bracket_status": new_status}).eq("id", r["id"]).execute()
+                        if new_status == "Eliminated":
+                            purge_future_picks_for_eliminated(supabase, str(uid), gtype, week_num)
 
                     cache["sched"] = supabase.table("nfl_schedule").select("*").execute().data or []
-                    cache["picks"] = all_picks
+                    cache["picks"] = supabase.table("user_picks").select("*").execute().data or []
                     cache["regs"] = supabase.table("tournament_registrations").select("*").execute().data or []
 
                 async def process_dual_pool_scores():
@@ -1001,7 +1007,23 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                                     ui.checkbox("Enrolled", value=bool(r.get("is_enrolled")), on_change=lambda e, rid=r["id"], reg_obj=r: (supabase.table("tournament_registrations").update({"is_enrolled": e.value}).eq("id", rid).execute(), reg_obj.update({"is_enrolled": e.value}), roster_list.refresh())).props("dense")
                                     ui.checkbox("Paid", value=bool(r.get("is_paid")), on_change=lambda e, rid=r["id"], reg_obj=r: (supabase.table("tournament_registrations").update({"is_paid": e.value}).eq("id", rid).execute(), reg_obj.update({"is_paid": e.value}), roster_list.refresh())).props("dense")
                                     cur_st = r.get("bracket_status") if r.get("bracket_status") in status_opts else "Loser Bracket"
-                                    ui.select(status_opts, value=cur_st, on_change=lambda e, rid=r["id"], reg_obj=r: (supabase.table("tournament_registrations").update({"bracket_status": e.value}).eq("id", rid).execute(), reg_obj.update({"bracket_status": e.value}), roster_list.refresh())).props("dense outlined").classes("w-36 text-xs")
+
+                                    def on_manual_status_change(e, rid=r["id"], reg_obj=r, target_uid=uid, target_pool=pool_filter.value):
+                                        supabase.table("tournament_registrations").update({"bracket_status": e.value}).eq("id", rid).execute()
+                                        reg_obj.update({"bracket_status": e.value})
+                                        if e.value == "Eliminated":
+                                            purge_future_picks_for_eliminated(supabase, target_uid, target_pool, current_week)
+                                            cache["picks"] = [
+                                                p for p in cache["picks"]
+                                                if not (str(p["user_id"]) == target_uid and p["game_type"] == target_pool and p["week"] > current_week)
+                                            ]
+                                        roster_list.refresh()
+
+                                    ui.select(
+                                        status_opts,
+                                        value=cur_st,
+                                        on_change=on_manual_status_change,
+                                    ).props("dense outlined").classes("w-36 text-xs")
 
             refresh_hooks["roster"] = roster_list.refresh
             roster_list()
