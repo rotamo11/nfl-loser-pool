@@ -17,7 +17,6 @@ async def render_overview_view(supabase, user, pool_slug: str):
     current_week = get_current_nfl_week()
     current_user_id = str(user.id)
 
-    # Fetch users, registrations, and picks concurrently for fast tab switching
     users, regs, all_picks = await asyncio.gather(
         run.io_bound(lambda: supabase.table("users").select("id, username, first_name, last_name").execute().data or []),
         run.io_bound(lambda: supabase.table("tournament_registrations").select("user_id, game_type, is_enrolled, bracket_status").eq("game_type", pool_slug).eq("is_enrolled", True).execute().data or []),
@@ -70,18 +69,14 @@ async def render_overview_view(supabase, user, pool_slug: str):
     viewer_status = viewer_reg.get("bracket_status", "Not Enrolled") if viewer_reg else "Not Enrolled"
     active_total = sum(1 for r in regs if r.get("bracket_status") != "Eliminated")
 
-    # Line 1: [Pool] Pool - Standings
     ui.label(f"{pool_label} Pool - Standings").classes("text-xl font-black")
 
-    # Line 2: Status (left) & Remaining Active #/# (right)
     with ui.row().classes("w-full items-center justify-between pb-2 mb-3 border-b border-gray-200 dark:border-slate-700"):
         ui.label(f"Status: {viewer_status}").classes("text-sm md:text-base font-extrabold")
         ui.badge(f"Remaining Active: {active_total} / {len(regs)}", color="primary").classes("text-xs font-bold px-2.5 py-1")
-
     is_masquerading = bool(app.storage.user.get("masquerade_uid"))
     is_adm = False if is_masquerading else bool(app.storage.user.get("is_admin_cached", False))
 
-    # Line 3: Enclosed Rectangle Week Selector (left) & Admin Reveal Toggle (right)
     week_opts = {
         w: f"{get_week_full_label(w)} (present)" if w == current_week else get_week_full_label(w)
         for w in visible_weeks
@@ -90,7 +85,7 @@ async def render_overview_view(supabase, user, pool_slug: str):
         dist_week_select = ui.select(
             week_opts,
             value=end_week,
-            label="Select Week (Wed-Tue)",
+            label="Select Week",
         ).props("dense outlined").classes("w-52")
 
         if is_adm:
@@ -109,12 +104,28 @@ async def render_overview_view(supabase, user, pool_slug: str):
             f"Note: You are viewing the {pool_label} Pool as a spectator. Current-week picks reveal once all picks for the week are finalized."
         ).classes("text-xs font-semibold text-amber-600 dark:text-amber-400 mb-2")
 
+    ui.add_head_html("""
+        <style>
+            .dist-grid-dynamic {
+                display: grid;
+                grid-template-columns: repeat(5, minmax(0, 1fr));
+                gap: 0.35rem;
+                width: 100%;
+            }
+            @media (min-width: 640px) {
+                .dist-grid-dynamic { grid-template-columns: repeat(min(var(--cols, 8), 8), minmax(0, 1fr)); }
+            }
+            @media (min-width: 1024px) {
+                .dist-grid-dynamic { grid-template-columns: repeat(var(--cols, 15), minmax(0, 1fr)); }
+            }
+        </style>
+    """)
+
     @ui.refreshable
     def overview_body():
         target_w = dist_week_select.value
         admin_override = bool(app.storage.user.get("admin_reveal_override", False))
 
-        # --- WEEKLY PICK DISTRIBUTION ---
         dist_border = "border-amber-500/40" if pool_slug == "2nd_Chance" else "border-blue-500/40"
         with ui.card().classes(f"w-full p-3 mb-4 border {dist_border} shadow-none"):
             ui.label(f"{get_week_full_label(target_w)} Pick Distribution").classes("text-sm font-extrabold mb-1")
@@ -146,23 +157,6 @@ async def render_overview_view(supabase, user, pool_slug: str):
                     total_logged = sum(week_team_counts.values())
                     desktop_cols = min(len(sorted_dist), 15)
 
-                    ui.add_head_html("""
-                        <style>
-                            .dist-grid-dynamic {
-                                display: grid;
-                                grid-template-columns: repeat(5, minmax(0, 1fr));
-                                gap: 0.35rem;
-                                width: 100%;
-                            }
-                            @media (min-width: 640px) {
-                                .dist-grid-dynamic { grid-template-columns: repeat(min(var(--cols, 8), 8), minmax(0, 1fr)); }
-                            }
-                            @media (min-width: 1024px) {
-                                .dist-grid-dynamic { grid-template-columns: repeat(var(--cols, 15), minmax(0, 1fr)); }
-                            }
-                        </style>
-                    """)
-
                     with ui.element("div").classes("dist-grid-dynamic mt-2").style(f"--cols: {desktop_cols};"):
                         for team_code, count in sorted_dist:
                             pct = round((count / total_logged) * 100)
@@ -182,7 +176,6 @@ async def render_overview_view(supabase, user, pool_slug: str):
                                 ui.label(f"{count}").classes("text-[11px] font-extrabold opacity-85 leading-none")
                                 with ui.tooltip():
                                     ui.label(f"{team_code}: {count} pick{'s' if count != 1 else ''} ({pct}%)")
-        # --- BRACKET TABLES ---
         def build_bracket_section(section_title: str, badge_color: str, players_list: list):
             if not players_list:
                 return
@@ -195,6 +188,23 @@ async def render_overview_view(supabase, user, pool_slug: str):
             sticky_bg = "bg-slate-900" if is_dark else "bg-white"
             border_cls = "border-slate-700" if is_dark else "border-gray-200"
             header_bg = "bg-slate-800/80 text-slate-200" if is_dark else "bg-gray-100 text-gray-800"
+
+            week_col_widths = {}
+            for w in visible_weeks:
+                max_entries = max((len(picks_by_user.get(pl["uid"], {}).get(w, [])) for pl in players_list), default=1)
+                if w >= 19:
+                    if max_entries <= 1:
+                        week_col_widths[w] = "w-24 shrink-0"
+                    elif max_entries == 2:
+                        week_col_widths[w] = "w-36 shrink-0"
+                    elif max_entries <= 4:
+                        week_col_widths[w] = "w-64 shrink-0"
+                    else:
+                        week_col_widths[w] = "w-96 shrink-0"
+                elif w >= 15 or max_entries >= 2:
+                    week_col_widths[w] = "w-32 shrink-0"
+                else:
+                    week_col_widths[w] = "w-16 shrink-0"
 
             with ui.element("div").classes(f"w-full overflow-x-auto border {border_cls} rounded-lg mb-4"):
                 with ui.column().classes("min-w-max gap-0"):
