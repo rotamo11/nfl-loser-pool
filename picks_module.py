@@ -15,7 +15,7 @@ def get_current_nfl_week() -> int:
     return min(22, ((now_et - SEASON_START_WEDNESDAY).days // 7) + 1)
 
 def get_week_label(w: int) -> str:
-    return {19: "Wildcard", 20: "Divisional", 21: "Conference", 22: "Super Bowl"}.get(w, f"Week {w}")
+    return {19: "Wild Card", 20: "Divisional", 21: "Conference", 22: "Super Bowl"}.get(w, f"Week {w}")
 
 def get_logo_url(team_code: str) -> str:
     clean = team_code.replace("_SO", "").strip().upper()
@@ -43,10 +43,11 @@ def render_history_rail(all_picks: list, all_matches: list, start_week: int):
 
     with ui.row().classes("w-full overflow-x-auto no-wrap gap-1 pb-2 mb-3"):
         for w in range(start_week, 23):
+            wk_hdr = get_week_label(w) if w >= 19 else f"Wk {w}"
             wk_list = picks_by_wk.get(w, [])
             if not wk_list:
                 with ui.column().classes("min-w-[52px] min-h-[64px] border border-dashed border-gray-400/50 rounded items-center justify-center p-1 opacity-50 shrink-0"):
-                    ui.label(f"Wk {w}").classes("text-[9px] font-bold")
+                    ui.label(wk_hdr).classes("text-[9px] font-bold text-center leading-tight")
                     ui.label("•").classes("text-xs")
             else:
                 for p in wk_list:
@@ -63,7 +64,7 @@ def render_history_rail(all_picks: list, all_matches: list, start_week: int):
                         box_cls = "bg-slate-400/10 border-slate-400/40"
 
                     with ui.column().classes(f"min-w-[56px] min-h-[64px] border rounded items-center justify-center p-1 shrink-0 {box_cls}"):
-                        ui.label(f"Wk {w}").classes("text-[9px] font-bold opacity-75 leading-none")
+                        ui.label(wk_hdr).classes("text-[9px] font-bold opacity-75 text-center leading-tight")
                         if url := get_logo_url(clean_team):
                             ui.html(f'<img src="{url}" class="w-7 h-5 object-contain p-0.5 my-0.5" />')
                         tag = f"{clean_team}{'🎯' if raw_pick.endswith('_SO') else ''}"
