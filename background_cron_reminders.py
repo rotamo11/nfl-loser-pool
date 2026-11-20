@@ -40,21 +40,24 @@ def send_smtp_email(smtp_user: str, smtp_pass: str, to_addr: str, subject: str, 
         server.login(clean_user, clean_pass)
         server.send_message(msg)
 
-def send_ntfy_push(topic: str, title: str, message: str, click_url: str):
-    clean_topic = topic.strip().lstrip("/")
-    ntfy_domain = ".".join(["ntfy", "sh"])
-    url = f"https://{ntfy_domain}/{clean_topic}"
-    req = urllib.request.Request(
-        url,
-        data=message.encode("utf-8"),
-        headers={
-            "Title": title,
-            "Priority": "default",
-            "Icon": f"{click_url.rstrip('/')}/static/loser-logo.png",
-            "Click": click_url,
-        },
-        method="POST",
-    )
+def send_ntfy_push(topic: str, title: str, message: str, click_url: str = ""):
+    if not topic:
+        return
+    app_url = os.environ.get("APP_URL", "https://nfl-loser-pool-production.up.railway.app").rstrip("/")
+    icon_url = f"{app_url}/static/loser-logo.png"
+    ntfy_host = ".".join(["ntfy", "sh"])
+    url = f"https://{ntfy_host}/{topic.strip()}"
+
+    headers = {
+        "Title": title,
+        "Priority": "high",
+        "Icon": icon_url,
+        "Content-Type": "text/plain; charset=utf-8",
+    }
+    if click_url:
+        headers["Click"] = click_url
+
+    req = urllib.request.Request(url, data=message.encode("utf-8"), headers=headers, method="POST")
     with urllib.request.urlopen(req, timeout=15) as resp:
         resp.read()
 
