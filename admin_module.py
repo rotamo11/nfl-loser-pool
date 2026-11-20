@@ -253,7 +253,7 @@ def execute_manual_reminders(supabase, target_week: int, admin_only_uid: str | N
                 smtp_user, smtp_pass, u["email"],
                 f"NFL Loser Pool Reminder: Week {target_week} Pick Needed ({pools_label})",
                 f"Hey {uname},\n\nYou still need to submit your Week {target_week} pick(s) for the {pools_label} Pool.\n\n"
-                f"You have until Sunday at NOON ET (or by kickoff of an earlier game) to avoid being given your BYE (if available) or the highest favored/ranked team that still has yet to play this week.\n\n"
+                f"You have until Sunday at NOON ET (or by kickoff of an earlier game) to avoid being given your BYE (if available) or the highest favored/ranked team that still has yet to play this week which is {default_team}.\n\n"
                 f"Submit your pick now: \n\n{app_url}\n",
             )
             sent_emails += 1
