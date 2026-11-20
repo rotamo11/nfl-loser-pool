@@ -59,7 +59,7 @@ async def render_overview_view(supabase, user, pool_slug: str):
     fully_finalized_weeks = weeks_with_picks - weeks_with_unfinalized
 
     start_week = 6 if pool_slug == "2nd_Chance" else 1
-    end_week = 22  # TEMP TEST: when done testing, change back to: end_week = max(start_week, current_week)
+    end_week = max(start_week, current_week)  # TEMP TEST: to see all weeks when testing, change to: end_week = 22
     visible_weeks = list(range(start_week, end_week + 1))
 
     is_dark = app.storage.user.get("dark_mode", False)
@@ -84,7 +84,7 @@ async def render_overview_view(supabase, user, pool_slug: str):
     with ui.row().classes("w-full items-center justify-between gap-2 mb-3 flex-wrap"):
         dist_week_select = ui.select(
             week_opts,
-            value=max(start_week, current_week), # after tesing, revert this to: value=end_week,
+            value=end_week, # TEMP TEST: to see all weeks when testing, change this to: value=max(start_week, current_week),
             label="Select Week (Wed-Tue)",
         ).props("dense outlined").classes("w-52")
 
