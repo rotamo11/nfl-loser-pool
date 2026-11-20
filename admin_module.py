@@ -631,31 +631,24 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                     ui.clipboard.write(", ".join(emails))
                     ui.notify(f"Copied {len(emails)} missing player email(s) to clipboard!", type="positive", timeout=6000)
 
-                def open_mailto_reminder():
+                def copy_reminder_body():
                     w_target = def_week_sel.value
-                    emails = get_missing_email_list()
-                    if not emails:
-                        ui.notify(f"No missing picks for {get_week_label(w_target)}!", type="positive")
-                        return
-                    wk_lbl = get_week_label(w_target)
-                    def_pick = (team_sel.value or "SEA").strip().upper()
-                    app_url = os.environ.get("APP_URL", "https://nfl-loser-pool-production.up.railway.app").rstrip("/")
+                    week_label = get_week_label(w_target)
+                    default_pick = (team_sel.value or "SEA").strip().upper()
+                    app_url = os.environ.get("APP_URL", "https://railway.app").rstrip("/")
 
-                    bcc_str = ",".join(emails)
-                    subj = urllib.parse.quote(f"{wk_lbl} Reminder")
                     body_txt = (
-                        f"The deadline is Sunday at noon ET to avoid being given your BYE if still available, "
-                        f"otherwise the default pick is {def_pick} to lose.\n\n"
-                        f"NFL Loser Pool: {app_url}"
+                        f"You still need to submit your {week_label} pick(s) for the Loser Pool.\n\n"
+                        f"You have until Sunday at NOON ET (or by kickoff of an earlier game) to avoid being given your BYE (if available) or the highest favored/ranked team that still has yet to play this week which is {default_pick}.\n\n"
+                        f"Submit your pick now: \n\n{app_url}\n"
                     )
-                    body_enc = urllib.parse.quote(body_txt)
-                    mailto_href = f"mailto:nfl.loser.pool@gmail.com?bcc={urllib.parse.quote(bcc_str)}&subject={subj}&body={body_enc}"
-                    ui.run_javascript(f"window.location.href = {json.dumps(mailto_href)};")
+                    ui.clipboard.write(body_txt)
+                    ui.notify(f"Copied {week_label} reminder body to clipboard!", type="positive", timeout=5000)
 
                 with ui.row().classes("items-center gap-3 flex-wrap"):
                     lock_btn = ui.button("Run Deadline Lock Now", icon="lock_clock", on_click=open_lock_confirm, color="amber-8").classes("font-bold text-white")
                     ui.button("Copy Missing Player Emails", icon="content_copy", on_click=copy_missing_emails, color="primary").classes("font-bold")
-                    ui.button("Open Reminder Email", icon="mail", on_click=open_mailto_reminder, color="secondary").props("outline").classes("font-bold")
+                    ui.button("Copy Reminder Message", icon="content_copy", on_click=copy_reminder_body, color="primary").classes("font-bold")
 
             ui.separator().classes("my-5")
 
@@ -1245,7 +1238,7 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                                         status_opts,
                                         value=cur_st,
                                         on_change=on_manual_status_change,
-                                    ).props("dense outlined").classes("w-32 text-[11px]")
+                                    ).props("dense outlined").classes("w-36 text-[11px]")
                             elif is_pool_open:
                                 def enroll_player_now(target_uid=uid, target_name=uname, reg_row=r, gtype=selected_pool):
                                     if reg_row:
