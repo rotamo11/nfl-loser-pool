@@ -5,6 +5,7 @@ import asyncio
 import datetime
 import json
 import urllib.request
+import urllib.parse
 from zoneinfo import ZoneInfo
 from nicegui import ui, app, run
 from picks_module import get_current_nfl_week, get_week_label, get_logo_url
@@ -605,7 +606,7 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                             ui.button("Confirm & Lock Week", on_click=confirm_run_lock, color="amber-8").classes("font-bold text-white")
                     lock_dlg.open()
 
-                def copy_missing_emails():
+                def get_missing_email_list() -> list[str]:
                     w_target = def_week_sel.value
                     active_regs = [r for r in cache["regs"] if r.get("is_enrolled") and r.get("bracket_status") != "Eliminated"]
                     wk_matches = [m for m in cache["sched"] if m["week"] == w_target]
@@ -619,18 +620,42 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                         wk_cnt = sum(1 for p in cache["picks"] if str(p["user_id"]) == uid and p["game_type"] == gtype and p["week"] == w_target)
                         if wk_cnt < req_count and user_email_map.get(uid):
                             missing_emails.add(user_email_map[uid])
+                    return sorted(missing_emails)
 
-                    if not missing_emails:
+                def copy_missing_emails():
+                    w_target = def_week_sel.value
+                    emails = get_missing_email_list()
+                    if not emails:
                         ui.notify(f"No missing picks for {get_week_label(w_target)}!", type="positive")
                         return
+                    ui.clipboard.write(", ".join(emails))
+                    ui.notify(f"Copied {len(emails)} missing player email(s) to clipboard!", type="positive", timeout=6000)
 
-                    email_list_str = ", ".join(sorted(missing_emails))
-                    ui.clipboard.write(email_list_str)
-                    ui.notify(f"Copied {len(missing_emails)} missing player email(s) to clipboard!", type="positive", timeout=6000)
+                def open_mailto_reminder():
+                    w_target = def_week_sel.value
+                    emails = get_missing_email_list()
+                    if not emails:
+                        ui.notify(f"No missing picks for {get_week_label(w_target)}!", type="positive")
+                        return
+                    wk_lbl = get_week_label(w_target)
+                    def_pick = (team_sel.value or "SEA").strip().upper()
+                    app_url = os.environ.get("APP_URL", "https://nfl-loser-pool-production.up.railway.app").rstrip("/")
+
+                    bcc_str = ",".join(emails)
+                    subj = urllib.parse.quote(f"{wk_lbl} Reminder")
+                    body_txt = (
+                        f"The deadline is Sunday at noon ET to avoid being given your BYE if still available, "
+                        f"otherwise the default pick is {def_pick} to lose.\n\n"
+                        f"NFL Loser Pool: {app_url}"
+                    )
+                    body_enc = urllib.parse.quote(body_txt)
+                    mailto_href = f"mailto:nfl.loser.pool@gmail.com?bcc={urllib.parse.quote(bcc_str)}&subject={subj}&body={body_enc}"
+                    ui.run_javascript(f"window.location.href = {json.dumps(mailto_href)};")
 
                 with ui.row().classes("items-center gap-3 flex-wrap"):
                     lock_btn = ui.button("Run Deadline Lock Now", icon="lock_clock", on_click=open_lock_confirm, color="amber-8").classes("font-bold text-white")
                     ui.button("Copy Missing Player Emails", icon="content_copy", on_click=copy_missing_emails, color="primary").classes("font-bold")
+                    ui.button("Open Reminder Email", icon="mail", on_click=open_mailto_reminder, color="secondary").props("outline").classes("font-bold")
 
             ui.separator().classes("my-5")
 
@@ -698,8 +723,8 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                     raise ValueError("Uploaded file arrived empty (0 bytes).")
                 return raw_bytes.decode("utf-8-sig")
 
-            with ui.grid().classes("w-full grid-cols-1 md:grid-cols-3 gap-4"):
-                with ui.card().classes("w-full p-4 border border-slate-300 dark:border-slate-700 shadow-none"):
+            with ui.grid().classes("w-full grid-cols-1 md:grid-cols-3 gap-4 items-stretch"):
+                with ui.card().classes("w-full h-full flex flex-col justify-between p-4 border border-slate-300 dark:border-slate-700 shadow-none"):
                     ui.label("Upload Picks CSV").classes("text-base font-extrabold mb-1")
                     ui.label("Columns: game_type, email, week, team_picked, pick_state").classes("text-xs opacity-75 mb-3")
                     picks_lbl = ui.label("Ready").classes("text-xs font-bold text-blue-600 dark:text-blue-400 mt-2")
@@ -731,7 +756,7 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                             picks_lbl.text = f"Error: {err}"
 
                     ui.upload(on_upload=on_picks_csv, auto_upload=True).props("accept=.csv").classes("w-full")
-                with ui.card().classes("w-full p-4 border border-slate-300 dark:border-slate-700 shadow-none"):
+                with ui.card().classes("w-full h-full flex flex-col justify-between p-4 border border-slate-300 dark:border-slate-700 shadow-none"):
                     ui.label("Import NFL Schedule").classes("text-base font-extrabold mb-1")
                     ui.label("Columns: week, away_team, home_team, kickoff_time").classes("text-xs opacity-75 mb-3")
                     sched_lbl = ui.label("Ready").classes("text-xs font-bold text-blue-600 dark:text-blue-400 mt-2")
@@ -761,7 +786,7 @@ async def render_admin_view(supabase, user, on_badge_change=None):
 
                     ui.upload(on_upload=on_sched_csv, auto_upload=True).props("accept=.csv").classes("w-full")
 
-                with ui.card().classes("w-full p-4 border border-slate-300 dark:border-slate-700 shadow-none"):
+                with ui.card().classes("w-full h-full flex flex-col justify-between p-4 border border-slate-300 dark:border-slate-700 shadow-none"):
                     ui.label("Import Players").classes("text-base font-extrabold mb-1")
                     ui.label("Columns: username, first_name, last_name, email, cell_phone, is_admin, main_enrolled, main_paid, second_enrolled, second_paid, notes, temporary_password").classes("text-[11px] opacity-75 mb-3")
                     ply_lbl = ui.label("Ready").classes("text-xs font-bold text-blue-600 dark:text-blue-400 mt-2")
@@ -1162,8 +1187,8 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                     is_enrolled_now = bool(r and r.get("is_enrolled"))
 
                     with ui.card().classes("w-full p-2.5 mb-2 border border-slate-200 dark:border-slate-700 shadow-none"):
-                        with ui.row().classes("w-full items-start justify-between gap-2"):
-                            with ui.column().classes("gap-0.5 flex-1 min-w-0"):
+                        with ui.row().classes("w-full items-start justify-between gap-2 flex-wrap"):
+                            with ui.column().classes("gap-0.5 flex-1 min-w-[200px]"):
                                 with ui.row().classes("items-center gap-2 flex-wrap"):
                                     ui.label(uname).classes("text-sm font-extrabold")
                                     if u.get("is_admin"):
@@ -1184,7 +1209,7 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                                     ui.label(f"{u['notes']}").classes("text-xs text-amber-700 dark:text-amber-300 italic mt-0.5")
 
                             if is_enrolled_now:
-                                with ui.row().classes("items-center gap-2 shrink-0"):
+                                with ui.row().classes("items-center gap-1.5 flex-wrap shrink-0"):
                                     ui.checkbox(
                                         "Enrolled",
                                         value=True,
@@ -1193,7 +1218,7 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                                             reg_obj.update({"is_enrolled": e.value}),
                                             roster_list.refresh(),
                                         ),
-                                    ).props("dense")
+                                    ).props("dense size=xs").classes("text-xs")
                                     ui.checkbox(
                                         "Paid",
                                         value=bool(r.get("is_paid")),
@@ -1202,7 +1227,7 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                                             reg_obj.update({"is_paid": e.value}),
                                             roster_list.refresh(),
                                         ),
-                                    ).props("dense")
+                                    ).props("dense size=xs").classes("text-xs")
                                     cur_st = r.get("bracket_status") if r.get("bracket_status") in status_opts else "Loser Bracket"
 
                                     def on_manual_status_change(e, rid=r["id"], reg_obj=r, target_uid=uid, target_pool=selected_pool):
@@ -1220,7 +1245,7 @@ async def render_admin_view(supabase, user, on_badge_change=None):
                                         status_opts,
                                         value=cur_st,
                                         on_change=on_manual_status_change,
-                                    ).props("dense outlined").classes("w-36 text-xs")
+                                    ).props("dense outlined").classes("w-32 text-[11px]")
                             elif is_pool_open:
                                 def enroll_player_now(target_uid=uid, target_name=uname, reg_row=r, gtype=selected_pool):
                                     if reg_row:
