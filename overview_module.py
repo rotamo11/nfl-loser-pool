@@ -37,7 +37,6 @@ async def render_overview_view(supabase, user, pool_slug: str):
     viewer_finalized_weeks = set()
     team_week_outcomes = {}
     weeks_with_picks = set()
-    weeks_with_unfinalized = set()
 
     for p in all_picks:
         uid = str(p["user_id"])
@@ -49,14 +48,34 @@ async def render_overview_view(supabase, user, pool_slug: str):
         if state in ["Finalized", "Correct", "Incorrect"]:
             if uid == current_user_id:
                 viewer_finalized_weeks.add(w)
-        else:
-            weeks_with_unfinalized.add(w)
 
         clean_t = p["team_picked"].replace("_SO", "").strip().upper()
         if state in ["Correct", "Incorrect"]:
             team_week_outcomes[(w, clean_t)] = state
 
-    fully_finalized_weeks = weeks_with_picks - weeks_with_unfinalized
+    # A week is ONLY fully finalized when EVERY active (non-eliminated) player has finalized all required picks
+    active_uid_set = {str(r["user_id"]) for r in regs if r.get("bracket_status") != "Eliminated"}
+    sched_rows = await run.io_bound(lambda: supabase.table("nfl_schedule").select("id, week").execute().data or [])
+    games_per_week = {}
+    for s in sched_rows:
+        games_per_week[s["week"]] = games_per_week.get(s["week"], 0) + 1
+
+    fully_finalized_weeks = set()
+    for w in weeks_with_picks:
+        if not active_uid_set:
+            continue
+        req_cnt = 1 if w <= 14 else (2 if w <= 18 else max(1, games_per_week.get(w, 1)))
+        everyone_done = True
+        for act_uid in active_uid_set:
+            fin_cnt = sum(
+                1 for p in picks_by_user.get(act_uid, {}).get(w, [])
+                if p.get("pick_state") in ["Finalized", "Correct", "Incorrect"]
+            )
+            if fin_cnt < req_cnt:
+                everyone_done = False
+                break
+        if everyone_done:
+            fully_finalized_weeks.add(w)
 
     start_week = 6 if pool_slug == "2nd_Chance" else 1
     end_week = max(start_week, current_week)  # TEMP TEST: to see all weeks when testing, change to: end_week = 22
@@ -67,6 +86,19 @@ async def render_overview_view(supabase, user, pool_slug: str):
 
     viewer_reg = next((r for r in regs if str(r["user_id"]) == current_user_id), None)
     viewer_status = viewer_reg.get("bracket_status", "Not Enrolled") if viewer_reg else "Not Enrolled"
+    is_viewer_active = bool(viewer_reg and viewer_status != "Eliminated")
+
+    viewer_finalized_weeks = set()
+    if is_viewer_active:
+        for w in weeks_with_picks:
+            req_cnt = 1 if w <= 14 else (2 if w <= 18 else max(1, games_per_week.get(w, 1)))
+            my_fin_cnt = sum(
+                1 for p in picks_by_user.get(current_user_id, {}).get(w, [])
+                if p.get("pick_state") in ["Finalized", "Correct", "Incorrect"]
+            )
+            if my_fin_cnt >= req_cnt:
+                viewer_finalized_weeks.add(w)
+
     active_total = sum(1 for r in regs if r.get("bracket_status") != "Eliminated")
 
     ui.label(f"{pool_label} Pool - Standings").classes("text-xl font-black")
