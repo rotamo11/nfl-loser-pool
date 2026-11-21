@@ -30,7 +30,7 @@ def render_rules_view(pool_slug: str):
         ("5. Entry Fees & Payout Breakdown", [
             "**Main Pool ($25 Entry • 74 Players • $1,850 Purse):** 1st Place: **$1,110** (60%) • 2nd Place: **$555** (30%) • 3rd Place: **$185** (10%).",
             "**2nd Chance Pool ($25 Entry • 26 Players • $650 Purse):** 1st Place: **$390** (60%) • 2nd Place: **$195** (30%) • 3rd Place: **$65** (10%).",
-            "**Tiebreakers:** If multiple players are eliminated in the same week, the remaining prize money is split evenly unless broken by the following tiebreakers in this order:",
+            "**Tiebreakers:** If multiple players in prize contention are eliminated in the same week, the remaining prize money is split evenly unless broken by the following tiebreakers, applied in order:",
             [
                 "**Fewest Wrong Picks:** The player with fewer incorrect picks across the entire season wins.",
                 "**Unused Bye:** A player who did not use their bye wins over a player who used theirs.",
@@ -41,9 +41,9 @@ def render_rules_view(pool_slug: str):
             ],
         ]),
         ("6. Helpful Links", [
-            "[**ESPN NFL Schedule Grid**](http://www.espn.com/nfl/schedulegrid)",
-            "[**ESPN Odds**](https://www.espn.com/nfl/odds)",
-            "[**ESPN Power Index**](https://www.espn.com/nfl/fpi)",
+            "[**ESPN NFL Schedule Grid**](http://www.espn.com/nfl/schedulegrid) View the entire regular season schedule at a glance.",
+            "[**ESPN Odds**](https://www.espn.com/nfl/odds) Default pick for missed entries is determined by highest favored team to win that still has yet to play.",
+            "[**ESPN Power Index**](https://www.espn.com/nfl/fpi) Used to determine default pick if multiple teams are tied with highest odds to win.",
         ]),
     ]
 
