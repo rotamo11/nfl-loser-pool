@@ -415,7 +415,7 @@ async def render_picks_view(supabase, user, pool_slug: str):
         if bye_finalized_this_week:
             ui.button("🔒 BYE Finalized for This Week", color="green").props("disable unelevated").classes("w-full font-bold")
         elif bye_used_prior:
-            ui.button("🔒 Season BYE Already Used", color="grey-5").props("disable unelevated").classes("w-full font-bold")
+            ui.button("🔒 BYE Already Used", color="grey-5").props("disable unelevated").classes("w-full font-bold")
         else:
             with ui.row().classes("w-full gap-2"):
                 def confirm_bye():
@@ -439,8 +439,8 @@ async def render_picks_view(supabase, user, pool_slug: str):
 
                 def open_bye_finalize():
                     with ui.dialog() as dlg, ui.card():
-                        ui.label("Finalize your Season BYE?").classes("font-bold text-lg")
-                        ui.label("You only get one BYE per season. Locking it in cannot be undone.").classes("text-sm text-gray-500")
+                        ui.label("Finalize your BYE?").classes("font-bold text-lg")
+                        ui.label("You only get one BYE to use in the regular season or playoffs. Locking it in cannot be undone.").classes("text-sm text-gray-500")
                         with ui.row().classes("w-full justify-end gap-2 mt-3"):
                             ui.button("Cancel", on_click=dlg.close).props("flat")
 
