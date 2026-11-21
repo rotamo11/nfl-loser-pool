@@ -10,7 +10,7 @@ def render_rules_view(pool_slug: str):
         ("1. Weekly Pick Requirements", [
             "**Weeks 1–14:** Pick **1 team** to lose each week.",
             "**Weeks 15–18:** Pick **2 teams** to lose each week.",
-            "**Playoffs (Wildcard through Super Bowl):** Pick **ALL losers** for every playoff game each week (repeats allowed).",
+            "**Playoffs (Wild Card through Super Bowl):** Pick **ALL losers** for every playoff game each week (repeats allowed).",
             "**No Repeat Picks (Regular Season):** During Weeks 1–18, you cannot pick the same team twice unless you earned a Shutout Bonus on that team or if they're determined to be the default pick (see Subission Failures below).",
         ]),
         ("2. Deadlines, Auto-Locks, & Submission Failures", [
