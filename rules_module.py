@@ -41,9 +41,9 @@ def render_rules_view(pool_slug: str):
             ],
         ]),
         ("6. Helpful Links", [
-            "[**ESPN NFL Schedule Grid**](http://www.espn.com/nfl/schedulegrid) View the entire regular season schedule at a glance.",
-            "[**ESPN Odds**](https://www.espn.com/nfl/odds) Default pick for missed entries is determined by highest favored team to win that still has yet to play.",
-            "[**ESPN Power Index**](https://www.espn.com/nfl/fpi) Used to determine default pick if multiple teams are tied with highest odds to win.",
+            "[**ESPN NFL Schedule Grid**](http://www.espn.com/nfl/schedulegrid) | View the entire regular season schedule at a glance.",
+            "[**ESPN Odds**](https://www.espn.com/nfl/odds) | Default pick for missed entries is determined by highest favored team to win that still has yet to play.",
+            "[**ESPN Power Index**](https://www.espn.com/nfl/fpi) | Used to determine default pick if multiple teams are tied with highest odds to win.",
         ]),
     ]
 
