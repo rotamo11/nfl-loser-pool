@@ -213,11 +213,15 @@ async def render_picks_view(supabase, user, pool_slug: str):
         render_history_rail(all_picks, all_matches, start_week)
 
         week_picks = [p for p in all_picks if p["week"] == target_week]
-        used_teams = {
-            p["team_picked"].replace("_SO", "").upper()
-            for p in all_picks
-            if p["week"] < 19 and not p["team_picked"].endswith("_SO") and p["week"] != target_week
-        }
+        used_teams = (
+            {
+                p["team_picked"].replace("_SO", "").upper()
+                for p in all_picks
+                if p["week"] < 19 and not p["team_picked"].endswith("_SO") and p["week"] != target_week
+            }
+            if target_week < 19
+            else set()
+        )
 
         # Always keep all saved picks for target_week in draft_picks so multi-pick limits & highlights stay accurate
         saved_week_teams = {p["team_picked"].replace("_SO", "").upper() for p in week_picks}
