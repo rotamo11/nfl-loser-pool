@@ -406,7 +406,8 @@ async def render_picks_view(supabase, user, pool_slug: str):
         bye_used_prior = any(p["team_picked"].upper() == "BYE" and p["week"] != target_week for p in all_picks)
         db_bye_this_week = next((p for p in week_picks if p["team_picked"].upper() == "BYE"), None)
         bye_finalized_this_week = db_bye_this_week and db_bye_this_week["pick_state"] in ["Finalized", "Correct", "Incorrect"]
-        bye_disabled = (target_week < current_week) or is_week_finalized
+        slots_full_without_bye = (max_picks > 1) and (len(draft_picks) >= max_picks) and not db_bye_this_week
+        bye_disabled = (target_week < current_week) or is_week_finalized or slots_full_without_bye
 
         if bye_finalized_this_week:
             ui.button("🔒 BYE Finalized for This Week", color="green").props("disable unelevated").classes("w-full font-bold")
@@ -415,7 +416,12 @@ async def render_picks_view(supabase, user, pool_slug: str):
         else:
             with ui.row().classes("w-full gap-2"):
                 def confirm_bye():
-                    supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", pool_slug).eq("week", target_week).execute()
+                    if max_picks == 1:
+                        supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", pool_slug).eq("week", target_week).execute()
+                        draft_picks.clear()
+                    else:
+                        supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", pool_slug).eq("week", target_week).eq("team_picked", "BYE").execute()
+                    draft_picks.add("BYE")
                     supabase.table("user_picks").insert({
                         "user_id": user_id,
                         "game_type": pool_slug,
@@ -423,7 +429,6 @@ async def render_picks_view(supabase, user, pool_slug: str):
                         "team_picked": "BYE",
                         "pick_state": "Confirmed",
                     }).execute()
-                    draft_picks.clear()
                     ui.notify("BYE Confirmed (Editable).", type="positive")
                     matchup_board.refresh()
 
@@ -441,7 +446,12 @@ async def render_picks_view(supabase, user, pool_slug: str):
                             ui.button("Cancel", on_click=dlg.close).props("flat")
 
                             def lock_bye():
-                                supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", pool_slug).eq("week", target_week).execute()
+                                if max_picks == 1:
+                                    supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", pool_slug).eq("week", target_week).execute()
+                                    draft_picks.clear()
+                                else:
+                                    supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", pool_slug).eq("week", target_week).eq("team_picked", "BYE").execute()
+                                draft_picks.add("BYE")
                                 supabase.table("user_picks").insert({
                                     "user_id": user_id,
                                     "game_type": pool_slug,
@@ -449,7 +459,6 @@ async def render_picks_view(supabase, user, pool_slug: str):
                                     "team_picked": "BYE",
                                     "pick_state": "Finalized",
                                 }).execute()
-                                draft_picks.clear()
                                 dlg.close()
                                 ui.notify("BYE Finalized!", type="positive")
                                 matchup_board.refresh()
@@ -465,7 +474,8 @@ async def render_picks_view(supabase, user, pool_slug: str):
 
                 if db_bye_this_week:
                     def clear_bye():
-                        supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", pool_slug).eq("week", target_week).execute()
+                        draft_picks.discard("BYE")
+                        supabase.table("user_picks").delete().eq("user_id", user_id).eq("game_type", pool_slug).eq("week", target_week).eq("team_picked", "BYE").execute()
                         ui.notify("BYE selection removed.", type="info")
                         matchup_board.refresh()
 
