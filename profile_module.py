@@ -141,7 +141,7 @@ def render_profile_view(supabase, user):
             with ui.row().classes("w-full items-center justify-between gap-2 pt-1"):
                 with ui.row().classes("items-center gap-1 text-xs"):
                     ui.label("Questions? Email the Commish:").classes("opacity-75")
-                    ui.link("nfl.loser.pool@gmail.com", "mailto:nfl.loser.pool@gmail.com").classes(
+                    ui.link("nfl.loser.pool@gmail.com", "mailto:nfl.loser.pool@gmail.com", new_tab=True).classes(
                         "font-bold text-blue-600 dark:text-blue-400 underline"
                     )
 
