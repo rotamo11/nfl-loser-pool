@@ -25,8 +25,10 @@ def get_logo_url(team_code: str) -> str:
 def render_history_rail(all_picks: list, all_matches: list, start_week: int):
     ui.label("Your Season Selection History").classes("font-bold text-base mb-1")
     outcomes = {}
+    games_per_week = {}
     for m in all_matches:
         w = m["week"]
+        games_per_week[w] = games_per_week.get(w, 0) + 1
         outcomes.setdefault(w, {})
         loser = m.get("winner")
         if loser == "TIE":
@@ -44,42 +46,36 @@ def render_history_rail(all_picks: list, all_matches: list, start_week: int):
     with ui.row().classes("w-full overflow-x-auto no-wrap gap-1.5 pb-2 mb-3 items-stretch"):
         for w in range(start_week, 23):
             wk_hdr = get_week_label(w) if w >= 19 else f"Wk {w}"
+            req_slots = 1 if w <= 14 else (2 if w <= 18 else max(1, games_per_week.get(w, 1)))
             wk_list = picks_by_wk.get(w, [])
-            if not wk_list:
-                with ui.column().classes("min-w-[54px] min-h-[68px] border border-dashed border-gray-400/50 rounded items-center justify-center p-1 opacity-50 shrink-0"):
-                    ui.label(wk_hdr).classes("text-[9px] font-bold text-center leading-tight")
-                    ui.label("•").classes("text-xs")
-            else:
-                pick_results = []
-                for p in wk_list:
-                    clean_t = p["team_picked"].upper().replace("_SO", "").strip()
-                    st = p.get("pick_state", "Pending")
-                    res = outcomes.get(w, {}).get(clean_t, "Pending")
-                    if clean_t == "BYE" or st == "Correct" or res == "Correct":
-                        pick_results.append("Correct")
-                    elif st == "Incorrect" or res == "Incorrect":
-                        pick_results.append("Incorrect")
-                    else:
-                        pick_results.append("Pending")
+            total_cards = max(req_slots, len(wk_list))
 
-                if "Incorrect" in pick_results:
-                    box_cls = "bg-red-500/15 border-red-500"
-                elif all(r == "Correct" for r in pick_results):
-                    box_cls = "bg-emerald-500/15 border-emerald-500"
+            for idx in range(total_cards):
+                slot_hdr = f"{wk_hdr} ({idx + 1})" if total_cards > 1 else wk_hdr
+                if idx >= len(wk_list):
+                    with ui.column().classes("min-w-[54px] min-h-[68px] border border-dashed border-gray-400/50 rounded items-center justify-center p-1 opacity-50 shrink-0"):
+                        ui.label(slot_hdr).classes("text-[9px] font-bold text-center leading-tight")
+                        ui.label("•").classes("text-xs")
                 else:
-                    box_cls = "bg-slate-400/10 border-slate-400/40"
+                    p = wk_list[idx]
+                    raw_pick = p["team_picked"].upper()
+                    clean_team = raw_pick.replace("_SO", "").strip()
+                    st = p.get("pick_state", "Pending")
+                    res = outcomes.get(w, {}).get(clean_team, "Pending")
 
-                with ui.column().classes(f"min-w-[60px] min-h-[68px] border rounded items-center justify-center p-1.5 shrink-0 gap-1 {box_cls}"):
-                    ui.label(wk_hdr).classes("text-[9px] font-bold opacity-75 text-center leading-tight")
-                    with ui.row().classes("items-center justify-center gap-2 no-wrap"):
-                        for p in wk_list:
-                            raw_pick = p["team_picked"].upper()
-                            clean_team = raw_pick.replace("_SO", "").strip()
-                            with ui.column().classes("items-center gap-0.5 shrink-0"):
-                                if url := get_logo_url(clean_team):
-                                    ui.html(f'<img src="{url}" class="w-7 h-5 object-contain p-0.5" />')
-                                tag = f"{clean_team}{'🎯' if raw_pick.endswith('_SO') else ''}"
-                                ui.label(tag).classes("text-[10px] font-extrabold leading-none")
+                    if clean_team == "BYE" or st == "Correct" or res == "Correct":
+                        box_cls = "bg-emerald-500/15 border-emerald-500"
+                    elif st == "Incorrect" or res == "Incorrect":
+                        box_cls = "bg-red-500/15 border-red-500"
+                    else:
+                        box_cls = "bg-slate-400/10 border-slate-400/40"
+
+                    with ui.column().classes(f"min-w-[56px] min-h-[68px] border rounded items-center justify-center p-1 shrink-0 gap-0.5 {box_cls}"):
+                        ui.label(slot_hdr).classes("text-[9px] font-bold opacity-75 text-center leading-tight")
+                        if url := get_logo_url(clean_team):
+                            ui.html(f'<img src="{url}" class="w-7 h-5 object-contain p-0.5" />')
+                        tag = f"{clean_team}{'🎯' if raw_pick.endswith('_SO') else ''}"
+                        ui.label(tag).classes("text-[10px] font-extrabold leading-none")
 
 async def render_picks_view(supabase, user, pool_slug: str):
     user_id = str(user.id)
