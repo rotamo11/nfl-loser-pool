@@ -23,8 +23,8 @@ def render_rules_view(pool_slug: str):
             "**Main Pool (Double Elimination):** Everyone starts in the **Loser Bracket** (0 wrong). Your first incorrect pick moves you to the **Winner Bracket** (1 wrong). A second incorrect pick eliminates you.",
             "**2nd Chance Pool (Single Elimination):** Begins in Week 6. One incorrect pick immediately eliminates you.",
         ]),
-        ("4. Season BYE & Shutout Bonus", [
-            "**Season BYE:** Each player receives **1 BYE** per pool, which can either be used during the regular season (Weeks 1–18) or the playoffs. Using your BYE safely advances you without requiring a pick. Please note that a BYE only covers a single matchup; during multi-matchup weeks, you must still pick a loser for the remaining games.",
+        ("4. Using Your BYE & Shutout Bonus", [
+            "**Using Your BYE:** Each player receives **1 BYE** per pool, which can either be used during the regular season (Weeks 1–18) or the playoffs (Wild Card through the Super Bowl). Using your BYE safely advances you without requiring a pick. Please note that a BYE only covers a single matchup; during multi-matchup weeks, you must still pick a loser for any remaining games.",
             "**Shutout Bonus (🎯):** If the team you pick to lose is shut out (scores 0 points), the Commissioner awards a **Shutout Bonus**, unlocking that team so you can pick them to lose **one more time** later in the season.",
         ]),
         ("5. Entry Fees & Payout Breakdown", [
