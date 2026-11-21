@@ -120,9 +120,10 @@ async def render_chat_view(supabase, user):
 
                             def start_reply(m_id=mid, s_name=sender, txt=body_txt):
                                 snippet = txt[:65] + ("..." if len(txt) > 65 else "")
-                                reply_state["id"] = m_id
+                                reply_state["id"] = str(m_id)
                                 reply_state["preview"] = f"{s_name}: {snippet}"
                                 reply_banner.refresh()
+                                msg_in.run_method("focus")
 
                             ui.button(icon="reply", on_click=start_reply).props("flat round dense size=xs").tooltip("Quote & Reply")
 
@@ -180,22 +181,24 @@ async def render_chat_view(supabase, user):
             txt = (msg_in.value or "").strip()
             if not txt:
                 return
-            msg_in.value = ""
             payload = {
                 "user_id": current_user_id,
                 "username": current_username,
                 "message": txt,
-                "reply_to_id": reply_state["id"],
+                "reply_to_id": str(reply_state["id"]) if reply_state["id"] is not None else None,
                 "reply_preview": reply_state["preview"] or None,
                 "reactions": {},
             }
-            reply_state["id"] = None
-            reply_state["preview"] = ""
-            reply_banner.refresh()
-
-            supabase.table("pool_chat").insert(payload).execute()
-            mark_chat_read_sync()
-            message_feed.refresh()
+            try:
+                supabase.table("pool_chat").insert(payload).execute()
+                msg_in.value = ""
+                reply_state["id"] = None
+                reply_state["preview"] = ""
+                reply_banner.refresh()
+                mark_chat_read_sync()
+                message_feed.refresh()
+            except Exception as err:
+                ui.notify(f"Chat send error: {err}", type="negative", timeout=8000)
 
         msg_in.on("keydown.enter", send_message)
         ui.button("Send", icon="send", on_click=send_message, color="primary").classes("font-bold px-4")
