@@ -17,7 +17,7 @@ def render_rules_view(pool_slug: str):
             "**Standard Deadline:** Sunday at **12:00 PM ET**.",
             "**Early Games (Thursday, Friday, Saturday, International):** Picks involving an early game lock at that specific game's kickoff and automatically finalize.",
             "**Confirmed vs. Finalized:** A **Confirmed** pick is saved to the database, remains editable until that game's deadline, and keeps opponents' current-week picks hidden. A **Finalized** pick is permanently locked and immediately reveals opponents' picks for that week.",
-            "**Submission Failures:** If you fail to submit a pick before the deadline, your BYE will be used automatically if available. Otherwise, you will be assigned the highest remaining favorite that has not yet played according to ESPN Odds, with the ESPN Football Power Index used to determine the higher ranked team to break any ties. As a result, an auto-assigned team will be allowed as a repeat pick if they are the highest-favored and top-ranked available option.",
+            "**Submission Failures:** If you miss the deadline without submitting a pick, your BYE is used automatically if it is still available. If you have already used your BYE, you will be assigned the highest favored team to win that has yet to play based on ESPN Odds (using the ESPN Football Power Index to break ties). Because this pick is auto-assigned when the deadline passes, it is exempt from the no-repeat rule.",
         ]),
         ("3. Elimination & Bracket Format", [
             "**Main Pool (Double Elimination):** Everyone starts in the **Loser Bracket** (0 wrong). Your first incorrect pick moves you to the **Winner Bracket** (1 wrong). A second incorrect pick eliminates you.",
